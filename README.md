@@ -8,6 +8,7 @@ A native macOS PDF reader with per-book notebooks, local Apple Vision OCR, and r
 ## What works
 
 - Native SwiftUI/AppKit reader with PDFKit rendering, selection, zoom, page navigation, and text view.
+- Keyboard page turning in both original PDF and text view, with single-page and continuous PDF layouts.
 - Per-book notebooks with autosave, save-failure feedback, and revision conflict protection.
 - Quoted passages with page coordinates, persistent highlights, comments, and Markdown export.
 - Bookmarks and reading position restored after quitting and relaunching.
@@ -18,6 +19,26 @@ A native macOS PDF reader with per-book notebooks, local Apple Vision OCR, and r
 
 AI answers are generated in your MCP client. This version does not run a model inside the reader.
 The reader's “AI로 이어가기” button copies the current book ID and PDF page as a prompt for your client.
+
+## Reading controls
+
+Click the original PDF or text reading area to use these keys. Switching to text view focuses
+the reading area automatically. Notes, search fields, PDF form fields, and the page-number
+field keep their normal editing keys.
+
+| Key | Action |
+| --- | --- |
+| Left / Right | Previous / next PDF page |
+| Space / Shift-Space | Next / previous PDF page |
+| Page Down / Page Up (Fn-Down / Fn-Up) | Next / previous PDF page |
+| Home / End (Fn-Left / Fn-Right) | First / last PDF page |
+| Up / Down | Scroll within the reading area |
+| Command-Shift-R | Return keyboard focus to the current reading view |
+| Command-Option-Left / Right | Previous / next page from anywhere in the reader |
+
+Enter a page number and press Return to jump and keep reading with the keyboard.
+The first and last pages are clamped. PDF layout selection is saved between launches.
+The keyboard button beside the page controls opens an in-app reference.
 
 ## Build and run
 
@@ -113,6 +134,8 @@ Tests cover persistence, separate book notes, concurrent revisions, file rename 
 OCR version attachment, rescans, original-byte preservation, overwrite refusal, and cancellation.
 Native UI verification covered typing a notebook, running OCR, selecting and annotating text,
 adding a bookmark, searching, and relaunching to verify persistence.
+Keyboard verification also covers original PDF and text view, page limits, Space and page keys,
+editing without accidental navigation, returning focus, and page-number submission.
 
 Build and verification logs are local under `.runtime/` and excluded from Git.
 

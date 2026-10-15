@@ -2,23 +2,74 @@ import SwiftUI
 import PDFKit
 import BookshelfCore
 
+/// Scope shortcuts to the PDF responder subtree, including PDFKit's private document view.
+/// Editors in the notebook, search, page field, sheets, and PDF forms keep native key behavior.
+final class ReaderPDFView: PDFView {
+    var navigate: ((Int) -> Void)?
+    private var keyMonitor: Any?
+    override var acceptsFirstResponder: Bool { true }
+
+    override func viewDidMoveToWindow() {
+        super.viewDidMoveToWindow()
+        if let keyMonitor { NSEvent.removeMonitor(keyMonitor); self.keyMonitor = nil }
+        guard window != nil else { return }
+        keyMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
+            guard let self, let window = self.window, event.window === window,
+                  window.attachedSheet == nil, let responder = window.firstResponder as? NSView,
+                  responder === self || responder.isDescendant(of: self) else { return event }
+            if let editor = responder as? NSTextView, editor.isEditable { return event }
+            if let field = responder as? NSTextField, field.isEditable { return event }
+            let modifiers = event.modifierFlags.intersection([.command, .option, .control, .shift])
+            guard modifiers.isEmpty || (event.keyCode == 49 && modifiers == .shift),
+                  let document = self.document, let page = self.currentPage else { return event }
+            let current = document.index(for: page) + 1
+            let target: Int
+            switch event.keyCode {
+            case 123, 116: target = current - 1 // Left, Page Up (Fn + Up)
+            case 124, 121: target = current + 1 // Right, Page Down (Fn + Down)
+            case 49: target = current + (modifiers == .shift ? -1 : 1)
+            case 115: target = 1 // Home (Fn + Left)
+            case 119: target = document.pageCount // End (Fn + Right)
+            default: return event
+            }
+            self.navigate?(min(max(target, 1), document.pageCount))
+            return nil
+        }
+    }
+    deinit { if let keyMonitor { NSEvent.removeMonitor(keyMonitor) } }
+}
+
 struct PDFReaderView: NSViewRepresentable {
     @ObservedObject var model: AppModel
     func makeCoordinator() -> Coordinator { Coordinator(model: model) }
-    func makeNSView(context: Context) -> PDFView {
-        let view = PDFView()
-        view.autoScales = true; view.displayMode = .singlePageContinuous; view.displayDirection = .vertical
-        view.displaysPageBreaks = true; view.pageBreakMargins = NSEdgeInsets(top: 14, left: 14, bottom: 14, right: 14)
-        view.backgroundColor = NSColor.windowBackgroundColor
+    func makeNSView(context: Context) -> ReaderPDFView {
+        let view = ReaderPDFView()
+        view.autoScales = true; view.displayMode = model.continuousReading ? .singlePageContinuous : .singlePage
+        view.displayDirection = .vertical
+        view.displaysPageBreaks = true; view.pageBreakMargins = NSEdgeInsets(top: 24, left: 24, bottom: 24, right: 24)
+        view.backgroundColor = NSColor.controlBackgroundColor
+        view.navigate = { [weak model] page in model?.goToPage(page) }
         context.coordinator.attach(view)
         model.pdfView = view
         return view
     }
-    func updateNSView(_ view: PDFView, context: Context) {
+    func updateNSView(_ view: ReaderPDFView, context: Context) {
         let coordinator = context.coordinator
+        let mode: PDFDisplayMode = model.continuousReading ? .singlePageContinuous : .singlePage
+        if view.displayMode != mode {
+            let current = view.currentPage
+            view.displayMode = mode; view.autoScales = true
+            if let current { view.go(to: current) }
+        }
         if view.document !== model.document {
             view.document = model.document; view.autoScales = true
             coordinator.lastJump = -1; coordinator.highlightIDs = []
+            DispatchQueue.main.async { [weak view] in
+                guard let view, let window = view.window, window.attachedSheet == nil else { return }
+                if let editor = window.firstResponder as? NSTextView, editor.isEditable { return }
+                if let field = window.firstResponder as? NSTextField, field.isEditable { return }
+                window.makeFirstResponder(view)
+            }
         }
         if coordinator.lastJump != model.jumpSerial, let doc = view.document, let page = doc.page(at: model.requestedPage - 1) {
             coordinator.lastJump = model.jumpSerial

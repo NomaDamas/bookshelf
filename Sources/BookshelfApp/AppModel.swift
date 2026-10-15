@@ -22,6 +22,10 @@ import BookshelfCore
     @Published var notesVisible = true
     @Published var panelTab = "notes"
     @Published var textMode = false
+    @Published var readerFocusRequest = 0
+    @Published var continuousReading = false {
+        didSet { try? store.setSetting("continuousReading", value: continuousReading ? "true" : "false") }
+    }
     @Published var isImporting = false
     @Published var isInspecting = false
     @Published var isOpening = false
@@ -47,6 +51,7 @@ import BookshelfCore
         catch { fatalError("Bookshelf could not open its local store: \(error.localizedDescription)") }
         reloadLibrary()
         if let language = try? store.setting("ocrLanguage") { ocrLanguage = language }
+        continuousReading = (try? store.setting("continuousReading")) == "true"
         let args = CommandLine.arguments
         if let index = args.firstIndex(of: "--open"), args.indices.contains(index + 1) {
             importLocation(URL(fileURLWithPath: args[index + 1]), select: true)
@@ -155,10 +160,15 @@ import BookshelfCore
         do { try store.savePosition(bookID: book.id, page: page) }
         catch { errorMessage = error.localizedDescription }
     }
-    func goToPage(_ number: Int) {
+    func goToPage(_ number: Int, focusReader: Bool = false) {
         guard let document else { return }
         requestedPage = min(max(number, 1), max(document.pageCount, 1)); jumpSerial += 1
         pageChanged(requestedPage)
+        if focusReader { self.focusReader() }
+    }
+    func focusReader() {
+        if textMode { readerFocusRequest += 1 }
+        else if let pdfView { pdfView.window?.makeFirstResponder(pdfView) }
     }
     func toggleBookmark() {
         guard let book = activeBook else { return }

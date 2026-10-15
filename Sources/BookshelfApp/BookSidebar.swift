@@ -7,23 +7,27 @@ struct BookSidebar: View {
     @ObservedObject var model: AppModel
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            HStack { Text("나의 서재").font(.system(size: 16, weight: .semibold)); Text("\(model.books.count)").font(.system(size: 11)).foregroundStyle(.secondary); Spacer() }.padding(18)
-            TextField("책 찾아보기", text: $model.libraryQuery).textFieldStyle(.roundedBorder).padding(.horizontal, 14).padding(.bottom, 12).accessibilityLabel("책 검색")
+            HStack(alignment: .firstTextBaseline) {
+                Text("나의 서재").font(.system(size: 20, weight: .semibold))
+                Text("\(model.books.count)권").font(.system(size: 12)).monospacedDigit().foregroundStyle(.secondary)
+                Spacer()
+            }.padding(.horizontal, 20).padding(.top, 24).padding(.bottom, 18)
+            TextField("책 찾아보기", text: $model.libraryQuery).textFieldStyle(.roundedBorder).controlSize(.large).padding(.horizontal, 16).padding(.bottom, 16).accessibilityLabel("책 검색")
             if model.isImporting { HStack { ProgressView().controlSize(.small); Text("PDF 목록을 읽고 있습니다.").font(.caption) }.padding(14) }
             List(model.filteredBooks) { book in
                 Button { model.selectBook(book) } label: {
                     HStack(alignment: .center, spacing: 11) {
-                        BookThumbnail(book: book).frame(width: 39, height: 55)
+                        BookThumbnail(book: book).frame(width: 40, height: 57)
                         VStack(alignment: .leading, spacing: 4) {
-                            Text(book.title).font(.system(size: 12, weight: .medium)).lineLimit(2).foregroundStyle(.primary)
-                            Text(book.displayCategory).font(.system(size: 9)).foregroundStyle(.secondary).lineLimit(1)
-                            if book.lastOpened > 0 { Text("PDF \(book.lastPage)쪽에서 이어 읽기").font(.system(size: 9)).foregroundStyle(Color.accentColor) }
+                            Text(book.title).font(.system(size: 13, weight: .medium)).lineLimit(2).foregroundStyle(.primary)
+                            Text(book.displayCategory).font(.system(size: 10)).foregroundStyle(.secondary).lineLimit(1)
+                            if book.lastOpened > 0 { Text("\(book.lastPage)쪽에서 이어 읽기").font(.system(size: 10)).monospacedDigit().foregroundStyle(ReaderStyle.accent) }
                         }
                         Spacer(minLength: 0)
                         if !book.isAvailable { Image(systemName: "icloud.and.arrow.down").font(.system(size: 11)).foregroundStyle(.secondary) }
-                    }.padding(.vertical, 5).contentShape(Rectangle())
+                    }.padding(.vertical, 9).contentShape(Rectangle())
                 }.buttonStyle(.plain).accessibilityLabel(book.title)
-                    .listRowBackground(model.activeBook?.id == book.id ? Color.accentColor.opacity(0.12) : Color.clear)
+                    .listRowBackground(model.activeBook?.id == book.id ? ReaderStyle.accent.opacity(0.12) : Color.clear)
             }.listStyle(.sidebar)
             Divider()
             HStack { Image(systemName: "internaldrive"); Text("이 Mac의 서재"); Spacer(); Button { model.chooseFiles(folder: true) } label: { Image(systemName: "folder.badge.plus") }.buttonStyle(.plain).accessibilityLabel("폴더 추가") }.font(.system(size: 11)).foregroundStyle(.secondary).padding(16)

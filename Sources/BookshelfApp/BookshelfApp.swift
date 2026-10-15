@@ -54,8 +54,9 @@ import BookshelfCore
                 Button("폴더 추가…") { model.chooseFiles(folder: true) }.keyboardShortcut("o", modifiers: [.command, .shift])
             }
             CommandMenu("읽기") {
-                Button("이전 페이지") { model.goToPage(model.page - 1) }.keyboardShortcut(.leftArrow, modifiers: .command)
-                Button("다음 페이지") { model.goToPage(model.page + 1) }.keyboardShortcut(.rightArrow, modifiers: .command)
+                Button("이전 페이지") { model.goToPage(model.page - 1, focusReader: true) }.keyboardShortcut(.leftArrow, modifiers: [.command, .option])
+                Button("다음 페이지") { model.goToPage(model.page + 1, focusReader: true) }.keyboardShortcut(.rightArrow, modifiers: [.command, .option])
+                Button("읽기 화면으로") { model.focusReader() }.keyboardShortcut("r", modifiers: [.command, .shift]).disabled(model.document == nil)
                 Button("책갈피") { model.toggleBookmark() }.keyboardShortcut("d")
                 Divider()
                 Button("이 책에서 찾기") { model.notesVisible = true; model.panelTab = "search" }.keyboardShortcut("f")
