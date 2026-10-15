@@ -32,6 +32,9 @@ import BookshelfCore
     @Published var errorMessage: String?
     @Published var information: String?
     @Published var searchQuery = ""
+    @Published var ignoreSearchWhitespace = true {
+        didSet { try? store.setSetting("ignoreSearchWhitespace", value: ignoreSearchWhitespace ? "true" : "false") }
+    }
     @Published var searchResults: [SearchHit] = []
     @Published var isSearching = false
     @Published var ocrRunning = false
@@ -52,6 +55,7 @@ import BookshelfCore
         reloadLibrary()
         if let language = try? store.setting("ocrLanguage") { ocrLanguage = language }
         continuousReading = (try? store.setting("continuousReading")) == "true"
+        ignoreSearchWhitespace = (try? store.setting("ignoreSearchWhitespace")) != "false"
         let args = CommandLine.arguments
         if let index = args.firstIndex(of: "--open"), args.indices.contains(index + 1) {
             importLocation(URL(fileURLWithPath: args[index + 1]), select: true)
@@ -195,10 +199,10 @@ import BookshelfCore
     func searchBook() {
         guard let book = activeBook else { return }
         notesVisible = true; panelTab = "search"; isSearching = true
-        let query = searchQuery; searchTask?.cancel()
+        let query = searchQuery, ignoreWhitespace = ignoreSearchWhitespace; searchTask?.cancel()
         searchTask = Task {
             do {
-                let results = try await Task.detached(priority: .userInitiated) { try PDFService.search(book, query: query) }.value
+                let results = try await Task.detached(priority: .userInitiated) { try PDFService.search(book, query: query, ignoreWhitespace: ignoreWhitespace) }.value
                 guard !Task.isCancelled, activeBook?.id == book.id else { return }
                 searchResults = results; isSearching = false
             } catch { if !Task.isCancelled { isSearching = false; errorMessage = error.localizedDescription } }

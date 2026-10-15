@@ -23,7 +23,7 @@ func stderr(_ text: String) { FileHandle.standardError.write(Data((text + "\n").
             bookshelf-cli import <PDF-or-folder>
             bookshelf-cli books [title]
             bookshelf-cli read <book-id> <PDF-page>
-            bookshelf-cli search <book-id> <text>
+            bookshelf-cli search <book-id> <text> [--exact-spacing]
             bookshelf-cli notes <book-id>
             bookshelf-cli note-set <book-id> <text>
             bookshelf-cli bookmark <book-id> <PDF-page>
@@ -35,6 +35,7 @@ func stderr(_ text: String) { FileHandle.standardError.write(Data((text + "\n").
             bookshelf-cli mcp
 
             Data location: BOOKSHELF_DATA_DIR or ~/Library/Application Support/Bookshelf
+            Search ignores OCR whitespace by default. --exact-spacing preserves word spacing.
             MCP exposes only reads. OCR and imports require explicit CLI/app actions.
             """)
             return
@@ -52,7 +53,10 @@ func stderr(_ text: String) { FileHandle.standardError.write(Data((text + "\n").
         case "read":
             let book = try store.book(argument(1)), page = try pageArgument(2)
             print(try objectJSON(["book_id": book.id, "title": book.title, "page": page, "text": PDFService.readPage(book, page: page), "url": "bookshelf://book/\(book.id)?page=\(page)"]))
-        case "search": print(try encoded(PDFService.search(store.book(argument(1)), query: argument(2))))
+        case "search":
+            let options = Array(args.dropFirst(3))
+            guard options.isEmpty || options == ["--exact-spacing"] else { throw ShelfError.message("검색 옵션은 --exact-spacing만 지원합니다.") }
+            print(try encoded(PDFService.search(store.book(argument(1)), query: argument(2), ignoreWhitespace: options.isEmpty)))
         case "notes":
             let id = try argument(1)
             print(try objectJSON(["book_id": id, "notebook": JSONSerialization.jsonObject(with: Data(encoded(store.notebook(bookID: id)).utf8)), "highlights": JSONSerialization.jsonObject(with: Data(encoded(store.highlights(bookID: id)).utf8)), "bookmarks": store.bookmarks(bookID: id)]))

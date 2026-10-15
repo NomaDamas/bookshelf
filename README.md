@@ -9,6 +9,7 @@ A native macOS PDF reader with per-book notebooks, local Apple Vision OCR, and r
 
 - Native SwiftUI/AppKit reader with PDFKit rendering, selection, zoom, page navigation, and text view.
 - Keyboard page turning in both original PDF and text view, with single-page and continuous PDF layouts.
+- OCR-friendly Korean/English search that ignores whitespace and line breaks, with an exact-spacing option.
 - Per-book notebooks with autosave, save-failure feedback, and revision conflict protection.
 - Quoted passages with page coordinates, persistent highlights, comments, and Markdown export.
 - Bookmarks and reading position restored after quitting and relaunching.
@@ -39,6 +40,21 @@ field keep their normal editing keys.
 Enter a page number and press Return to jump and keep reading with the keyboard.
 The first and last pages are clamped. PDF layout selection is saved between launches.
 The keyboard button beside the page controls opens an in-app reference.
+
+## Searching OCR text
+
+The search panel enables “띄어쓰기 무시” by default. `설득의 심리학` can find `설 득 의 심 리 학`,
+and `Deep Learning` can find `DE EP LEARN ING`, including line breaks, tabs and Unicode spaces.
+Soft hyphens and zero-width spaces are ignored in this search projection too.
+PDF files, extracted source text, quotations and page numbers stay unchanged.
+
+Turn the checkbox off when word boundaries matter: removing spaces also makes `the rapist`
+match `therapist`. This feature does not correct misspelled characters, rewrite grammar,
+or remove visible punctuation/hyphens. It does not install a language model or upload book text.
+
+CLI search uses the same default. Pass `--exact-spacing` to preserve spacing.
+The MCP `search_book` tool accepts `ignore_whitespace: false` for the same behavior and returns
+the chosen mode alongside original page excerpts.
 
 ## Build and run
 
@@ -106,7 +122,8 @@ Example prompts:
 - “이 책에 내가 남긴 메모를 읽고 이해가 빠진 부분을 짚어줘.”
 
 MCP uses 1-based PDF page numbers, which can differ from printed book page numbers.
-Search is literal text search. Tool results distinguish user notes from source quotations.
+Search is keyword search with optional whitespace normalization, not semantic search.
+Tool results distinguish user notes from source quotations.
 Book links use `bookshelf://book/<book-id>?page=<number>`.
 
 ## Storage
@@ -136,6 +153,9 @@ Native UI verification covered typing a notebook, running OCR, selecting and ann
 adding a bookmark, searching, and relaunching to verify persistence.
 Keyboard verification also covers original PDF and text view, page limits, Space and page keys,
 editing without accidental navigation, returning focus, and page-number submission.
+Search regression tests cover Korean/English OCR spacing, Unicode spaces, emoji and decomposed
+text offsets, unchanged quotations, empty queries and exact-spacing false-positive control.
+The stdio MCP check covers both search modes and rejects an invalid option type.
 
 Build and verification logs are local under `.runtime/` and excluded from Git.
 

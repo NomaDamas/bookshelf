@@ -94,13 +94,23 @@ struct NotesPanel: View {
     private var search: some View {
         VStack(alignment: .leading, spacing: 15) {
             HStack { TextField("이 책의 본문에서 찾기", text: $model.searchQuery).textFieldStyle(.roundedBorder).onSubmit { model.searchBook() }.accessibilityLabel("본문 검색어"); Button { model.searchBook() } label: { Image(systemName: "magnifyingglass") }.accessibilityLabel("본문 검색") }.padding(.top, 20)
+            VStack(alignment: .leading, spacing: 7) {
+                Toggle("띄어쓰기 무시", isOn: $model.ignoreSearchWhitespace)
+                    .toggleStyle(.checkbox).font(.system(size: 12))
+                    .help("OCR의 글자 사이 공백과 줄바꿈을 무시하고 찾습니다. 원문은 바뀌지 않습니다.")
+                    .onChange(of: model.ignoreSearchWhitespace) { _, _ in
+                        if !model.searchQuery.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty { model.searchBook() }
+                    }
+                Text(model.ignoreSearchWhitespace ? "‘설 득’도 ‘설득’으로 찾습니다." : "입력한 띄어쓰기가 같은 문장을 찾습니다.")
+                    .font(.system(size: 11)).foregroundStyle(.secondary)
+            }
             if model.isSearching { ProgressView("본문을 찾고 있습니다.").controlSize(.small) }
             else if !model.searchQuery.isEmpty { Text("\(model.searchResults.count)개 페이지").font(.system(size: 11)).foregroundStyle(.secondary) }
             ScrollView {
                 LazyVStack(alignment: .leading, spacing: 14) {
                     ForEach(model.searchResults) { hit in
                         Button { model.goToPage(hit.page) } label: {
-                            VStack(alignment: .leading, spacing: 8) { Text("PDF \(hit.page)쪽").font(.system(size: 11, weight: .medium)).foregroundStyle(Color.accentColor); Text(hit.text).font(.system(size: 12)).lineSpacing(5).lineLimit(7).foregroundStyle(.primary) }.padding(13).frame(maxWidth: .infinity, alignment: .leading).background(Color(nsColor: .textBackgroundColor), in: RoundedRectangle(cornerRadius: 7))
+                            VStack(alignment: .leading, spacing: 8) { Text("PDF \(hit.page)쪽").font(.system(size: 11, weight: .medium)).foregroundStyle(ReaderStyle.accent); Text(hit.text).font(.system(size: 12)).lineSpacing(5).lineLimit(7).foregroundStyle(.primary) }.padding(13).frame(maxWidth: .infinity, alignment: .leading).background(Color(nsColor: .textBackgroundColor), in: RoundedRectangle(cornerRadius: 7))
                         }.buttonStyle(.plain)
                     }
                 }

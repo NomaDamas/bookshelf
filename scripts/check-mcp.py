@@ -54,11 +54,23 @@ try:
         responses[name] = json.loads(result['content'][0]['text'])
     assert '서재' in responses['read_page']['text']
     assert responses['search_book']['matches']
+    # Deliberately insert a tab into a known fixture word. Normalization must apply to the query too.
+    relaxed = send('tools/call', {'name': 'search_book', 'arguments': {'book_id': book_id, 'query': '서\t재'}})
+    assert not relaxed.get('isError'), relaxed
+    relaxed_data = json.loads(relaxed['content'][0]['text'])
+    assert relaxed_data['ignore_whitespace'] is True
+    assert relaxed_data['matches'] and '서재' in relaxed_data['matches'][0]['text']
+    exact = send('tools/call', {'name': 'search_book', 'arguments': {'book_id': book_id, 'query': '서\t재', 'ignore_whitespace': False}})
+    assert not exact.get('isError'), exact
+    exact_data = json.loads(exact['content'][0]['text'])
+    assert exact_data['ignore_whitespace'] is False and not exact_data['matches']
+    invalid_option = send('tools/call', {'name': 'search_book', 'arguments': {'book_id': book_id, 'query': '서재', 'ignore_whitespace': 'yes'}})
+    assert invalid_option.get('isError')
     assert responses['get_notes']['notebook'].startswith('OCR 전에 쓴 메모')
     assert responses['get_reading_context']['page'] == 2
     invalid = send('tools/call', {'name': 'read_page', 'arguments': {'book_id': book_id, 'page': 0}})
     assert invalid.get('isError')
-    report = {'protocol': init['protocolVersion'], 'tools': [t['name'] for t in tools], 'all_read_only': True, 'all_calls_passed': True, 'invalid_page_rejected': True}
+    report = {'protocol': init['protocolVersion'], 'tools': [t['name'] for t in tools], 'all_read_only': True, 'all_calls_passed': True, 'invalid_page_rejected': True, 'ocr_whitespace_search': True, 'exact_spacing_option': True, 'invalid_search_option_rejected': True}
     (root / '.runtime/mcp-check-result.json').write_text(json.dumps(report, indent=2), encoding='utf-8')
     print(json.dumps(report, indent=2))
 finally:

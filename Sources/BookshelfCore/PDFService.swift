@@ -31,15 +31,15 @@ public enum PDFService {
             return pdf.page(at: page - 1)?.string ?? ""
         }
     }
-    public static func search(_ book: Book, query: String, limit: Int = 20) throws -> [SearchHit] {
-        let term = query.trimmingCharacters(in: .whitespacesAndNewlines)
+    public static func search(_ book: Book, query: String, limit: Int = 20, ignoreWhitespace: Bool = true) throws -> [SearchHit] {
+        let term = TextSearchQuery(query, ignoreWhitespace: ignoreWhitespace)
         guard !term.isEmpty else { return [] }
         return try autoreleasepool {
             let pdf = try document(at: book.url)
             var results: [SearchHit] = []
             for i in 0..<pdf.pageCount {
                 let text = pdf.page(at: i)?.string ?? ""
-                if let range = text.range(of: term, options: [.caseInsensitive, .diacriticInsensitive]) {
+                if let range = term.range(in: text) {
                     let start = text.index(range.lowerBound, offsetBy: -120, limitedBy: text.startIndex) ?? text.startIndex
                     let end = text.index(range.upperBound, offsetBy: 400, limitedBy: text.endIndex) ?? text.endIndex
                     results.append(SearchHit(page: i + 1, text: String(text[start..<end])))
