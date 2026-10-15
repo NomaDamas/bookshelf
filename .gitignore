@@ -4,3 +4,5 @@
 dist/
 .DS_Store
 *.xcuserstate
+__pycache__/
+*.py[cod]

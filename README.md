@@ -104,6 +104,29 @@ PDF text detection counts pages with any extractable text. It is not an OCR qual
 A scanned page with a small existing text header may require a separate repair workflow;
 this app does not automatically force-rasterize it.
 
+## Existing OCR layer maintenance
+
+The optional scripts below audit and repair one specific failure mode in some AppleOCR PDFs:
+standalone invisible spaces inserted between Korean characters. They do not rewrite grammar,
+run a language model, or replace recognized letters. They require Poppler and a Python environment
+with `pikepdf` and Pillow, in addition to the Swift/PDFKit probe.
+
+- `pdf-text-probe.swift`: extract PDFKit text/geometry for selected pages or `all` pages.
+- `audit-text-layer.py`: compare sampled PDFKit/Poppler text. A clean sample is not proof that every page is accurate.
+- `repair-ocr-spacing.py`: propose removal of separately positioned invisible GlyphLessFont spaces only where a complete, unambiguous source-text match supports it. Without `--output`, it is a dry run.
+- `validate-text-layer.py`: compare all PDFKit/Poppler non-whitespace text, page geometry, image stream bytes, and chosen rendered pages.
+- `stage-spacing-repairs.py` / `finalize-spacing-repairs.py`: prepare candidates and restore any pages where either extractor's reading order changes. Unsupported or ambiguous text remains untouched.
+- `apply-spacing-repairs.py`: verify source/candidate hashes, back up originals, then replace files atomically. A dry run is the default; `--apply` is explicit.
+- `restore-text-layer-backup.py`: restore originals only if the current PDF still matches the recorded repair; keep a copy of the repaired file too.
+
+Every tool has `--help`, except the standalone restore tool, which accepts its backup directory.
+Keep the virtual environment's Python executable path when passing `--python`; resolving its symlink
+to a base interpreter bypasses the environment's installed dependencies.
+Placeholder downloads require an explicit file list and `--download-placeholders`; normal auditing
+does not download them. A FileProvider timeout leaves the PDF unmodified and its audit incomplete.
+Do not apply a candidate with a failed validation report. These tools do not edit the global OCR skill
+or an installed third-party package. The app continues to use explicit Apple Vision `accurate` mode.
+
 ## CLI and MCP
 
 ```sh
