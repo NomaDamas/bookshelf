@@ -38,6 +38,7 @@ struct NotesPanel: View {
                 HStack(alignment: .firstTextBaseline) {
                     Label("이 책의 노트", systemImage: "square.and.pencil")
                         .font(.system(size: 14, weight: .semibold))
+                    NoteCountBadge(count: model.noteCount(book))
                     Spacer(minLength: 8)
                     HStack(spacing: 4) {
                         Image(systemName: model.hasUnsavedChanges ? "circle.dotted" : "checkmark")

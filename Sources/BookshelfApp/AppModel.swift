@@ -25,7 +25,12 @@ import BookshelfCore
     @Published var readerFocusRequest = 0
     @Published var libraryRevealRequest = 0
     @Published var readingShelfVisible = false
-    @Published private(set) var readingMembership: [String: Bool] = [:]
+    @Published var shelfStatus: ReadingStatus = .reading
+    @Published private(set) var readingSummaries: [String: ReadingSummary] = [:]
+    @Published private(set) var noteCounts: [String: NoteCount] = [:]
+    @Published var historyBook: Book?
+    @Published private(set) var historyEntries: [ReadingCompletion] = []
+    @Published private(set) var sortPreferences = LibrarySortPreferences()
     @Published var continuousReading = false {
         didSet { try? store.setSetting("continuousReading", value: continuousReading ? "true" : "false") }
     }
@@ -63,9 +68,9 @@ import BookshelfCore
         if let language = try? store.setting("ocrLanguage") { ocrLanguage = language }
         continuousReading = (try? store.setting("continuousReading")) == "true"
         ignoreSearchWhitespace = (try? store.setting("ignoreSearchWhitespace")) != "false"
-        if let saved = try? store.setting("readingShelf.membership") {
-            do { readingMembership = try JSONDecoder().decode([String: Bool].self, from: Data(saved.utf8)) }
-            catch { errorMessage = "읽는 중 목록 설정을 불러오지 못했습니다." }
+        if let saved = try? store.setting("library.sort") {
+            do { sortPreferences = try JSONDecoder().decode(LibrarySortPreferences.self, from: Data(saved.utf8)) }
+            catch { errorMessage = "책장 정렬 설정을 불러오지 못했습니다." }
         }
         let args = CommandLine.arguments
         if let index = args.firstIndex(of: "--open"), args.indices.contains(index + 1) {
@@ -76,25 +81,98 @@ import BookshelfCore
     }
     var filteredBooks: [Book] {
         let term = libraryQuery.replacingOccurrences(of: " ", with: "").lowercased()
-        return term.isEmpty ? books : books.filter { ($0.title + $0.category).replacingOccurrences(of: " ", with: "").lowercased().contains(term) }
+        return sortedBooks.filter { term.isEmpty || ($0.title + $0.category).replacingOccurrences(of: " ", with: "").lowercased().contains(term) }
     }
-    var readingBooks: [Book] {
-        books.filter(isInReadingShelf).sorted {
-            $0.lastOpened == $1.lastOpened ? $0.title.localizedStandardCompare($1.title) == .orderedAscending : $0.lastOpened > $1.lastOpened
+    var readingBooks: [Book] { books(in: .reading) }
+    var shelfBooks: [Book] {
+        filteredBooks.filter { readingSummary($0).status == shelfStatus }
+    }
+    func readingSummary(_ book: Book) -> ReadingSummary { readingSummaries[book.id] ?? ReadingSummary() }
+    func noteCount(_ book: Book) -> NoteCount { noteCounts[book.id] ?? NoteCount() }
+    func books(in status: ReadingStatus) -> [Book] {
+        sortedBooks.filter { readingSummary($0).status == status }
+    }
+    func bookCount(in status: ReadingStatus) -> Int { books.filter { readingSummary($0).status == status }.count }
+    private var sortedBooks: [Book] {
+        func value(_ book: Book) -> Double {
+            switch sortPreferences.criterion {
+            case .recentlyRead: return max(book.lastOpened, readingSummary(book).startedAt ?? 0)
+            case .recentlyFinished: return readingSummary(book).lastCompletedAt ?? 0
+            case .recentlyAdded: return book.created
+            case .notes: return Double(noteCount(book).total)
+            case .readCount: return Double(readingSummary(book).completedCount)
+            case .title: return 0
+            }
+        }
+        return books.sorted {
+            if sortPreferences.criterion != .title {
+                let a = value($0), b = value($1)
+                if a != b { return sortPreferences.ascending ? a < b : a > b }
+            }
+            let order = $0.title.localizedStandardCompare($1.title)
+            if order == .orderedSame { return $0.id < $1.id }
+            return sortPreferences.criterion == .title && !sortPreferences.ascending ? order == .orderedDescending : order == .orderedAscending
         }
     }
-    func isInReadingShelf(_ book: Book) -> Bool { readingMembership[book.id] ?? (book.lastOpened > 0) }
-    func setReadingMembership(_ book: Book, included: Bool) {
-        var next = readingMembership; next[book.id] = included
-        do {
-            let text = String(decoding: try JSONEncoder().encode(next), as: UTF8.self)
-            try store.setSetting("readingShelf.membership", value: text)
-            readingMembership = next
-        } catch { errorMessage = "읽는 중 목록을 저장하지 못했습니다. " + error.localizedDescription }
+    func setSort(_ criterion: LibrarySort) {
+        guard criterion != sortPreferences.criterion else { return }
+        saveSort(LibrarySortPreferences(criterion: criterion, ascending: criterion == .title))
     }
-    func showReadingShelf() {
+    func setSortAscending(_ ascending: Bool) {
+        var next = sortPreferences; next.ascending = ascending; saveSort(next)
+    }
+    private func saveSort(_ preferences: LibrarySortPreferences) {
+        do {
+            try store.setSetting("library.sort", value: String(decoding: JSONEncoder().encode(preferences), as: UTF8.self))
+            sortPreferences = preferences
+        } catch { errorMessage = "정렬 설정을 저장하지 못했습니다. " + error.localizedDescription }
+    }
+    func startReading(_ book: Book, open: Bool = true) {
         guard flushPendingSave() else { return }
-        savePositionNow(); readingShelfVisible = true
+        savePositionNow()
+        do {
+            let previous = try store.readingSummaries(bookID: book.id)[book.id]
+            let changed = try store.startReading(bookID: book.id)
+            if changed && previous?.status == .finished && activeBook?.id == book.id {
+                page = 1; requestedPage = 1; jumpSerial += 1
+            }
+            reloadLibrary()
+            if open { selectBook(try store.book(book.id)) }
+        } catch { errorMessage = error.localizedDescription }
+    }
+    func completeReading(_ book: Book) {
+        guard flushPendingSave() else { return }
+        savePositionNow()
+        do {
+            if try store.completeReading(bookID: book.id) {
+                reloadLibrary()
+                information = "\(book.title), \(readingSummary(book).completedCount)회독을 기록했습니다."
+            }
+        } catch { errorMessage = error.localizedDescription }
+    }
+    func shelveReading(_ book: Book) {
+        guard flushPendingSave() else { return }
+        savePositionNow()
+        do { try store.shelveReading(bookID: book.id); reloadLibrary() }
+        catch { errorMessage = error.localizedDescription }
+    }
+    func undoReadingCompletion(_ book: Book) {
+        guard flushPendingSave() else { return }
+        do { try store.undoReadingCompletion(bookID: book.id); reloadLibrary() }
+        catch { errorMessage = error.localizedDescription }
+    }
+    func showReadingHistory(_ book: Book) {
+        do { historyEntries = try store.readingHistory(bookID: book.id); historyBook = book }
+        catch { errorMessage = error.localizedDescription }
+    }
+    func showReadingShelf(_ status: ReadingStatus = .reading) {
+        guard flushPendingSave() else { return }
+        savePositionNow(); shelfStatus = status; readingShelfVisible = true
+    }
+    func showNotes(_ book: Book) {
+        guard flushPendingSave() else { return }
+        selectBook(book)
+        notesVisible = true; panelTab = noteCount(book).notebook > 0 ? "notes" : "quotes"
     }
     func showLibrary() {
         readingShelfVisible = false; sidebarVisible = true; libraryQuery = ""
@@ -103,7 +181,16 @@ import BookshelfCore
         if readingShelfVisible { readingShelfVisible = false; notesVisible = true }
         else { notesVisible.toggle() }
     }
-    func reloadLibrary() { do { books = try store.books() } catch { errorMessage = error.localizedDescription } }
+    func reloadLibrary() {
+        do {
+            books = try store.books(); readingSummaries = try store.readingSummaries(); noteCounts = try store.noteCounts()
+            if let book = historyBook { historyEntries = try store.readingHistory(bookID: book.id) }
+        } catch { errorMessage = error.localizedDescription }
+    }
+    private func refreshNoteCount(_ bookID: String) {
+        do { noteCounts[bookID] = try store.noteCounts(bookID: bookID)[bookID] }
+        catch { errorMessage = error.localizedDescription }
+    }
     func chooseFiles(folder: Bool = false) {
         let panel = NSOpenPanel()
         panel.title = folder ? "서재에 추가할 폴더" : "서재에 추가할 PDF"
@@ -218,6 +305,7 @@ import BookshelfCore
         do {
             let result = try store.saveNotebook(bookID: book.id, body: notebookText, expectedRevision: revision)
             revision = result.revision; hasUnsavedChanges = false; saveStatus = "저장됨"
+            refreshNoteCount(book.id)
             return true
         } catch { saveStatus = "저장하지 못함"; errorMessage = error.localizedDescription; return false }
     }
@@ -227,7 +315,7 @@ import BookshelfCore
             NSPasteboard.general.clearContents(); NSPasteboard.general.setString(notebookText, forType: .string)
             information = "현재 메모를 클립보드에 보관하고 저장된 내용을 다시 불러왔습니다."
         }
-        do { let n = try store.notebook(bookID: b.id); notebookText = n.body; revision = n.revision; hasUnsavedChanges = false; saveStatus = "저장됨" }
+        do { let n = try store.notebook(bookID: b.id); notebookText = n.body; revision = n.revision; hasUnsavedChanges = false; saveStatus = "저장됨"; refreshNoteCount(b.id) }
         catch { errorMessage = error.localizedDescription }
     }
     func pageChanged(_ number: Int) {
@@ -244,6 +332,7 @@ import BookshelfCore
             let saved = try store.book(book.id)
             if let index = books.firstIndex(where: { $0.id == book.id }) { books[index] = saved }
             if activeBook?.id == book.id { activeBook = saved }
+            readingSummaries[book.id] = try store.readingSummaries(bookID: book.id)[book.id]
         }
         catch { errorMessage = error.localizedDescription }
     }
@@ -268,16 +357,17 @@ import BookshelfCore
         do {
             for quote in selection { try store.saveHighlight(quote) }
             highlights = try store.highlights(bookID: book.id); selection = []; pdfView?.clearSelection()
+            refreshNoteCount(book.id)
             notesVisible = true; panelTab = "quotes"
         } catch { errorMessage = error.localizedDescription }
     }
     func updateHighlight(_ highlight: Highlight, comment: String) {
         var copy = highlight; copy.comment = comment
-        do { try store.saveHighlight(copy); highlights = try store.highlights(bookID: copy.bookID) }
+        do { try store.saveHighlight(copy); highlights = try store.highlights(bookID: copy.bookID); refreshNoteCount(copy.bookID) }
         catch { errorMessage = error.localizedDescription }
     }
     func deleteHighlight(_ highlight: Highlight) {
-        do { try store.deleteHighlight(id: highlight.id, bookID: highlight.bookID); highlights = try store.highlights(bookID: highlight.bookID) }
+        do { try store.deleteHighlight(id: highlight.id, bookID: highlight.bookID); highlights = try store.highlights(bookID: highlight.bookID); refreshNoteCount(highlight.bookID) }
         catch { errorMessage = error.localizedDescription }
     }
     func searchBook() {

@@ -45,8 +45,19 @@ public final class LibraryStore: @unchecked Sendable {
             path TEXT PRIMARY KEY, book_id TEXT NOT NULL REFERENCES books(id), report_path TEXT NOT NULL
         );
         CREATE TABLE IF NOT EXISTS ocr_versions (path TEXT PRIMARY KEY, book_id TEXT NOT NULL REFERENCES books(id));
+        CREATE TABLE IF NOT EXISTS reading_states (
+            book_id TEXT PRIMARY KEY REFERENCES books(id),
+            status TEXT NOT NULL CHECK(status IN ('unread','reading','finished')),
+            started_at REAL, updated_at REAL NOT NULL
+        );
+        CREATE TABLE IF NOT EXISTS reading_completions (
+            id TEXT PRIMARY KEY, book_id TEXT NOT NULL REFERENCES books(id),
+            started_at REAL, completed_at REAL NOT NULL
+        );
+        CREATE INDEX IF NOT EXISTS reading_completions_book ON reading_completions(book_id, completed_at);
         PRAGMA user_version=1;
         """)
+        try migrateReadingMembership()
         try? FileManager.default.setAttributes([.posixPermissions: 0o600], ofItemAtPath: databaseURL.path)
     }
     deinit { sqlite3_close(db) }
@@ -154,9 +165,15 @@ public final class LibraryStore: @unchecked Sendable {
         _ = try query("UPDATE books SET page_count=?,text_pages=? WHERE id=?", [String(pageCount),String(textPages),bookID])
     }
     public func savePosition(bookID: String, page: Int) throws {
-        let b = try book(bookID)
-        guard page > 0, b.pageCount == 0 || page <= b.pageCount else { throw ShelfError.message("유효하지 않은 페이지 번호입니다.") }
-        _ = try query("UPDATE books SET last_page=?,last_opened=? WHERE id=?", [String(page),String(Date().timeIntervalSince1970),bookID])
+        try readingTransaction {
+            let b = try book(bookID)
+            guard page > 0, b.pageCount == 0 || page <= b.pageCount else { throw ShelfError.message("유효하지 않은 페이지 번호입니다.") }
+            let now = String(Date().timeIntervalSince1970)
+            _ = try query("UPDATE books SET last_page=?,last_opened=? WHERE id=?", [String(page),now,bookID])
+            // Only a first open starts reading automatically. Reviewing a finished
+            // book or an explicitly shelved book must not start a new read-through.
+            _ = try query("INSERT OR IGNORE INTO reading_states(book_id,status,started_at,updated_at) VALUES(?,'reading',?,?)", [bookID,now,now])
+        }
     }
     public func notebook(bookID: String) throws -> Notebook {
         guard let row = try query("SELECT * FROM notebooks WHERE book_id=?", [bookID]).first else { return Notebook() }
@@ -202,5 +219,122 @@ public final class LibraryStore: @unchecked Sendable {
         var text = "# \(b.title)\n\n\(n.body)\n\n## 발췌 메모\n"
         for h in hs { text += "\n### PDF \(h.page)쪽\n\n> " + h.quote.replacingOccurrences(of: "\n", with: "\n> ") + "\n\n" + h.comment + "\n" }
         return text
+    }
+
+    private func readingTransaction<T>(_ body: () throws -> T) throws -> T {
+        try synchronized {
+            try exec("BEGIN IMMEDIATE")
+            do { let value = try body(); try exec("COMMIT"); return value }
+            catch { try? exec("ROLLBACK"); throw error }
+        }
+    }
+
+    /// Import old shelf choices without inventing completions or start dates.
+    /// INSERT OR IGNORE also supports a legacy CLI writing positions during an upgrade.
+    private func migrateReadingMembership() throws {
+        try readingTransaction {
+            let legacy = try setting("readingShelf.membership").map {
+                try JSONDecoder().decode([String: Bool].self, from: Data($0.utf8))
+            } ?? [:]
+            let rows = try query("SELECT b.id,b.last_opened FROM books b LEFT JOIN reading_states r ON r.book_id=b.id WHERE r.book_id IS NULL")
+            for row in rows {
+                let id = row["id"]!, opened = Double(row["last_opened"]!) ?? 0
+                guard legacy[id] != nil || opened > 0 else { continue }
+                let status: ReadingStatus = (legacy[id] ?? (opened > 0)) ? .reading : .unread
+                _ = try query("INSERT OR IGNORE INTO reading_states(book_id,status,updated_at) VALUES(?,?,?)", [id,status.rawValue,String(opened)])
+            }
+        }
+    }
+
+    public func readingSummaries(bookID: String? = nil) throws -> [String: ReadingSummary] {
+        let rows = try query("""
+        SELECT b.id,COALESCE(r.status,'unread') AS status,r.started_at,COALESCE(r.updated_at,0) AS updated_at,
+               COALESCE(c.total,0) AS total,c.last_completed
+        FROM books b LEFT JOIN reading_states r ON r.book_id=b.id
+        LEFT JOIN (SELECT book_id,COUNT(*) AS total,MAX(completed_at) AS last_completed
+                   FROM reading_completions GROUP BY book_id) c ON c.book_id=b.id
+        """ + (bookID == nil ? "" : " WHERE b.id=?"), bookID.map { [$0] } ?? [])
+        return Dictionary(uniqueKeysWithValues: rows.map { row in
+            var summary = ReadingSummary()
+            summary.status = ReadingStatus(rawValue: row["status"]!) ?? .unread
+            summary.completedCount = Int(row["total"]!) ?? 0
+            summary.startedAt = row["started_at"].flatMap(Double.init)
+            summary.lastCompletedAt = row["last_completed"].flatMap(Double.init)
+            summary.updatedAt = Double(row["updated_at"]!) ?? 0
+            return (row["id"]!, summary)
+        })
+    }
+
+    public func readingHistory(bookID: String) throws -> [ReadingCompletion] {
+        try query("SELECT * FROM reading_completions WHERE book_id=? ORDER BY completed_at DESC,rowid DESC", [bookID]).map {
+            ReadingCompletion(id: $0["id"]!, bookID: bookID, startedAt: $0["started_at"].flatMap(Double.init), completedAt: Double($0["completed_at"]!)!)
+        }
+    }
+
+    private func setReadingState(_ status: ReadingStatus, bookID: String, started: Double?, now: Double) throws {
+        _ = try query("""
+        INSERT INTO reading_states(book_id,status,started_at,updated_at) VALUES(?,?,?,?)
+        ON CONFLICT(book_id) DO UPDATE SET status=excluded.status,started_at=excluded.started_at,updated_at=excluded.updated_at
+        """, [bookID,status.rawValue,started.map { String($0) },String(now)])
+    }
+
+    @discardableResult public func startReading(bookID: String, now: Double = Date().timeIntervalSince1970) throws -> Bool {
+        try readingTransaction {
+            _ = try book(bookID)
+            let previous = try readingSummaries(bookID: bookID)[bookID] ?? ReadingSummary()
+            guard previous.status != .reading else { return false }
+            try setReadingState(.reading, bookID: bookID, started: now, now: now)
+            if previous.status == .finished {
+                _ = try query("UPDATE books SET last_page=1 WHERE id=?", [bookID])
+            }
+            return true
+        }
+    }
+
+    @discardableResult public func completeReading(bookID: String, now: Double = Date().timeIntervalSince1970) throws -> Bool {
+        try readingTransaction {
+            _ = try book(bookID)
+            let previous = try readingSummaries(bookID: bookID)[bookID] ?? ReadingSummary()
+            guard previous.status != .finished else { return false }
+            _ = try query("INSERT INTO reading_completions(id,book_id,started_at,completed_at) VALUES(?,?,?,?)",
+                          [UUID().uuidString,bookID,previous.startedAt.map { String($0) },String(now)])
+            try setReadingState(.finished, bookID: bookID, started: nil, now: now)
+            return true
+        }
+    }
+
+    @discardableResult public func undoReadingCompletion(bookID: String) throws -> Bool {
+        try readingTransaction {
+            _ = try book(bookID)
+            guard try readingSummaries(bookID: bookID)[bookID]?.status == .finished,
+                  let last = try readingHistory(bookID: bookID).first else { return false }
+            _ = try query("DELETE FROM reading_completions WHERE id=? AND book_id=?", [last.id,bookID])
+            try setReadingState(.reading, bookID: bookID, started: last.startedAt, now: Date().timeIntervalSince1970)
+            return true
+        }
+    }
+
+    /// A first read returns to unread; cancelling a reread retains past completions.
+    public func shelveReading(bookID: String) throws {
+        try readingTransaction {
+            _ = try book(bookID)
+            let previous = try readingSummaries(bookID: bookID)[bookID] ?? ReadingSummary()
+            try setReadingState(previous.completedCount > 0 ? .finished : .unread,
+                                bookID: bookID, started: nil, now: Date().timeIntervalSince1970)
+        }
+    }
+
+    public func noteCounts(bookID: String? = nil) throws -> [String: NoteCount] {
+        // Match whitespace-only notes without loading every notebook body into the UI.
+        let whitespace = "\u{0009}\u{000A}\u{000B}\u{000C}\u{000D} \u{0085}\u{00A0}\u{1680}\u{2000}\u{2001}\u{2002}\u{2003}\u{2004}\u{2005}\u{2006}\u{2007}\u{2008}\u{2009}\u{200A}\u{2028}\u{2029}\u{202F}\u{205F}\u{3000}"
+        let rows = try query("""
+        SELECT b.id,CASE WHEN length(trim(n.body,?))>0 THEN 1 ELSE 0 END AS notebook,
+               (SELECT COUNT(*) FROM highlights h WHERE h.book_id=b.id) AS excerpts
+        FROM books b LEFT JOIN notebooks n ON n.book_id=b.id
+        """ + (bookID == nil ? "" : " WHERE b.id=?"), [whitespace] + (bookID.map { [$0] } ?? []))
+        return Dictionary(uniqueKeysWithValues: rows.map { row in
+            var count = NoteCount(); count.notebook = Int(row["notebook"]!) ?? 0; count.excerpts = Int(row["excerpts"]!) ?? 0
+            return (row["id"]!, count)
+        })
     }
 }
