@@ -4,15 +4,20 @@ import BookshelfCore
 struct NotesPanel: View {
     @ObservedObject var model: AppModel
     let book: Book
+    private var hasAgent: Bool { AgentRuntime.bridgeURL != nil }
+    private var choices: [(String, String)] {
+        (hasAgent ? [("대화", "chat")] : []) + [("메모", "notes"), (model.highlights.isEmpty ? "발췌" : "발췌 \(model.highlights.count)", "quotes"), ("검색", "search")]
+    }
 
     var body: some View {
         VStack(spacing: 0) {
-            ReaderPicker(choices: [("메모", "notes"), (model.highlights.isEmpty ? "발췌" : "발췌 \(model.highlights.count)", "quotes"), ("검색", "search")],
+            ReaderPicker(choices: choices,
                          selection: $model.panelTab, label: "책 패널")
                 .frame(height: 28)
                 .padding(.horizontal, 16).frame(height: ReaderStyle.toolbarHeight + 8)
             Group {
                 switch model.panelTab {
+                case "chat": BookChatView(model: model, chat: model.chat, book: book)
                 case "quotes": quotes
                 case "search": search
                 default: notebook
@@ -20,11 +25,11 @@ struct NotesPanel: View {
             }.frame(maxWidth: .infinity, maxHeight: .infinity)
             ReaderHairline().padding(.horizontal, 16)
             HStack(spacing: 4) {
-                Button { model.copyContext() } label: {
-                    Label("AI로 이어가기", systemImage: "arrow.up.right.square")
+                Button { if hasAgent { model.panelTab = "chat" } else { model.copyContext() } } label: {
+                    Label(hasAgent ? "이 책에 질문" : "AI로 이어가기", systemImage: hasAgent ? "bubble.left.and.bubble.right" : "arrow.up.right.square")
                         .font(.system(size: 12, weight: .medium)).foregroundStyle(.primary)
-                }.buttonStyle(.plain).accessibilityLabel("AI로 이어가기")
-                    .help("현재 페이지와 메모를 복사해 Codex 또는 Claude Code에 전달합니다.")
+                }.buttonStyle(.plain).accessibilityLabel(hasAgent ? "이 책에 질문" : "AI로 이어가기")
+                    .help(hasAgent ? "현재 페이지를 바탕으로 앱 안에서 질문할 수 있습니다." : "현재 책과 메모를 외부 AI 클라이언트에 전달할 문맥으로 복사합니다.")
                 Spacer()
                 ReaderIconButton(symbol: "square.and.arrow.up", label: "메모 내보내기") { model.exportNotes() }
                 ReaderIconButton(symbol: "link", label: "CLI MCP 연결 안내") { model.showSettings = true }

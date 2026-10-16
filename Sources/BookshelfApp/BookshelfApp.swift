@@ -10,6 +10,8 @@ import BookshelfCore
     func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
         guard let model else { return .terminateNow }
         guard model.flushPendingSave() else { return .terminateCancel }
+        model.chat.stop()
+        guard model.chat.persist() else { return .terminateCancel }
         model.savePositionNow()
         if model.ocrRunning {
             let alert = NSAlert(); alert.messageText = "텍스트 인식이 진행 중입니다."

@@ -1,0 +1,18 @@
+{
+  "name": "bookshelf-learning-agent",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "bun build index.ts --target=node --format=esm --outfile=../../dist/agent/bridge.mjs --metafile=../../dist/agent/metafile.json && bun profile.ts",
+    "test": "bun test",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@earendil-works/pi-agent-core": "0.85.1",
+    "@earendil-works/pi-ai": "0.85.1"
+  },
+  "devDependencies": {
+    "@types/node": "22.19.0",
+    "typescript": "5.9.3"
+  }
+}

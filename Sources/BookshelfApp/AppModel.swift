@@ -5,6 +5,7 @@ import BookshelfCore
 
 @MainActor final class AppModel: ObservableObject {
     let store: LibraryStore
+    let chat: BookChatModel
     @Published var books: [Book] = []
     @Published var libraryQuery = ""
     @Published var activeBook: Book?
@@ -64,6 +65,7 @@ import BookshelfCore
     init(store suppliedStore: LibraryStore? = nil) {
         do { store = try suppliedStore ?? LibraryStore() }
         catch { fatalError("Bookshelf could not open its local store: \(error.localizedDescription)") }
+        chat = BookChatModel(store: store)
         reloadLibrary()
         if let language = try? store.setting("ocrLanguage") { ocrLanguage = language }
         continuousReading = (try? store.setting("continuousReading")) == "true"
@@ -214,6 +216,7 @@ import BookshelfCore
     }
     func selectBook(_ book: Book) {
         guard flushPendingSave() else { return }
+        guard chat.selectBook(book.id) else { errorMessage = chat.errorMessage; return }
         readingShelfVisible = false
         savePositionNow(); openTask?.cancel(); searchTask?.cancel(); inspectionTask?.cancel()
         let book = (try? store.book(book.id)) ?? book

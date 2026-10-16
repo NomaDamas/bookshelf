@@ -57,9 +57,9 @@ struct SettingsView: View {
                                 .font(.system(size: 12)).foregroundStyle(.secondary).lineSpacing(4)
                         }
                     }
-                    settingsSection("Codex / Claude Code", symbol: "terminal") {
+                    settingsSection("앱 내 대화와 외부 연결", symbol: "bubble.left.and.bubble.right") {
                         VStack(alignment: .leading, spacing: 14) {
-                            Text("CLI의 MCP 서버를 연결하면 책 찾기, 페이지 읽기, 본문 검색, 책별 메모 조회를 사용할 수 있습니다.")
+                            Text(AgentRuntime.bridgeURL != nil ? "책 패널의 대화 탭에서 Claude 또는 Codex를 선택하고 공식 계정으로 연결할 수 있습니다. 학습 전용 영어 지침을 사용하고 답변은 질문의 언어를 따릅니다." : "CLI의 MCP 서버를 연결하면 책 찾기, 페이지 읽기, 본문 검색, 책별 메모 조회를 사용할 수 있습니다.")
                                 .font(.system(size: 13)).foregroundStyle(.secondary).lineSpacing(5)
                             HStack {
                                 Label("읽기 전용 연결", systemImage: "lock").font(.system(size: 12)).foregroundStyle(.secondary)
@@ -70,7 +70,7 @@ struct SettingsView: View {
                                     NSPasteboard.general.setString("\"\(url.path)\" mcp", forType: .string)
                                 }.controlSize(.small)
                             }
-                            Text("질문과 AI 답변은 연결한 CLI에서 이어갈 수 있습니다.")
+                            Text(AgentRuntime.bridgeURL != nil ? "외부 CLI에서 서재에 접근하려면 위 MCP 명령을 사용할 수 있습니다. 앱의 대화 기록은 책별로 이 Mac에 보관됩니다." : "질문과 AI 답변은 연결한 CLI에서 이어갈 수 있습니다.")
                                 .font(.system(size: 12)).foregroundStyle(.secondary)
                         }
                     }

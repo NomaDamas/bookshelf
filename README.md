@@ -20,8 +20,11 @@ A native macOS PDF reader with per-book notebooks, local Apple Vision OCR, and r
 - The original and its OCR output retain one book ID, notebook, bookmarks, and progress.
 - A native CLI and five read-only MCP tools: `list_books`, `read_page`, `search_book`, `get_notes`, and `get_reading_context`.
 
-AI answers are generated in your MCP client. This version does not run a model inside the reader.
-The reader's “AI로 이어가기” button copies the current book ID and PDF page as a prompt for your client.
+This experimental branch adds in-app learning chat through Pi and the user's official Claude Code
+or Codex executable. The **대화** tab supports source-page context, streaming, per-book conversation
+storage and switching executors. The model runs through the selected provider; the app owns the
+learning instructions and conversation history. See [the Pi experiment](Resources/Design/PI-AGENT.md)
+for account boundaries, setup, scope and verification. The external MCP workflow remains available.
 
 ## Reading controls
 
