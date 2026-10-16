@@ -6,6 +6,7 @@ if [[ -z "${DEVELOPER_DIR:-}" && -d /Applications/Xcode.app/Contents/Developer ]
 fi
 configuration="${BOOKSHELF_BUILD_CONFIGURATION:-release}"
 mkdir -p .runtime dist
+python3 scripts/generate-reader-tokens.py --check
 swift build -c "$configuration" --product Bookshelf
 swift build -c "$configuration" --product bookshelf-cli
 binary_dir="$(swift build -c "$configuration" --show-bin-path)"

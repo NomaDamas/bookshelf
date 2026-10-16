@@ -1,0 +1,140 @@
+[
+  {
+    "name": "Text view left arrow",
+    "pass": true,
+    "detail": {
+      "page": "1"
+    }
+  },
+  {
+    "name": "Text view right arrow",
+    "pass": true,
+    "detail": {
+      "page": "2"
+    }
+  },
+  {
+    "name": "Arrow stays in note editor",
+    "pass": true,
+    "detail": {
+      "page": "2"
+    }
+  },
+  {
+    "name": "Native note edit autosaved",
+    "pass": true,
+    "detail": {
+      "body": "OCR 개선 후에도 보존할 메모입니다.\n디자인 검수: 책을 읽고 내 말로 정리합니다."
+    }
+  },
+  {
+    "name": "Whitespace-insensitive search",
+    "pass": true,
+    "detail": {
+      "matches": [
+        "PDF 2쪽",
+        "PDF 2쪽, 두 번 째 페 이 지 와 독 서 메 모\n이 문 서 는 직 접 만 든 테 스 트 자 료 입 니 다 .\n책 을 읽 고 내 말 로 생 각 을 정 리 합 니 다 .\n선 택 한 문 장 은 발 췌 메 모 에 저 장 합 니 다 .\n앱 을 다 시 열 어 도 메 모 는 남 아 있 습 니 다 .\n원 본 P D F 는 변 경 "
+      ]
+    }
+  },
+  {
+    "name": "Clear search removes stale hits",
+    "pass": true,
+    "detail": {
+      "query": ""
+    }
+  },
+  {
+    "name": "Note and reading position survive relaunch",
+    "pass": true,
+    "detail": {
+      "page": "2",
+      "note_saved": true
+    }
+  },
+  {
+    "name": "PDF view left arrow",
+    "pass": true,
+    "detail": {
+      "page": "1"
+    }
+  },
+  {
+    "name": "PDF view right arrow",
+    "pass": true,
+    "detail": {
+      "page": "2"
+    }
+  },
+  {
+    "name": "Review page Return keeps comparison open",
+    "pass": true,
+    "detail": {
+      "page": "2"
+    }
+  },
+  {
+    "name": "Literal phrase matches improved OCR",
+    "pass": true,
+    "detail": {
+      "review_open": true
+    }
+  },
+  {
+    "name": "Keep original dismisses review",
+    "pass": true,
+    "detail": {
+      "review_closed": true
+    }
+  },
+  {
+    "name": "Review accept preserves note and page",
+    "pass": true,
+    "detail": {
+      "page": "2"
+    }
+  },
+  {
+    "name": "Light and dark appearance switched in native settings",
+    "pass": true,
+    "detail": {
+      "method": "AX controls and screenshot inspection",
+      "evidence": [
+        "settings-light.png",
+        "settings-dark.png"
+      ]
+    }
+  },
+  {
+    "name": "Narrow and wide reading layouts",
+    "pass": true,
+    "detail": {
+      "method": "AX resize and screenshot inspection",
+      "window_points": [
+        [
+          1000,
+          700
+        ],
+        [
+          1380,
+          900
+        ]
+      ],
+      "evidence": [
+        "reader-narrow.png",
+        "reader-narrow-dark.png",
+        "reader-light.png"
+      ]
+    }
+  },
+  {
+    "name": "Original and improved OCR visual comparison",
+    "pass": true,
+    "detail": {
+      "method": "Native PDF comparison screenshot inspection",
+      "evidence": [
+        "ocr-review-pdf-dark.png"
+      ]
+    }
+  }
+]

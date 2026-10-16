@@ -46,8 +46,8 @@ struct PDFReaderView: NSViewRepresentable {
         let view = ReaderPDFView()
         view.autoScales = true; view.displayMode = model.continuousReading ? .singlePageContinuous : .singlePage
         view.displayDirection = .vertical
-        view.displaysPageBreaks = true; view.pageBreakMargins = NSEdgeInsets(top: 24, left: 24, bottom: 24, right: 24)
-        view.backgroundColor = NSColor.controlBackgroundColor
+        view.displaysPageBreaks = true; view.pageBreakMargins = NSEdgeInsets(top: 20, left: 20, bottom: 20, right: 20)
+        view.backgroundColor = NSColor.underPageBackgroundColor
         view.navigate = { [weak model] page in model?.goToPage(page) }
         context.coordinator.attach(view)
         model.pdfView = view

@@ -8,6 +8,7 @@ A native macOS PDF reader with per-book notebooks, local Apple Vision OCR, and r
 ## What works
 
 - Native SwiftUI/AppKit reader with PDFKit rendering, selection, zoom, page navigation, and text view.
+- Aside-inspired native material sidebars, neutral controls, and a paper-like notebook surface, with system/light/dark appearance settings.
 - Keyboard page turning in both original PDF and text view, with single-page and continuous PDF layouts.
 - OCR-friendly Korean/English search that ignores whitespace and line breaks, with an exact-spacing option.
 - Per-book notebooks with autosave, save-failure feedback, and revision conflict protection.
@@ -40,6 +41,19 @@ field keep their normal editing keys.
 Enter a page number and press Return to jump and keep reading with the keyboard.
 The first and last pages are clamped. PDF layout selection is saved between launches.
 The keyboard button beside the page controls opens an in-app reference.
+
+## Native design
+
+The reader adapts the [Aside / Glass workspace](https://github.com/seungwonme/ui-references/tree/main/references/aside-glass)
+reference to SwiftUI and AppKit. Native materials surround opaque PDF and writing surfaces;
+the system font, semantic colors, split views, segmented controls and keyboard behavior remain native.
+Choose system, light or dark appearance in settings. Reduced transparency, increased contrast
+and reduced motion have dedicated fallback behavior.
+
+The source mapping and intentional differences are in [Resources/Design/DESIGN.md](Resources/Design/DESIGN.md),
+with native screenshots and verification in [Resources/Design/verification.md](Resources/Design/verification.md).
+Edit [Resources/Design/tokens.json](Resources/Design/tokens.json), then run
+`python3 scripts/generate-reader-tokens.py` to regenerate the Swift constants. The app build checks for drift.
 
 ## Searching OCR text
 

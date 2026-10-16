@@ -1,0 +1,53 @@
+{
+  "source": {
+    "name": "Aside / Glass workspace",
+    "version": "1.0.928.1",
+    "url": "https://github.com/seungwonme/ui-references/tree/main/references/aside-glass",
+    "sha256": {
+      "tokens.json": "86d71dd663a542c20b523aa16111f6e82684f03f793a951e169f46b3e3863c39",
+      "DESIGN.md": "c81141800639b56f1a6ce577c8903bb66173ad1465db9beaefeb75fe906eb15b",
+      "reference.json": "46b36599fa05f867e30790813ceb049730050e0f827039aca609668bdda10c80",
+      "evidence/extraction.json": "7986f97dbf5e3bfc3ed53c7b05ce7082242eb648dad1cedab0b84c223b78a8d4"
+    }
+  },
+  "mode": "reuse",
+  "target": {
+    "platform": "native macOS",
+    "stack": [
+      "SwiftUI",
+      "AppKit",
+      "PDFKit"
+    ],
+    "minimum_os": "14",
+    "tokens": "tokens.json",
+    "design": "DESIGN.md",
+    "verification": "verification.md"
+  },
+  "evidence": [
+    {
+      "kind": "observed",
+      "locator": "source tokens.json and extraction.json",
+      "finding": "Neutral theme roles, opacity, control density, sidebar width and continuous corner dimensions."
+    },
+    {
+      "kind": "adapted",
+      "locator": "Sources/BookshelfApp/ReaderStyle.swift",
+      "finding": "System font, semantic colors and NSVisualEffectView replace web fonts and CSS composition."
+    },
+    {
+      "kind": "proposed",
+      "locator": "Sources/BookshelfApp/OCRReviewView.swift",
+      "finding": "Side-by-side review screen built with the same native surface and control rules."
+    }
+  ],
+  "publication": "Local source and native app only; no release or gallery publication performed.",
+  "verification": {
+    "native_checks": "evidence/native-checks.json",
+    "report": "verification.md",
+    "tested_os": "macOS 26.6.2",
+    "reference_ready_records": "pass",
+    "native_visual_review": "pass",
+    "native_pixel_equality": "not-claimed",
+    "global_accessibility_preferences": "not-changed; runtime fallback paths not exercised"
+  }
+}

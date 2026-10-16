@@ -4,6 +4,7 @@ import BookshelfCore
 
 struct ReaderWindow: View {
     @ObservedObject var model: AppModel
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     var body: some View {
         VStack(spacing: 0) {
             if let message = model.errorMessage {
@@ -25,10 +26,11 @@ struct ReaderWindow: View {
                 Divider()
             }
             HSplitView {
-                if model.sidebarVisible { BookSidebar(model: model).frame(minWidth: 225, idealWidth: 260, maxWidth: 320) }
+                if model.sidebarVisible { BookSidebar(model: model).frame(minWidth: 220, idealWidth: ReaderTokens.sidebarWidth, maxWidth: 340) }
                 if let book = model.activeBook {
-                    ReaderSurface(model: model, book: book).frame(minWidth: 450, maxWidth: .infinity, maxHeight: .infinity)
-                    if model.notesVisible { NotesPanel(model: model, book: book).frame(minWidth: 300, idealWidth: 340, maxWidth: 420) }
+                    ReaderSurface(model: model, book: book)
+                        .padding(8).frame(minWidth: 420, maxWidth: .infinity, maxHeight: .infinity)
+                    if model.notesVisible { NotesPanel(model: model, book: book).frame(minWidth: 300, idealWidth: 340, maxWidth: 440) }
                 } else { EmptyLibraryView(model: model).frame(maxWidth: .infinity, maxHeight: .infinity) }
             }
             if let information = model.information {
@@ -42,11 +44,11 @@ struct ReaderWindow: View {
             }
         }
         .frame(minWidth: 1000, minHeight: 650)
-        .background(Color(nsColor: .windowBackgroundColor))
+        .background(ReaderMaterial(material: .underWindowBackground))
         .tint(ReaderStyle.accent)
         .toolbar {
             ToolbarItemGroup(placement: .navigation) {
-                Button { withAnimation(.easeInOut(duration: 0.15)) { model.sidebarVisible.toggle() } } label: { Image(systemName: "sidebar.left") }.help("책장 표시").accessibilityLabel("책장 표시")
+                Button { withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.15)) { model.sidebarVisible.toggle() } } label: { Image(systemName: "sidebar.left") }.help("책장 표시 (⌘0)").accessibilityLabel("책장 표시")
                 Menu { Button("PDF 추가…") { model.chooseFiles() }; Button("폴더 추가…") { model.chooseFiles(folder: true) } } label: { Image(systemName: "plus") }.help("서재에 추가")
             }
             ToolbarItem(placement: .principal) {
@@ -54,10 +56,10 @@ struct ReaderWindow: View {
             }
             ToolbarItemGroup(placement: .primaryAction) {
                 Button { model.showSettings = true } label: { Image(systemName: "slider.horizontal.3") }.help("OCR와 AI 연결 설정").accessibilityLabel("설정")
-                Button { withAnimation(.easeInOut(duration: 0.15)) { model.notesVisible.toggle() } } label: { Image(systemName: "sidebar.right") }.help("책별 메모 표시").accessibilityLabel("메모 패널 표시")
+                Button { withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.15)) { model.notesVisible.toggle() } } label: { Image(systemName: "sidebar.right") }.help("책별 메모 표시 (⌘⇧M)").accessibilityLabel("메모 패널 표시")
             }
         }
-        .sheet(isPresented: $model.showSettings) { SettingsView(model: model).padding(10) }
+        .sheet(isPresented: $model.showSettings) { SettingsView(model: model) }
         .sheet(item: $model.ocrReview) { review in OCRReviewView(model: model, review: review) }
         .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in model.reloadLibrary() }
         .onDisappear { model.flushPendingSave(); model.savePositionNow() }
@@ -77,7 +79,7 @@ struct ReaderSurface: View {
     var body: some View {
         VStack(spacing: 0) {
             readingTools
-            Divider()
+            ReaderHairline()
             ZStack(alignment: .bottom) {
                 if model.isOpening {
                     ProgressView("책을 펼치고 있습니다.").frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -87,17 +89,17 @@ struct ReaderSurface: View {
                 if !model.selection.isEmpty && !model.textMode { selectionActions }
             }.frame(maxWidth: .infinity, maxHeight: .infinity)
             pageControls
-        }
+        }.background(ReaderStyle.panel)
+        .clipShape(RoundedRectangle(cornerRadius: ReaderTokens.radiusPanel, style: .continuous))
+        .modifier(ReaderSurfaceBorder(radius: ReaderTokens.radiusPanel))
         .onChange(of: model.page) { _, number in pageEntry = String(number) }
         .onAppear { pageEntry = String(model.page) }
     }
 
     private var readingTools: some View {
         HStack(spacing: 12) {
-            Picker("보기 방식", selection: $model.textMode) {
-                Text("원문").tag(false)
-                Text("텍스트").tag(true)
-            }.pickerStyle(.segmented).labelsHidden().frame(width: 124)
+            ReaderPicker(choices: [("원문", false), ("텍스트", true)], selection: $model.textMode, label: "보기 방식")
+                .frame(width: 128, height: 28)
             Spacer(minLength: 4)
             if !model.textMode {
                 Menu {
@@ -139,10 +141,12 @@ struct ReaderSurface: View {
                     Text("PDF \(model.page)쪽").font(.system(size: 12, weight: .medium)).foregroundStyle(ReaderStyle.accent)
                     Text(pageText).font(.system(size: 17)).lineSpacing(9).textSelection(.enabled)
                         .frame(maxWidth: .infinity, alignment: .leading)
-                }.padding(36).frame(maxWidth: 720).background(ReaderStyle.panel, in: RoundedRectangle(cornerRadius: 4))
-                    .padding(28).frame(maxWidth: .infinity).id("text-page-top")
+                }.padding(32).frame(maxWidth: 720)
+                    .background(ReaderStyle.panel, in: RoundedRectangle(cornerRadius: ReaderTokens.radiusLarge, style: .continuous))
+                    .modifier(ReaderSurfaceBorder())
+                    .padding(24).frame(maxWidth: .infinity).id("text-page-top")
                     .background(TextScrollAnchor(target: textScrollTarget).frame(width: 0, height: 0))
-            }.background(Color(nsColor: .controlBackgroundColor))
+            }.background(ReaderStyle.canvas)
                 .focusable().focused($textReaderFocused)
                 .focusEffectDisabled()
                 .overlay(alignment: .top) {
@@ -206,15 +210,16 @@ struct ReaderSurface: View {
                 .buttonStyle(.borderless).font(.system(size: 12, weight: .semibold)).accessibilityLabel("발췌 메모에 담기")
             ReaderIconButton(symbol: "xmark", label: "선택 닫기") { model.selection = []; model.pdfView?.clearSelection() }
         }.padding(.leading, 18).padding(.trailing, 8).padding(.vertical, 8)
-            .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12))
-            .shadow(color: .black.opacity(0.12), radius: 14, y: 4).padding(.bottom, 22)
+            .background(.regularMaterial, in: RoundedRectangle(cornerRadius: ReaderTokens.radiusPanel, style: .continuous))
+            .modifier(ReaderSurfaceBorder(radius: ReaderTokens.radiusPanel))
+            .shadow(color: .black.opacity(0.10), radius: 12, y: 4).padding(.bottom, 20)
     }
 
     private var pageControls: some View {
         VStack(spacing: 0) {
             GeometryReader { geometry in
-                Rectangle().fill(ReaderStyle.accent.opacity(0.12))
-                    .overlay(alignment: .leading) { Rectangle().fill(ReaderStyle.accent).frame(width: geometry.size.width * progress) }
+                Rectangle().fill(ReaderStyle.muted)
+                    .overlay(alignment: .leading) { Rectangle().fill(Color.primary.opacity(0.25)).frame(width: geometry.size.width * progress) }
             }.frame(height: 2).accessibilityHidden(true)
             HStack(spacing: 12) {
                 ReaderIconButton(symbol: model.bookmarks.contains(model.page) ? "bookmark.fill" : "bookmark",
@@ -229,7 +234,7 @@ struct ReaderSurface: View {
                             TextField("페이지", text: $pageEntry)
                                 .textFieldStyle(.plain).font(.system(size: 14, weight: .semibold)).monospacedDigit()
                                 .multilineTextAlignment(.center).frame(width: 48, height: 28)
-                                .background(.primary.opacity(0.045), in: RoundedRectangle(cornerRadius: 5))
+                                .background(ReaderStyle.muted, in: RoundedRectangle(cornerRadius: ReaderTokens.radiusMedium))
                                 .onSubmit { if let number = Int(pageEntry) { model.goToPage(number, focusReader: true) }; pageEntry = String(model.page) }
                                 .accessibilityLabel("페이지 번호").help("페이지 번호를 입력하고 Return")
                             Text("/ \(pageCount)").font(.system(size: 12)).monospacedDigit().foregroundStyle(.secondary)
@@ -246,10 +251,9 @@ struct ReaderSurface: View {
     }
 
     private func pageButton(forward: Bool) -> some View {
-        Button { model.goToPage(model.page + (forward ? 1 : -1), focusReader: true) } label: {
-            Image(systemName: forward ? "chevron.right" : "chevron.left")
-                .font(.system(size: 15, weight: .medium)).frame(width: 40, height: 32).contentShape(Rectangle())
-        }.buttonStyle(.bordered).buttonBorderShape(.roundedRectangle(radius: 7))
+        ReaderIconButton(symbol: forward ? "chevron.right" : "chevron.left", label: forward ? "다음 페이지" : "이전 페이지") {
+            model.goToPage(model.page + (forward ? 1 : -1), focusReader: true)
+        }
             .disabled(model.document == nil || (forward ? model.page >= pageCount : model.page <= 1))
             .help(forward ? "다음 페이지 (오른쪽 방향키)" : "이전 페이지 (왼쪽 방향키)")
             .accessibilityLabel(forward ? "다음 페이지" : "이전 페이지")
@@ -260,8 +264,9 @@ struct EmptyLibraryView: View {
     @ObservedObject var model: AppModel
     var body: some View {
         VStack(spacing: 18) {
-            Image(systemName: "book.pages").font(.system(size: 55, weight: .ultraLight)).foregroundStyle(.secondary)
-            Text("책에서 시작되는 생각").font(.system(size: 28, weight: .medium))
+            Image(systemName: "book.pages").font(.system(size: 42, weight: .light)).foregroundStyle(.secondary)
+                .frame(width: 88, height: 88).background(.regularMaterial, in: RoundedRectangle(cornerRadius: ReaderTokens.radiusPanel))
+            Text("책에서 시작되는 생각").font(.system(size: 24, weight: .medium))
             Text("PDF를 읽고, 문장을 남기고, 내 말로 정리해보세요.").font(.system(size: 13)).foregroundStyle(.secondary)
             HStack(spacing: 12) { Button("PDF 추가…") { model.chooseFiles() }.buttonStyle(.borderedProminent); Button("폴더 연결…") { model.chooseFiles(folder: true) } }.padding(.top, 10)
             if !model.books.isEmpty { Text("왼쪽 책장에서 읽을 책을 선택할 수 있습니다.").font(.system(size: 12)).foregroundStyle(.secondary) }

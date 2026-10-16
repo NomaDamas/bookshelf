@@ -7,31 +7,80 @@ struct BookSidebar: View {
     @ObservedObject var model: AppModel
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            HStack(alignment: .firstTextBaseline) {
-                Text("나의 서재").font(.system(size: 20, weight: .semibold))
-                Text("\(model.books.count)권").font(.system(size: 12)).monospacedDigit().foregroundStyle(.secondary)
+            HStack(spacing: 9) {
+                Image(systemName: "books.vertical").foregroundStyle(.secondary)
+                Text("나의 서재").font(.system(size: 16, weight: .semibold))
                 Spacer()
-            }.padding(.horizontal, 20).padding(.top, 24).padding(.bottom, 18)
-            TextField("책 찾아보기", text: $model.libraryQuery).textFieldStyle(.roundedBorder).controlSize(.large).padding(.horizontal, 16).padding(.bottom, 16).accessibilityLabel("책 검색")
-            if model.isImporting { HStack { ProgressView().controlSize(.small); Text("PDF 목록을 읽고 있습니다.").font(.caption) }.padding(14) }
+                Text("\(model.books.count)").font(.system(size: 11, weight: .medium)).monospacedDigit()
+                    .foregroundStyle(.secondary).padding(.horizontal, 7).padding(.vertical, 3)
+                    .background(ReaderStyle.muted, in: Capsule())
+                    .accessibilityLabel("\(model.books.count)권")
+            }.padding(.horizontal, 20).frame(height: ReaderStyle.toolbarHeight)
+            ReaderSearchField(prompt: "제목 또는 분야 검색", label: "책 검색", text: $model.libraryQuery)
+                .padding(.horizontal, 12).padding(.top, 6).padding(.bottom, 16)
+            HStack {
+                Text(model.libraryQuery.isEmpty ? "책장" : "검색 결과")
+                Spacer()
+                if !model.libraryQuery.isEmpty { Text("\(model.filteredBooks.count)권").monospacedDigit() }
+            }.font(.system(size: 11, weight: .medium)).foregroundStyle(.secondary)
+                .padding(.horizontal, 20).padding(.bottom, 8)
+            if model.isImporting {
+                HStack(spacing: 8) { ProgressView().controlSize(.small); Text("PDF 목록을 읽고 있습니다.") }
+                    .font(.system(size: 12)).foregroundStyle(.secondary).padding(16)
+            }
             List(model.filteredBooks) { book in
-                Button { model.selectBook(book) } label: {
-                    HStack(alignment: .center, spacing: 11) {
-                        BookThumbnail(book: book).frame(width: 40, height: 57)
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text(book.title).font(.system(size: 13, weight: .medium)).lineLimit(2).foregroundStyle(.primary)
-                            Text(book.displayCategory).font(.system(size: 10)).foregroundStyle(.secondary).lineLimit(1)
-                            if book.lastOpened > 0 { Text("\(book.lastPage)쪽에서 이어 읽기").font(.system(size: 10)).monospacedDigit().foregroundStyle(ReaderStyle.accent) }
-                        }
-                        Spacer(minLength: 0)
-                        if !book.isAvailable { Image(systemName: "icloud.and.arrow.down").font(.system(size: 11)).foregroundStyle(.secondary) }
-                    }.padding(.vertical, 9).contentShape(Rectangle())
-                }.buttonStyle(.plain).accessibilityLabel(book.title)
-                    .listRowBackground(model.activeBook?.id == book.id ? ReaderStyle.accent.opacity(0.12) : Color.clear)
-            }.listStyle(.sidebar)
-            Divider()
-            HStack { Image(systemName: "internaldrive"); Text("이 Mac의 서재"); Spacer(); Button { model.chooseFiles(folder: true) } label: { Image(systemName: "folder.badge.plus") }.buttonStyle(.plain).accessibilityLabel("폴더 추가") }.font(.system(size: 11)).foregroundStyle(.secondary).padding(16)
-        }
+                BookRow(book: book, selected: model.activeBook?.id == book.id) { model.selectBook(book) }
+                    .listRowInsets(EdgeInsets(top: 2, leading: 10, bottom: 2, trailing: 10))
+                    .listRowSeparator(.hidden).listRowBackground(Color.clear)
+            }.listStyle(.plain).scrollContentBackground(.hidden)
+                .overlay {
+                    if model.filteredBooks.isEmpty && !model.isImporting {
+                        VStack(spacing: 10) {
+                            Image(systemName: model.libraryQuery.isEmpty ? "books.vertical" : "magnifyingglass").font(.system(size: 24, weight: .light))
+                            Text(model.libraryQuery.isEmpty ? "PDF를 추가해 서재를 시작하세요." : "검색한 책이 없습니다.")
+                                .font(.system(size: 12)).multilineTextAlignment(.center)
+                        }.foregroundStyle(.secondary).padding(20).allowsHitTesting(false)
+                    }
+                }
+            ReaderHairline().padding(.horizontal, 16)
+            HStack(spacing: 8) {
+                Image(systemName: "internaldrive")
+                Text("이 Mac의 서재")
+                Spacer()
+                ReaderIconButton(symbol: "folder.badge.plus", label: "폴더 추가") { model.chooseFiles(folder: true) }
+            }.font(.system(size: 11)).foregroundStyle(.secondary)
+                .padding(.leading, 20).padding(.trailing, 12).frame(height: ReaderStyle.footerHeight)
+        }.background(ReaderMaterial())
+    }
+}
+
+private struct BookRow: View {
+    let book: Book
+    let selected: Bool
+    let action: () -> Void
+    @State private var hovering = false
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 11) {
+                BookThumbnail(book: book).frame(width: 34, height: 48)
+                    .shadow(color: .black.opacity(0.08), radius: 2, y: 1)
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(book.title).font(.system(size: ReaderTokens.controlFont, weight: selected ? .semibold : .medium))
+                        .lineLimit(2).foregroundStyle(.primary)
+                    Text(book.lastOpened > 0 ? "\(book.lastPage)쪽에서 이어 읽기" : book.displayCategory)
+                        .font(.system(size: 11)).monospacedDigit().foregroundStyle(.secondary).lineLimit(1)
+                }
+                Spacer(minLength: 0)
+                if !book.isAvailable {
+                    Image(systemName: "icloud.and.arrow.down").font(.system(size: 12)).foregroundStyle(.secondary)
+                        .accessibilityLabel("iCloud 다운로드 필요")
+                }
+            }.padding(10).frame(maxWidth: .infinity, alignment: .leading)
+                .background(selected ? ReaderStyle.selection : (hovering ? ReaderStyle.muted : .clear),
+                            in: RoundedRectangle(cornerRadius: ReaderTokens.radiusLarge, style: .continuous))
+                .contentShape(RoundedRectangle(cornerRadius: ReaderTokens.radiusLarge))
+        }.buttonStyle(.plain).onHover { hovering = $0 }
+            .help(book.title).accessibilityLabel(book.title).accessibilityAddTraits(selected ? .isSelected : [])
     }
 }
 

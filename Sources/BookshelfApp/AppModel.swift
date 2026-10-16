@@ -202,8 +202,12 @@ import BookshelfCore
     }
     func searchBook() {
         guard let book = activeBook else { return }
+        searchTask?.cancel()
+        guard !searchQuery.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+            searchResults = []; isSearching = false; return
+        }
         notesVisible = true; panelTab = "search"; isSearching = true
-        let query = searchQuery, ignoreWhitespace = ignoreSearchWhitespace; searchTask?.cancel()
+        let query = searchQuery, ignoreWhitespace = ignoreSearchWhitespace
         searchTask = Task {
             do {
                 let results = try await Task.detached(priority: .userInitiated) { try PDFService.search(book, query: query, ignoreWhitespace: ignoreWhitespace) }.value

@@ -33,10 +33,12 @@ import BookshelfCore
 
 @main struct BookshelfApp: App {
     @StateObject private var model = AppModel()
+    @AppStorage("readerAppearance") private var appearance = ReaderAppearance.system
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var delegate
     var body: some Scene {
         WindowGroup("서재") {
             ReaderWindow(model: model)
+                .preferredColorScheme(appearance.colorScheme)
                 .onAppear { delegate.model = model }
                 .onOpenURL { url in
                     guard url.scheme == "bookshelf", url.host == "book", let id = url.pathComponents.last, let book = try? model.store.book(id) else { return }
@@ -74,6 +76,6 @@ import BookshelfCore
                 Button("메모 패널 표시") { model.notesVisible.toggle() }.keyboardShortcut("m", modifiers: [.command, .shift])
             }
         }
-        Settings { SettingsView(model: model) }
+        Settings { SettingsView(model: model).preferredColorScheme(appearance.colorScheme) }
     }
 }
