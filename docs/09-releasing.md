@@ -1,0 +1,163 @@
+# Versioning and macOS releases
+
+[Documentation](README.md) / Releases
+
+## Product identity and version source
+
+| Surface | Identity |
+| --- | --- |
+| GitHub | `NomaDamas/bookshelf` |
+| App bundle | `Bookshelf.app` |
+| Bundle identifier | `org.nomadamas.bookshelf` |
+| Swift package / core library | `Bookshelf` / `BookshelfCore` |
+| CLI / MCP server name | `bookshelf-cli` / `bookshelf` |
+| Deep links | `bookshelf://book/<id>?page=<number>` |
+
+[`AppMetadata.json`](../Sources/BookshelfCore/Resources/AppMetadata.json) is the
+single product/version source. The app, CLI `--version`/`doctor`, and MCP server
+read the packaged resource. `scripts/app-metadata.py` generates `Resources/Info.plist`
+and checks its agreement with the metadata and the Swift deployment target.
+
+Marketing versions use numeric `MAJOR.MINOR.PATCH`; Git tags use `vMAJOR.MINOR.PATCH`.
+The positive build number increases whenever the version setter advances the version.
+GitHub's prerelease flag is separate from the numeric macOS bundle version.
+
+```sh
+python3 scripts/app-metadata.py version
+python3 scripts/app-metadata.py check
+```
+
+For a future version, choose the appropriate number and run, for example:
+
+```sh
+python3 scripts/app-metadata.py set 0.1.1
+```
+
+The setter refuses equal/older versions and regenerates the plist. Review both
+changed files, update [CHANGELOG.md](../CHANGELOG.md), and submit a release-preparation
+PR. Never edit the version independently in Swift, Info.plist, a filename, or MCP.
+
+## Build a local DMG
+
+From a clean checkout of the source you want to distribute:
+
+```sh
+python3 scripts/release.py package
+```
+
+The command builds release configuration, checks the app's version/identity and
+signature, packages it, mounts the DMG read-only, copies its app to a temporary
+installation, and executes the copied CLI with an isolated data directory.
+It also checks the `/Applications` drag-and-drop shortcut and required notices.
+Temporary mounts are detached when verification exits.
+
+On Apple Silicon, output is:
+
+```text
+dist/release/
+  Bookshelf-0.1.0-macos-arm64.dmg
+  Bookshelf-0.1.0-macos-arm64.dmg.sha256
+  Bookshelf-0.1.0-macos-arm64.json
+```
+
+Intel builds use `x86_64`. Each build packages the host architecture; these are
+separate native artifacts, not a universal binary. The JSON records the source
+revision, dirty-source flag, minimum macOS, signature mode, and notarization status.
+A local build from edited source is marked dirty and is not an exact tagged release.
+
+The packager refuses to overwrite existing outputs. Use a new `--output` directory
+for another candidate. `--skip-build` reuses an already-built release bundle and
+checks its version/commit; only use it when that build matches your working source.
+
+To verify a trusted candidate again:
+
+```sh
+python3 scripts/release.py verify dist/release/Bookshelf-0.1.0-macos-arm64.dmg --arch arm64
+```
+
+This executes code from the supplied app. Use it for your own or otherwise trusted
+artifacts, not as a malware scanner for an unknown DMG.
+
+## Signing and notarization
+
+By default, local and GitHub CI builds use **ad-hoc signing**. This checks the bundle's
+integrity but does not establish a Developer ID identity or Apple notarization.
+Downloaded previews may be blocked by Gatekeeper. The workflows create draft
+prereleases and describe this limitation in the generated notes.
+
+For a properly credentialed local release, set `BOOKSHELF_SIGNING_IDENTITY` to your
+full **Developer ID Application:** identity and `BOOKSHELF_NOTARY_PROFILE` to an
+existing `notarytool` Keychain profile, then run:
+
+```sh
+python3 scripts/release.py package --notarize
+```
+
+The build signs nested executables and the app with hardened runtime and a timestamp.
+The packager signs the DMG, submits it with `xcrun notarytool`, staples the accepted
+ticket, validates stapling, and only then calculates the final checksum.
+An Apple Development certificate is not a distribution certificate. Notarization
+needs your own Apple developer credentials; none are bundled or installed by these scripts.
+
+The committed workflows intentionally contain no certificate import or signing
+secrets. Use your secret-management process to provision credentials before adding
+an automated signing environment. Do not put private keys, passwords, or certificate
+exports in this repository or in shell command logs.
+
+Apple's [notarization guide](https://developer.apple.com/documentation/security/notarizing-macos-software-before-distribution)
+describes certificate and hardened-runtime requirements. A configured notarization
+path is not proof that a candidate was notarized; check its JSON and actual ticket.
+
+## CI and tag-triggered drafts
+
+[`ci.yml`](../.github/workflows/ci.yml) runs on pull requests, pushes to `main`, and
+manual dispatch. Apple Silicon (`macos-26`) and Intel (`macos-26-intel`) jobs run
+metadata/token checks, XCTest, release builds, DMG creation, and copied-CLI verification.
+They upload short-lived workflow artifacts. OCR integration and native GUI interaction
+are separate local checks; passing these jobs does not prove either one.
+
+[`release.yml`](../.github/workflows/release.yml) runs only for pushed `v*` tags:
+
+1. Require the tag to equal the metadata version and point to the checked-out commit.
+2. Require that commit to belong to `origin/main` history and the checkout to be clean.
+3. Test and package both architectures.
+4. Upload each DMG, checksum, and metadata file.
+5. Create a **draft prerelease**, using the matching changelog section. An existing
+   release causes a failure instead of silently replacing its assets.
+
+The build jobs have read-only repository permissions. Only the draft-creation job
+has `contents: write`. Actions are pinned to immutable commit SHAs. The workflow
+uses the standard hosted runners, not the paid `-large` / `-xlarge` labels.
+
+After merging the version-preparation PR and verifying CI, a maintainer can create
+and push an annotated tag. For the initial version:
+
+```sh
+git fetch origin
+git tag -a v0.1.0 origin/main -m "Bookshelf 0.1.0"
+git push origin v0.1.0
+```
+
+This is an external release action; it is not performed by a local build or ordinary
+PR merge. Verify the tag and final main commit first. Open the resulting draft,
+review assets/checksums, record the actual signing status and known issues, then
+publish when approved. Never move a published tag or replace its assets; release
+a new version instead. A failed workflow can leave a draft that must be inspected
+before retrying publication.
+
+## Install, update, and compatibility
+
+Open the DMG and drag `Bookshelf.app` to Applications, or use the local installer
+for `~/Applications`. Quit the old app first. Metadata/CLI verification does not
+prove an interactive Gatekeeper launch on another person's Mac.
+
+The new bundle ID succeeds the legacy `org.bookshelf.reader`. The library remains
+at `~/Library/Application Support/Bookshelf`, so notes and PDF identities do not
+move. The app copies only a valid legacy appearance preference when no new choice
+exists. It leaves the old preference domain intact. The local installer recognizes
+both bundle IDs; it refuses to overwrite an unrelated app.
+
+`register-mcp.command` discovers `/Applications/Bookshelf.app` and the personal
+Applications folder. If both exist, set `BOOKSHELF_APP_PATH` to the intended bundle.
+Existing client registrations are still preserved; inspect their executable paths
+when changing installation location. See [CLI/MCP](03-cli-and-mcp.md).

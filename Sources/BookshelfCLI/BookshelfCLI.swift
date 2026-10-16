@@ -17,9 +17,15 @@ func stderr(_ text: String) { FileHandle.standardError.write(Data((text + "\n").
     static func run() async throws {
         let args = Array(CommandLine.arguments.dropFirst())
         let command = args.first ?? "help"
+        if command == "--version" || command == "version" {
+            let product = AppMetadata.current
+            print("\(product.name) \(product.version) (build \(product.buildNumber))")
+            return
+        }
         if command == "help" || command == "--help" {
             print("""
             Bookshelf / 서재 (macOS 14+)
+            bookshelf-cli --version
             bookshelf-cli import <PDF-or-folder>
             bookshelf-cli books [title]
             bookshelf-cli read <book-id> <PDF-page>
@@ -90,7 +96,7 @@ func stderr(_ text: String) { FileHandle.standardError.write(Data((text + "\n").
             let id = try argument(1)
             try store.useOriginal(bookID: id)
             print(try encoded(store.book(id)))
-        case "doctor": print(try objectJSON(["data_directory": store.directory.path, "ocrmypdf": OCRService.executable()?.path ?? "not found", "book_count": store.books().count, "version": "0.1.0"]))
+        case "doctor": print(try objectJSON(["data_directory": store.directory.path, "ocrmypdf": OCRService.executable()?.path ?? "not found", "book_count": store.books().count, "version": AppMetadata.current.version, "build_number": AppMetadata.current.buildNumber, "bundle_identifier": AppMetadata.current.bundleIdentifier]))
         case "mcp": try await runMCP(store: store)
         default: throw ShelfError.message("알 수 없는 명령: \(command)")
         }
