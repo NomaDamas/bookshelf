@@ -244,8 +244,8 @@ export async function codexChat(
 	const client = await connection(request, signal);
 	try {
 		const status = await client.status();
-		if (!status.connected) throw new Error(status.label);
 		emit({ type: "status", status });
+		if (!status.connected) throw new Error(status.label);
 		const models = await client.call("model/list", { includeHidden: false });
 		const selected =
 			models.data?.find((model: any) => model.isDefault) ?? models.data?.[0];

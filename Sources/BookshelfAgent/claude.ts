@@ -72,8 +72,8 @@ export async function claudeChat(
 	emit: Emit,
 ): Promise<string> {
 	const status = await claudeStatus(request, signal);
-	if (!status.connected) throw new Error(status.label);
 	emit({ type: "status", status });
+	if (!status.connected) throw new Error(status.label);
 	return new Promise((resolve, reject) => {
 		const child = startChild(
 			request.claudePath!,
