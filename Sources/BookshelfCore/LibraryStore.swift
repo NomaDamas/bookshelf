@@ -41,6 +41,10 @@ public final class LibraryStore: @unchecked Sendable {
             PRIMARY KEY(book_id, page)
         );
         CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT NOT NULL);
+        CREATE TABLE IF NOT EXISTS ocr_candidates (
+            path TEXT PRIMARY KEY, book_id TEXT NOT NULL REFERENCES books(id), report_path TEXT NOT NULL
+        );
+        CREATE TABLE IF NOT EXISTS ocr_versions (path TEXT PRIMARY KEY, book_id TEXT NOT NULL REFERENCES books(id));
         PRAGMA user_version=1;
         """)
         try? FileManager.default.setAttributes([.posixPermissions: 0o600], ofItemAtPath: databaseURL.path)
@@ -88,6 +92,7 @@ public final class LibraryStore: @unchecked Sendable {
     @discardableResult public func register(source: URL, ocr: URL?, root: URL) throws -> Book {
         try synchronized {
             let path = FileAccess.canonicalPath(source), identity = FileAccess.identity(source)
+            if let owner = try query("SELECT book_id FROM ocr_versions WHERE path=?", [path]).first?["book_id"] { return try book(owner) }
             let ocrKey = ocr.map(FileAccess.canonicalPath)
             let existing = try query("SELECT * FROM books WHERE source_path=? OR ocr_path=? OR file_identity=? OR source_path=? OR ocr_path=? LIMIT 1", [path, path, identity, ocrKey, ocrKey]).first
             let base = source.deletingPathExtension().lastPathComponent.replacingOccurrences(of: "_ocr", with: "", options: [.anchored, .backwards])
@@ -101,7 +106,8 @@ public final class LibraryStore: @unchecked Sendable {
                 if path == existing["ocr_path"], path != existing["source_path"] { return try book(id) }
                 // Path updates keep the book ID and all user notes. Never clear a known OCR version during a rescan.
                 let knownOCR = existing["ocr_path"].flatMap { FileManager.default.fileExists(atPath: $0) ? $0 : nil }
-                let effectiveOCR = knownOCR ?? ocr.map(FileAccess.canonicalPath)
+                let preferOriginal = try setting("preferOriginal." + id) == "true"
+                let effectiveOCR = preferOriginal ? nil : knownOCR ?? ocr.map(FileAccess.canonicalPath)
                 let oldRoot = existing["root_path"] ?? rootPath
                 let keepWiderRoot = path.hasPrefix(oldRoot + "/") && oldRoot.count < rootPath.count
                 let savedRoot = keepWiderRoot ? oldRoot : rootPath
@@ -113,8 +119,36 @@ public final class LibraryStore: @unchecked Sendable {
             return try book(id)
         }
     }
-    public func attachOCR(bookID: String, url: URL, pageCount: Int, textPages: Int) throws {
-        _ = try query("UPDATE books SET ocr_path=?,page_count=?,text_pages=? WHERE id=?", [FileAccess.canonicalPath(url),String(pageCount),String(textPages),bookID])
+    public func holdOCRCandidate(bookID: String, url: URL, report: URL) throws {
+        _ = try query("INSERT INTO ocr_candidates(path,book_id,report_path) VALUES(?,?,?) ON CONFLICT(path) DO UPDATE SET report_path=excluded.report_path", [FileAccess.canonicalPath(url),bookID,report.path])
+    }
+    public func heldOCRPaths() throws -> Set<String> { Set(try query("SELECT path FROM ocr_candidates").compactMap { $0["path"] }) }
+    public func ocrReviewReport(bookID: String) throws -> String? { try query("SELECT report_path FROM ocr_candidates WHERE book_id=? ORDER BY rowid DESC LIMIT 1", [bookID]).first?["report_path"] }
+    public func attachOCR(bookID: String, url: URL, pageCount: Int, textPages: Int, expectedSourcePath: String? = nil) throws {
+        try synchronized {
+            try exec("BEGIN IMMEDIATE")
+            do {
+                if let expectedSourcePath, try book(bookID).activePath != expectedSourcePath { throw ShelfError.message("검토 중 다른 OCR 사본이 선택되었습니다. 현재 PDF를 유지합니다.") }
+                if let previous = try book(bookID).ocrPath { _ = try query("INSERT OR IGNORE INTO ocr_versions(path,book_id) VALUES(?,?)", [previous,bookID]) }
+                _ = try query("INSERT OR IGNORE INTO ocr_versions(path,book_id) VALUES(?,?)", [FileAccess.canonicalPath(url),bookID])
+                _ = try query("UPDATE books SET ocr_path=?,page_count=?,text_pages=? WHERE id=?", [FileAccess.canonicalPath(url),String(pageCount),String(textPages),bookID])
+                _ = try query("DELETE FROM ocr_candidates WHERE path=?", [FileAccess.canonicalPath(url)])
+                try setSetting("preferOriginal." + bookID, value: "false")
+                try exec("COMMIT")
+            } catch { try? exec("ROLLBACK"); throw error }
+        }
+    }
+    public func useOriginal(bookID: String) throws {
+        let current = try book(bookID)
+        let inspection = try PDFService.inspect(URL(fileURLWithPath: current.sourcePath))
+        try synchronized {
+            try exec("BEGIN IMMEDIATE")
+            do {
+                _ = try query("UPDATE books SET ocr_path=NULL,page_count=?,text_pages=? WHERE id=?", [String(inspection.pageCount),String(inspection.textPages),bookID])
+                try setSetting("preferOriginal." + bookID, value: "true")
+                try exec("COMMIT")
+            } catch { try? exec("ROLLBACK"); throw error }
+        }
     }
     public func updateInspection(bookID: String, pageCount: Int, textPages: Int) throws {
         _ = try query("UPDATE books SET page_count=?,text_pages=? WHERE id=?", [String(pageCount),String(textPages),bookID])

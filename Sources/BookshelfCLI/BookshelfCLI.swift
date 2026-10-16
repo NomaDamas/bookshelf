@@ -29,7 +29,9 @@ func stderr(_ text: String) { FileHandle.standardError.write(Data((text + "\n").
             bookshelf-cli bookmark <book-id> <PDF-page>
             bookshelf-cli position <book-id> <PDF-page>
             bookshelf-cli inspect <book-id>
-            bookshelf-cli ocr <book-id> [--language kor|eng|jpn|und] [--output path]
+            bookshelf-cli ocr <book-id> [--language kor|eng|jpn|und] [--output path] [--redo] [--review-only]
+            bookshelf-cli ocr-accept <result-json>
+            bookshelf-cli ocr-original <book-id>
             bookshelf-cli export <book-id>
             bookshelf-cli doctor
             bookshelf-cli mcp
@@ -76,8 +78,18 @@ func stderr(_ text: String) { FileHandle.standardError.write(Data((text + "\n").
             let signalSource = DispatchSource.makeSignalSource(signal: SIGINT, queue: .global())
             signalSource.setEventHandler { service.cancel() }; signalSource.resume()
             defer { signalSource.cancel() }
-            let result = try await Task.detached { try service.run(book: book, output: output, language: language, store: store, progress: { stderr($0) }) }.value
+            let mode: OCRMode = args.contains("--redo") ? .replaceText : .missingText
+            let attach = !args.contains("--review-only")
+            let result = try await Task.detached { try service.run(book: book, output: output, language: language, store: store, mode: mode, attachResult: attach, progress: { stderr($0) }) }.value
             print(try encoded(result))
+        case "ocr-accept":
+            let result = try JSONDecoder().decode(OCRResult.self, from: Data(contentsOf: URL(fileURLWithPath: argument(1))))
+            try OCRService.accept(result, store: store)
+            print(try encoded(store.book(result.bookID)))
+        case "ocr-original":
+            let id = try argument(1)
+            try store.useOriginal(bookID: id)
+            print(try encoded(store.book(id)))
         case "doctor": print(try objectJSON(["data_directory": store.directory.path, "ocrmypdf": OCRService.executable()?.path ?? "not found", "book_count": store.books().count, "version": "0.1.0"]))
         case "mcp": try await runMCP(store: store)
         default: throw ShelfError.message("알 수 없는 명령: \(command)")

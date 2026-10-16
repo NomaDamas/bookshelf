@@ -94,11 +94,32 @@ brew install ghostscript
 The integration was verified with OCRmyPDF 17.10.0 and AppleOCR 0.4.0.
 Python, OCRmyPDF, AppleOCR, and Ghostscript are external installations; they are not bundled in this app.
 
-The worker explicitly uses `--ocr-engine appleocr`, `--appleocr-recognition-mode accurate`,
-`--pdf-renderer sandwich`, `--output-type pdf`, `--optimize 0`, and `--skip-text`.
-It does not pass a duplicate `--plugin` registration. Original page sizes, rotations,
-page count, and the existence of extracted text are checked before attaching the output.
-Cancellation interrupts the worker and removes its private partial output.
+The worker explicitly uses AppleOCR `accurate`, the `sandwich` renderer, ordinary PDF output,
+optimization disabled, and overwrite protection. “텍스트 인식” uses `--skip-text` for missing text;
+“기존 OCR 개선” uses `--redo-ocr` to replace an existing invisible text layer in a separate copy.
+Before replacement, a bundled helper clears render-mode-3 text from supported page and Form streams.
+This avoids duplicate text with OCRmyPDF versions that leave old OCR inside nested forms.
+The helper uses the Python interpreter from the OCRmyPDF launcher; a custom launcher can specify
+`BOOKSHELF_OCR_PYTHON` pointing to the same environment with pikepdf installed.
+The app opens a review screen before connecting either result to the book. Compare extracted text
+or PDF pages, test a literal phrase, and choose the new copy or keep the current PDF.
+
+Quality checks cover page count/geometry, text presence, excess character spacing, text loss,
+and PDFKit/Poppler agreement on every page. Poppler is optional; unavailable checks are reported.
+Rendered appearance is compared on up to three text-bearing pages, not the entire book.
+The report records pixel differences. It permits Quartz rounding on at most 0.001% of pixels
+(minimum four pixels), with a maximum per-channel difference of 8/255. Larger changes require review.
+Flags require explicit review in the app; they are not a claim that every recognized word is correct.
+Acceptance verifies source and candidate hashes again, then preserves the book ID, notes, bookmarks,
+and progress. Cancellation interrupts OCR and removes its private partial output.
+Unaccepted candidates are excluded from folder rescans and can be reopened from “생성한 OCR 사본 검토”.
+Previously accepted OCR versions remain associated with the same book during later rescans.
+“원본 PDF 사용” (or `ocr-original <book-id>`) returns to the source without deleting OCR copies or notes.
+That choice also survives folder rescans.
+
+CLI users can run `ocr <book-id> --redo --review-only` to create a candidate and JSON report without
+attaching it. After review, `ocr-accept <result-json>` attaches the unchanged candidate. Default CLI OCR
+refuses automatic attachment when quality checks need review. MCP remains read-only.
 
 PDF text detection counts pages with any extractable text. It is not an OCR quality score.
 A scanned page with a small existing text header may require a separate repair workflow;
@@ -165,6 +186,7 @@ Book links use `bookshelf://book/<book-id>?page=<number>`.
 ```sh
 swift test
 python3 scripts/check-ocr.py dist/Bookshelf.app/Contents/MacOS/bookshelf-cli
+python3 scripts/check-ocr-review.py dist/Bookshelf.app/Contents/MacOS/bookshelf-cli
 python3 scripts/check-mcp.py dist/Bookshelf.app/Contents/MacOS/bookshelf-cli
 python3 scripts/check-cancel.py dist/Bookshelf.app/Contents/MacOS/bookshelf-cli
 ```
@@ -181,6 +203,15 @@ text offsets, unchanged quotations, empty queries and exact-spacing false-positi
 The stdio MCP check covers both search modes and rejects an invalid option type.
 
 Build and verification logs are local under `.runtime/` and excluded from Git.
+
+`scripts/check-ocr-preparation.py`, run in the OCRmyPDF Python environment, verifies nested hidden
+text removal while preserving visible/mixed text, vectors and image pixels. `audit-text-layer.py`
+supports full-page inspection and append-only retries. `maintain-pdf-library.py` follows an audit,
+backs up spacing repairs, and creates OCR copies with the same book identity; it is dry-run unless
+`--apply` is explicit. Candidates with quality flags remain available for review in the app.
+`report-pdf-maintenance.py` produces a live/final per-file report without modifying the library.
+`restore-library-maintenance.py` previews a job rollback; `--apply --stop-running` stops that job,
+restores its original selections and spacing backups, and keeps OCR copies and notes.
 
 ## Source layout
 

@@ -14,7 +14,7 @@ struct SettingsView: View {
                     Picker("인식 언어", selection: $model.ocrLanguage) { Text("한국어").tag("kor"); Text("English").tag("eng"); Text("日本語").tag("jpn"); Text("자동 감지").tag("und") }.onChange(of: model.ocrLanguage) { _, value in try? model.store.setSetting("ocrLanguage", value: value) }
                     Label(OCRService.executable() == nil ? "OCR 도구 설치 필요" : "OCRmyPDF 실행 파일 확인됨", systemImage: OCRService.executable() == nil ? "exclamationmark.circle" : "checkmark.circle").font(.system(size: 11)).foregroundStyle(.secondary)
                     Button("OCR 설치 안내 보기") { NSWorkspace.shared.open(URL(string: "https://github.com/mkyt/OCRmyPDF-AppleOCR")!) }.font(.system(size: 11))
-                    Text("공개 Vision API의 accurate 모드 사용. 일부 페이지에만 텍스트가 있는 PDF는 나머지 페이지를 인식합니다.").font(.system(size: 10)).foregroundStyle(.tertiary)
+                    Text("‘텍스트 인식’은 텍스트가 없는 페이지를 처리합니다. ‘기존 OCR 개선’은 이미 인식된 글자도 다시 읽습니다. 완료 후 원문과 결과를 비교해 사용할 사본을 선택할 수 있습니다.").font(.system(size: 11)).foregroundStyle(.secondary)
                 }.frame(maxWidth: .infinity, alignment: .leading).padding(10)
             }
             GroupBox {

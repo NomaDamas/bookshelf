@@ -65,6 +65,9 @@ import BookshelfCore
                 Button("메모 내보내기…") { model.exportNotes() }.disabled(model.activeBook == nil)
                 Divider()
                 Button("텍스트 인식…") { model.startOCR() }.disabled(model.activeBook == nil || model.ocrRunning)
+                Button("기존 OCR 개선…") { model.startOCR(mode: .replaceText) }.disabled(model.activeBook == nil || model.ocrRunning)
+                Button("생성한 OCR 사본 검토…") { model.reviewLatestOCR() }.disabled(model.activeBook == nil || model.ocrRunning)
+                Button("원본 PDF 사용") { model.useOriginalPDF() }.disabled(model.activeBook?.ocrPath == nil || model.ocrRunning)
             }
             CommandGroup(after: .sidebar) {
                 Button("책장 표시") { model.sidebarVisible.toggle() }.keyboardShortcut("0")

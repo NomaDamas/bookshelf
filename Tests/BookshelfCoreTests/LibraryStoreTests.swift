@@ -75,4 +75,31 @@ final class LibraryStoreTests: XCTestCase {
         XCTAssertEqual(try store.notebook(bookID: second.id).body, "")
         XCTAssertThrowsError(try store.savePosition(bookID: second.id, page: 0))
     }
+    func testReviewCandidatesStayUnattachedAcrossRescansAndVersionsKeepOneBook() throws {
+        let source = try makeFile("book.pdf"), candidate = try makeFile("book_ocr.pdf"), next = try makeFile("book_2_ocr.pdf")
+        let store = try LibraryStore(directory: directory.appendingPathComponent("data"))
+        let book = try store.register(source: source, ocr: nil, root: directory)
+        let report = directory.appendingPathComponent("review.json")
+        try store.holdOCRCandidate(bookID: book.id, url: candidate, report: report)
+        try store.holdOCRCandidate(bookID: book.id, url: next, report: report)
+        _ = try LibraryImporter.add(directory, to: store)
+        XCTAssertEqual(try store.books().count, 1)
+        XCTAssertNil(try store.book(book.id).ocrPath)
+        try store.attachOCR(bookID: book.id, url: candidate, pageCount: 2, textPages: 2, expectedSourcePath: source.path)
+        XCTAssertThrowsError(try store.attachOCR(bookID: book.id, url: next, pageCount: 2, textPages: 2, expectedSourcePath: source.path))
+        try store.attachOCR(bookID: book.id, url: next, pageCount: 2, textPages: 2, expectedSourcePath: candidate.path)
+        _ = try LibraryImporter.add(directory, to: store)
+        XCTAssertEqual(try store.books().count, 1)
+        XCTAssertEqual(try store.book(book.id).ocrPath, next.path)
+    }
+    func testCancelBeforeWorkerStartsDoesNotLaunchOCR() throws {
+        let source = try makeFile("source.pdf"), output = directory.appendingPathComponent("output.pdf")
+        let store = try LibraryStore(directory: directory.appendingPathComponent("data"))
+        let book = try store.register(source: source, ocr: nil, root: directory)
+        let service = OCRService(); service.cancel()
+        XCTAssertThrowsError(try service.run(book: book, output: output, language: "kor", store: store, progress: { _ in })) { error in
+            guard let value = error as? ShelfError, case .cancelled = value else { return XCTFail("Expected cancellation before any PDF or executable access") }
+        }
+        XCTAssertFalse(FileManager.default.fileExists(atPath: output.path))
+    }
 }

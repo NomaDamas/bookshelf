@@ -13,6 +13,7 @@ bundle="$PWD/dist/Bookshelf.app"
 mkdir -p "$bundle/Contents/MacOS" "$bundle/Contents/Resources/ThirdParty"
 cp "$binary_dir/Bookshelf" "$bundle/Contents/MacOS/Bookshelf"
 cp "$binary_dir/bookshelf-cli" "$bundle/Contents/MacOS/bookshelf-cli"
+cp -R "$binary_dir/Bookshelf_BookshelfCore.bundle" "$bundle/Contents/Resources/"
 cp Resources/Info.plist "$bundle/Contents/Info.plist"
 swift scripts/generate-icon.swift .runtime/AppIcon.iconset
 iconutil -c icns .runtime/AppIcon.iconset -o "$bundle/Contents/Resources/AppIcon.icns"

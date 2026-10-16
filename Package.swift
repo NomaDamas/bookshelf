@@ -12,7 +12,7 @@ let package = Package(
     dependencies: [.package(url: "https://github.com/modelcontextprotocol/swift-sdk.git", exact: "0.12.1")],
     targets: [
         .systemLibrary(name: "CSQLite", pkgConfig: "sqlite3"),
-        .target(name: "BookshelfCore", dependencies: ["CSQLite"]),
+        .target(name: "BookshelfCore", dependencies: ["CSQLite"], resources: [.copy("Resources/prepare-ocr-replacement.py")]),
         .executableTarget(name: "BookshelfApp", dependencies: ["BookshelfCore"]),
         .executableTarget(name: "BookshelfCLI", dependencies: ["BookshelfCore", .product(name: "MCP", package: "swift-sdk")]),
         .testTarget(name: "BookshelfCoreTests", dependencies: ["BookshelfCore"]),

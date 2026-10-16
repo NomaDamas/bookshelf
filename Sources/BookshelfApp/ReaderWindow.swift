@@ -58,6 +58,8 @@ struct ReaderWindow: View {
             }
         }
         .sheet(isPresented: $model.showSettings) { SettingsView(model: model).padding(10) }
+        .sheet(item: $model.ocrReview) { review in OCRReviewView(model: model, review: review) }
+        .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in model.reloadLibrary() }
         .onDisappear { model.flushPendingSave(); model.savePositionNow() }
     }
 }
@@ -118,6 +120,10 @@ struct ReaderSurface: View {
                 Text(model.isInspecting ? "텍스트 확인 중" : book.textStatus)
                 Button("텍스트 인식…", systemImage: "text.viewfinder") { model.startOCR() }
                     .disabled(model.ocrRunning || !book.isAvailable || (book.pageCount > 0 && book.textPages == book.pageCount))
+                Button("기존 OCR 개선…", systemImage: "text.badge.checkmark") { model.startOCR(mode: .replaceText) }
+                    .disabled(model.ocrRunning || !book.isAvailable)
+                Button("생성한 OCR 사본 검토…", systemImage: "doc.text.magnifyingglass") { model.reviewLatestOCR() }.disabled(model.ocrRunning)
+                Button("원본 PDF 사용", systemImage: "arrow.uturn.backward") { model.useOriginalPDF() }.disabled(model.ocrRunning || book.ocrPath == nil)
                 Divider()
                 Button("Finder에서 보기", systemImage: "folder") { model.revealSource() }
                 Button("키보드 조작 안내", systemImage: "keyboard") { showKeyboardHelp = true }

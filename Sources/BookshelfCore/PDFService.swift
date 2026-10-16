@@ -54,8 +54,13 @@ public enum PDFService {
         guard original.pageCount == result.pageCount, result.pageCount > 0 else { throw ShelfError.message("OCR 결과의 페이지 수가 원본과 달라 연결하지 않았습니다.") }
         for i in 0..<original.pageCount {
             guard let a = original.page(at: i), let b = result.page(at: i) else { throw ShelfError.message("OCR 결과에 읽을 수 없는 페이지가 있습니다.") }
-            let x = a.bounds(for: .mediaBox), y = b.bounds(for: .mediaBox)
-            guard abs(x.width-y.width) < 1, abs(x.height-y.height) < 1, a.rotation == b.rotation else { throw ShelfError.message("OCR 결과의 페이지 크기 또는 회전이 변경되어 연결하지 않았습니다.") }
+            guard a.rotation == b.rotation else { throw ShelfError.message("OCR 결과의 페이지 회전이 변경되어 연결하지 않았습니다.") }
+            for box in [PDFDisplayBox.mediaBox, .cropBox] {
+                let x = a.bounds(for: box), y = b.bounds(for: box)
+                guard abs(x.minX-y.minX) <= 0.01, abs(x.minY-y.minY) <= 0.01, abs(x.width-y.width) <= 0.01, abs(x.height-y.height) <= 0.01 else {
+                    throw ShelfError.message("OCR 결과의 페이지 크기 또는 잘림 영역이 변경되어 연결하지 않았습니다.")
+                }
+            }
         }
         let inspection = try inspect(output)
         guard inspection.textPages > 0 else { throw ShelfError.message("OCR 결과에서 텍스트를 찾지 못했습니다.") }

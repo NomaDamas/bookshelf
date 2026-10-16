@@ -24,6 +24,8 @@ public enum LibraryImporter {
             let mate = base.lastPathComponent.hasSuffix("_ocr") ? base.deletingLastPathComponent().appendingPathComponent(String(base.lastPathComponent.dropLast(4)) + ".pdf") : URL(fileURLWithPath: base.path + "_ocr.pdf")
             if FileManager.default.fileExists(atPath: mate.path) { files.append(mate) }
         }
+        let withheld = try store.heldOCRPaths()
+        files.removeAll { withheld.contains(FileAccess.canonicalPath($0)) }
         var groups: [String: [URL]] = [:]
         for file in files {
             let base = file.deletingPathExtension()

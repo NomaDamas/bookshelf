@@ -40,6 +40,7 @@ import BookshelfCore
     @Published var ocrRunning = false
     @Published var ocrMessage = ""
     @Published var ocrLanguage = "kor"
+    @Published var ocrReview: OCRReview?
     @Published var showSettings = false
     var pdfView: PDFView?
     private var revision = 0
@@ -92,6 +93,7 @@ import BookshelfCore
     func selectBook(_ book: Book) {
         guard flushPendingSave() else { return }
         savePositionNow(); openTask?.cancel(); searchTask?.cancel()
+        let book = (try? store.book(book.id)) ?? book
         activeBook = book; document = nil; selection = []; searchResults = []; searchQuery = ""
         page = max(book.lastPage, 1); requestedPage = page
         do {
@@ -105,6 +107,8 @@ import BookshelfCore
             do {
                 let pdf = try await Task.detached(priority: .userInitiated) { try PDFService.document(at: book.url) }.value
                 guard !Task.isCancelled, activeBook?.id == book.id else { return }
+                let latest = try store.book(book.id)
+                guard latest.activePath == book.activePath else { selectBook(latest); return }
                 document = pdf; page = min(page, max(pdf.pageCount, 1)); requestedPage = page
                 isOpening = false; sidebarVisible = false
                 try store.updateInspection(bookID: book.id, pageCount: pdf.pageCount, textPages: book.textPages)
@@ -208,16 +212,17 @@ import BookshelfCore
             } catch { if !Task.isCancelled { isSearching = false; errorMessage = error.localizedDescription } }
         }
     }
-    func startOCR() {
-        guard let book = activeBook, !ocrRunning else { return }
+    func startOCR(mode: OCRMode = .missingText) {
+        guard let book = activeBook, !ocrRunning, ocrReview == nil else { return }
         guard OCRService.executable() != nil else { showSettings = true; return }
         let target = OCRService.suggestedOutput(for: book)
-        let panel = NSSavePanel(); panel.title = "텍스트를 인식한 PDF 저장"; panel.allowedContentTypes = [.pdf]
+        let panel = NSSavePanel(); panel.title = mode == .replaceText ? "개선한 OCR 사본 저장" : "텍스트를 인식한 PDF 저장"; panel.allowedContentTypes = [.pdf]
+        panel.message = mode == .replaceText ? "기존 텍스트를 다시 인식합니다. 원본을 보존하며, 결과를 비교한 뒤 이 책에서 사용할 수 있습니다." : "텍스트가 없는 페이지를 인식합니다. 생성 후 결과를 비교할 수 있습니다."
         panel.directoryURL = target.deletingLastPathComponent(); panel.nameFieldStringValue = target.lastPathComponent
         guard panel.runModal() == .OK, let output = panel.url else { return }
-        runOCR(book: book, output: output)
+        runOCR(book: book, output: output, mode: mode)
     }
-    func runOCR(book: Book, output: URL) {
+    func runOCR(book: Book, output: URL, mode: OCRMode = .missingText) {
         let service = OCRService(); ocrService = service; ocrRunning = true
         ocrMessage = "텍스트 인식을 준비하고 있습니다."
         let store = store, language = ocrLanguage
@@ -225,21 +230,56 @@ import BookshelfCore
         Task {
             do {
                 let result = try await Task.detached(priority: .userInitiated) {
-                    try service.run(book: book, output: output, language: language, store: store) { line in
+                    try service.run(book: book, output: output, language: language, store: store, mode: mode, attachResult: false) { line in
                         Task { @MainActor in
-                            if line.contains("확인") { self.ocrMessage = "페이지와 텍스트를 확인하고 있습니다." }
+                            if line.contains("확인") { self.ocrMessage = line }
                             else if line.lowercased().contains("postprocess") { self.ocrMessage = "새 PDF를 정리하고 있습니다." }
                             else { self.ocrMessage = "Mac에서 텍스트를 인식하고 있습니다. 다른 책을 읽어도 괜찮습니다." }
                         }
                     }
                 }.value
-                ocrRunning = false; ocrService = nil; reloadLibrary()
-                information = "텍스트 인식 완료 · \(result.inspection.textPages)/\(result.inspection.pageCount)쪽에서 텍스트를 확인했습니다."
-                if activeBook?.id == book.id { selectBook(try store.book(book.id)) }
+                ocrRunning = false; ocrService = nil
+                ocrReview = OCRReview(book: book, result: result)
             } catch { ocrRunning = false; ocrService = nil; errorMessage = error.localizedDescription }
         }
     }
     func cancelOCR() { ocrMessage = "작업을 취소하고 있습니다."; ocrService?.cancel() }
+    func acceptOCRReview() {
+        guard let review = ocrReview else { return }
+        guard flushPendingSave() else { ocrReview = nil; return }
+        do {
+            try OCRService.accept(review.result, store: store)
+            ocrReview = nil; reloadLibrary()
+            information = "개선한 PDF를 연결했습니다. 책별 메모와 읽던 위치를 유지합니다."
+            if activeBook?.id == review.book.id { selectBook(try store.book(review.book.id)) }
+        } catch { ocrReview = nil; errorMessage = error.localizedDescription }
+    }
+    func keepOriginalOCR() {
+        guard let review = ocrReview else { return }
+        information = "기존 PDF를 유지했습니다. 생성한 사본: \(review.result.path)"
+        ocrReview = nil
+    }
+    func reviewLatestOCR() {
+        guard let book = activeBook else { return }
+        do {
+            guard let report = try store.ocrReviewReport(bookID: book.id) else { information = "검토를 기다리는 OCR 사본이 없습니다."; return }
+            let result = try JSONDecoder().decode(OCRResult.self, from: Data(contentsOf: URL(fileURLWithPath: report)))
+            guard book.activePath == result.sourcePath else { throw ShelfError.message("사용 중인 PDF가 변경되어 이 사본을 적용할 수 없습니다. 현재 PDF로 다시 인식해 주세요.") }
+            ocrReview = OCRReview(book: book, result: result)
+        } catch { errorMessage = error.localizedDescription }
+    }
+    func useOriginalPDF() {
+        guard let book = activeBook, flushPendingSave() else { return }
+        let store = store
+        Task {
+            do {
+                try await Task.detached { try store.useOriginal(bookID: book.id) }.value
+                reloadLibrary()
+                information = "원본 PDF로 돌아왔습니다. OCR 사본과 메모는 보존했습니다."
+                if activeBook?.id == book.id { selectBook(try store.book(book.id)) }
+            } catch { errorMessage = error.localizedDescription }
+        }
+    }
     func downloadBook() {
         guard let book = activeBook else { return }
         do { try FileManager.default.startDownloadingUbiquitousItem(at: book.url); information = "iCloud 다운로드를 요청했습니다. 다운로드 후 다시 열기를 눌러 주세요." }
