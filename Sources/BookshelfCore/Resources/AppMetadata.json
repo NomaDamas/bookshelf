@@ -1,0 +1,11 @@
+{
+  "name": "Bookshelf",
+  "bundleIdentifier": "org.nomadamas.bookshelf",
+  "version": "0.1.0",
+  "buildNumber": 1,
+  "minimumMacOS": "14.0",
+  "repository": "https://github.com/NomaDamas/bookshelf",
+  "legacyBundleIdentifiers": [
+    "org.bookshelf.reader"
+  ]
+}

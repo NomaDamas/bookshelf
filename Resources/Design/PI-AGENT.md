@@ -59,7 +59,7 @@ open "$HOME/Applications/Bookshelf Pi.app"
 
 The ordinary build keeps the existing external-AI workflow and does not require Node, pnpm or Bun. The preview script opts into the bridge with `BOOKSHELF_INCLUDE_AGENT=1`.
 
-This installs a separate `Bookshelf Pi.app` with bundle ID `org.bookshelf.reader.pi`; the existing Bookshelf app remains installed. It shares the normal library and notebook database, and adds the conversations table. The preview does not register the `bookshelf` URL scheme.
+This installs a separate `Bookshelf Pi.app` with a bundle ID derived from the canonical identifier with a `.pi` suffix (`org.nomadamas.bookshelf.pi` currently); the existing Bookshelf app remains installed. It shares the normal library and notebook database, and adds the conversations table. The preview does not register the `bookshelf` URL scheme.
 
 Open the **대화** tab, choose an executor and use its official login button. Claude can use an existing official CLI subscription login. Codex deliberately uses a separate app-owned configuration directory, so it needs its own initial ChatGPT sign-in. The app cannot finish the browser/account verification on the user's behalf.
 

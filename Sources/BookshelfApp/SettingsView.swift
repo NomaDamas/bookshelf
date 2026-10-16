@@ -16,7 +16,8 @@ struct SettingsView: View {
                     .background(ReaderStyle.muted, in: RoundedRectangle(cornerRadius: ReaderTokens.radiusLarge))
                 VStack(alignment: .leading, spacing: 4) {
                     Text("서재 설정").font(.system(size: 18, weight: .semibold))
-                    Text("텍스트 인식과 AI 연결").font(.system(size: 12)).foregroundStyle(.secondary)
+                    Text("\(AppMetadata.current.name) \(AppMetadata.current.version) (\(AppMetadata.current.buildNumber))")
+                        .font(.system(size: 12)).foregroundStyle(.secondary)
                 }
                 Spacer()
                 Button("완료") { dismiss() }.keyboardShortcut(.defaultAction)

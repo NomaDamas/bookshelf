@@ -8,16 +8,18 @@ python3 - "$preview/Contents/Info.plist" <<'PY'
 import plistlib, sys
 from pathlib import Path
 p = Path(sys.argv[1]); info = plistlib.loads(p.read_bytes())
-info['CFBundleIdentifier'] = 'org.bookshelf.reader.pi'
-info['CFBundleName'] = 'Bookshelf Pi'
-info['CFBundleDisplayName'] = '서재 Pi'
+info['CFBundleIdentifier'] += '.pi'
+info['CFBundleName'] += ' Pi'
+info['CFBundleDisplayName'] = info.get('CFBundleDisplayName', info['CFBundleName']) + ' Pi'
 info.pop('CFBundleURLTypes', None)
 p.write_bytes(plistlib.dumps(info))
 PY
 codesign --force --deep --sign - "$preview"
 target="$HOME/Applications/Bookshelf Pi.app"
 if [[ -e "$target" ]]; then
-  [[ "$(plutil -extract CFBundleIdentifier raw "$target/Contents/Info.plist")" == 'org.bookshelf.reader.pi' ]] || exit 1
+  identity="$(plutil -extract CFBundleIdentifier raw "$target/Contents/Info.plist")"
+  expected="$(plutil -extract CFBundleIdentifier raw "$preview/Contents/Info.plist")"
+  [[ "$identity" == "$expected" || "$identity" == 'org.bookshelf.reader.pi' ]] || exit 1
 fi
 ditto "$preview" "$target"
 codesign --verify --deep --strict "$target"
