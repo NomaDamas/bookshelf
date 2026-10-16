@@ -31,6 +31,6 @@ The verified release was installed in the user's Applications folder and reopene
 
 Native materials and controls intentionally differ from the web reference's pixel values. Their composition belongs to AppKit, while the notebook and book content remain opaque. Source token/provenance hashes are retained in `reference.json`.
 
-Reduced-transparency, increased-contrast and reduced-motion branches were inspected in code; the user's global accessibility settings were not changed for this run. Full VoiceOver navigation, every hover state, OCR cancellation/error presentation and macOS 14/15 rendering were not re-exercised in this design pass. Existing OCR integration checks remain documented in the main README.
+Reduced-transparency, increased-contrast and reduced-motion branches were inspected in code; the user's global accessibility settings were not changed for this run. Full VoiceOver navigation, every hover state, OCR cancellation/error presentation and macOS 14/15 rendering were not re-exercised in this design pass. Existing OCR integration checks are documented in the [development guide](../../docs/06-development.md#ocr-and-mcp-integration-checks).
 
 The legacy web prototype and the ongoing library maintenance worker were left intact. The worker uses its own fixed CLI snapshot; installing the reader does not replace that executable. This verification does not mean the library-wide OCR batch has finished.

@@ -1,0 +1,22 @@
+name: Feature request
+description: Describe a reading or development task Bookshelf could support better.
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: User problem
+      description: Describe a concrete task and the current obstacle.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed behavior
+      description: Show the expected workflow or a before/after example.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives and implications
+      description: Note workarounds and any effects on PDF originals, notes, privacy, or MCP permissions.
