@@ -11,6 +11,7 @@ export function codexArguments(): string[] {
 	return [
 		"app-server",
 		"--stdio",
+		"--strict-config",
 		"--disable",
 		"shell_tool",
 		"--disable",
@@ -133,7 +134,7 @@ class CodexConnection {
 			clientInfo: {
 				name: "bookshelf_pi_preview",
 				title: "Bookshelf Pi Preview",
-				version: "0.1.0",
+				version: this.request.clientVersion ?? "dev",
 			},
 		});
 		this.send({ method: "initialized", params: {} });

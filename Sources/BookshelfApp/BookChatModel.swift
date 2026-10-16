@@ -59,11 +59,11 @@ import BookshelfCore
         guard !question.isEmpty else { return }
         guard question.utf16.count <= 10000 else { errorMessage = "질문은 10000자 이내로 입력해 주세요."; return }
         let history = messages.filter { $0.state == "complete" }.suffix(12).map { AgentRequest.Message(role: $0.role, text: String($0.text.prefix(6000))) }
-        messages.append(BookChatMessage(role: "user", text: question, backend: backend.rawValue, page: context.page))
+        messages.append(BookChatMessage(role: "user", text: question, backend: backend.rawValue, page: context.page, harness: usePi ? "pi" : "direct", skill: skill))
         hasUnsavedChanges = true
         guard persist() else { return }
         draft = ""
-        let answer = BookChatMessage(role: "assistant", text: "", backend: backend.rawValue, page: context.page, state: "interrupted")
+        let answer = BookChatMessage(role: "assistant", text: "", backend: backend.rawValue, page: context.page, state: "interrupted", harness: usePi ? "pi" : "direct", skill: skill)
         messages.append(answer); assistantID = answer.id; receivedAnswer = false; hasUnsavedChanges = true
         start(AgentRequest(action: "chat", backend: backend, directory: store.directory, usePi: usePi, skill: skill,
                            question: question, messages: history, book: context))

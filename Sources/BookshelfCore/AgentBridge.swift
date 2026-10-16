@@ -38,6 +38,7 @@ public struct AgentRequest: Encodable, Sendable {
         }
     }
     public var action: String
+    public var clientVersion: String
     public var backend: ChatBackend
     public var usePi: Bool
     public var skill: String
@@ -50,7 +51,7 @@ public struct AgentRequest: Encodable, Sendable {
     public var book: Context?
     public init(action: String, backend: ChatBackend, directory: URL, usePi: Bool = true, skill: String = "explain",
                 question: String? = nil, messages: [Message] = [], book: Context? = nil) {
-        self.action = action; self.backend = backend; self.usePi = usePi; self.skill = skill
+        self.action = action; self.clientVersion = AppMetadata.current.version; self.backend = backend; self.usePi = usePi; self.skill = skill
         let agentBase = ProcessInfo.processInfo.environment["BOOKSHELF_AGENT_DATA_DIR"].map { URL(fileURLWithPath: $0, isDirectory: true) } ?? directory
         workspace = agentBase.appendingPathComponent("Agent/Workspace", isDirectory: true).path
         codexHome = agentBase.appendingPathComponent("Agent/Codex", isDirectory: true).path
@@ -88,7 +89,8 @@ public final class AgentBridge: @unchecked Sendable {
             DispatchQueue.global(qos: .userInitiated).async { [self] in
                 do {
                     guard let executable, let script else { throw ShelfError.message("AI 실행 환경이 없습니다. Node.js 설치와 앱 빌드를 확인해 주세요.") }
-                    let payload = try JSONEncoder().encode(request)
+                    let encoder = JSONEncoder(); encoder.outputFormatting = [.sortedKeys]
+                    let payload = try encoder.encode(request)
                     guard payload.count < 1_000_000 else { throw ShelfError.message("질문에 포함된 내용이 너무 큽니다.") }
                     let task = Process(), input = Pipe(), output = Pipe()
                     task.executableURL = executable; task.arguments = [script.path]

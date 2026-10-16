@@ -48,7 +48,7 @@ struct BookChatView: View {
                         ForEach(chat.messages) { message in
                             VStack(alignment: .leading, spacing: 9) {
                                 HStack {
-                                    Text(message.role == "user" ? "나" : ChatBackend(rawValue: message.backend)?.title ?? "도우미")
+                                    Text(message.role == "user" ? "나" : (message.harness == "pi" ? "Pi + " : "") + (ChatBackend(rawValue: message.backend)?.title ?? "도우미"))
                                         .font(.system(size: 11, weight: .semibold)).foregroundStyle(.secondary)
                                     Spacer()
                                     if message.role == "assistant" && message.state != "complete" {

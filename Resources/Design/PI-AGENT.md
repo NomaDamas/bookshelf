@@ -1,6 +1,6 @@
 # Pi learning-agent experiment
 
-This branch adds a native chat panel to Bookshelf. It uses Pi agent core for conversation state and streaming, with adapters that invoke unmodified official executables. The same panel can bypass Pi to compare the extra layer. The default is Pi enabled.
+This branch adds a native chat panel to Bookshelf. It uses Pi agent core for conversation state and streaming, with adapters that invoke unmodified official executables. The same panel can bypass Pi to compare the extra layer. The default is Pi enabled. Each message records the selected harness and learning profile; Pi replies are labeled accordingly.
 
 ## Scope
 
@@ -32,7 +32,7 @@ The complete conversation is stored by Bookshelf. Each request includes at most 
 `Sources/BookshelfAgent/instructions.ts` is the instruction source. Build output contains a generated `profile.json`, which the app's information button reads. The bridge does not discover skills, plugins or instructions from user/project directories.
 
 - Claude uses `--safe-mode`, `--restricted`, `--disable-slash-commands`, `--tools ""`, `--disallowedTools "mcp__*"`, `--strict-mcp-config` and `--system-prompt`. `--bare` is deliberately excluded because it disables the subscription/keychain authentication path. The adapter rejects a run if its initialization event advertises any tools, MCP servers or skills.
-- Codex uses a dedicated `CODEX_HOME` under Bookshelf's data directory and a dedicated working directory. It overrides the base instructions, disables automatic skill instructions and bundled skills, sets `project_doc_max_bytes=0`, disables shell/plugins/apps/multi-agent/image/view-image/skill-search/tool-suggest/sleep/web-search features and uses read-only sandboxing with no approval escalation. The app rejects unexpected client-side tool or credential requests and cancels the executor if tool-execution items appear in its event stream. Some fixed Codex runtime behavior and vendor-managed policies remain; this is not a claim that every internal tool or policy is replaced.
+- Codex rejects unknown configuration keys with `--strict-config` and uses a dedicated `CODEX_HOME` under Bookshelf's data directory and a dedicated working directory. It overrides the base instructions, disables automatic skill instructions and bundled skills, sets `project_doc_max_bytes=0`, disables shell/plugins/apps/multi-agent/image/view-image/skill-search/tool-suggest/sleep/web-search features and uses read-only sandboxing with no approval escalation. The app rejects unexpected client-side tool or credential requests and cancels the executor if tool-execution items appear in its event stream. Some fixed Codex runtime behavior and vendor-managed policies remain; this is not a claim that every internal tool or policy is replaced.
 - Vendor and administrator-managed policies still apply. The app does not attempt to bypass them.
 
 The learning guidelines borrow clarity principles from ASD-STE100, adapted to the user's response language. They are not a claim of certified STE compliance. Source material is explicitly treated as reference data. Answers must distinguish supplied text from added examples, and cite PDF indices using `[p. N]`.
@@ -67,10 +67,11 @@ The bridge is bundled, but the executors and Node runtime are not redistributed.
 
 ## Verification
 
-- Swift regression tests include conversation persistence, per-book separation, stale-writer protection, Unicode bridge framing and cancelling stale replies on book switches.
-- Bun tests cover English instructions, executor isolation flags, context transfer, Pi/direct streaming, unexpected-tool rejection, subscription-mode billing guard and cancellation. A separate Linux CI job runs these credential-free checks and verifies the generated bundle notices.
-- A real Claude Max request through Pi returned a Korean source-grounded explanation; a second request with the stricter skill flag returned an English explanation with empty tools, MCP-server and skill lists.
-- Codex App Server startup and unauthenticated account status were checked. Live subscription inference requires completing the app-owned login.
+- All 41 Swift tests passed on macOS 26.6.2 / Apple Silicon with Swift 6.4. They include conversation persistence, per-book separation, stale-writer protection, Unicode bridge framing and cancelling stale replies on book switches.
+- All eight Bun tests and the TypeScript check passed with Node 26.8.1 and Bun 1.4.0. They cover English instructions, executor isolation flags, context transfer, Pi/direct streaming, unexpected-tool rejection, subscription-mode billing guard and cancellation. A separate Linux CI job runs these credential-free checks and verifies the generated bundle notices.
+- Real Claude Max requests through Pi returned Korean and English source-grounded explanations with empty tools, MCP-server and skill lists.
+- Codex App Server startup and unauthenticated account status were checked with the final strict configuration. Live subscription inference requires completing the app-owned login.
+- The native app was launched with a synthetic PDF, but screen lock prevented the send/relaunch acceptance flow. Track that flow and live Codex sign-in in [issue #8](https://github.com/NomaDamas/bookshelf/issues/8).
 - Native screenshots use authored synthetic PDF pages. Private source books, notes, account tokens and raw authentication URLs must not be committed as evidence.
 
 Private logs and fixtures live in `.runtime/pi-agent-qa/` in the experiment worktree. `BOOKSHELF_DATA_DIR` isolates QA library data. `BOOKSHELF_AGENT_DATA_DIR`, when explicitly set for local QA, selects the app-owned agent directory independently so credentials do not need to be copied between profiles.

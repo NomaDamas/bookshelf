@@ -1,6 +1,7 @@
 export type Backend = "claude" | "codex";
 export type ChatMessage = { role: "user" | "assistant"; text: string };
 export type Request = {
+	clientVersion?: string;
 	action: "status" | "login" | "chat";
 	backend: Backend;
 	usePi: boolean;
