@@ -67,8 +67,8 @@ The bridge is bundled, but the executors and Node runtime are not redistributed.
 
 ## Verification
 
-- Swift regression tests include conversation persistence, per-book separation and stale-writer protection.
-- Bun tests cover English instructions, executor isolation flags, context transfer, Pi/direct streaming, unexpected-tool rejection, subscription-mode billing guard and cancellation.
+- Swift regression tests include conversation persistence, per-book separation, stale-writer protection, Unicode bridge framing and cancelling stale replies on book switches.
+- Bun tests cover English instructions, executor isolation flags, context transfer, Pi/direct streaming, unexpected-tool rejection, subscription-mode billing guard and cancellation. A separate Linux CI job runs these credential-free checks and verifies the generated bundle notices.
 - A real Claude Max request through Pi returned a Korean source-grounded explanation; a second request with the stricter skill flag returned an English explanation with empty tools, MCP-server and skill lists.
 - Codex App Server startup and unauthenticated account status were checked. Live subscription inference requires completing the app-owned login.
 - Native screenshots use authored synthetic PDF pages. Private source books, notes, account tokens and raw authentication URLs must not be committed as evidence.

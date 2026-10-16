@@ -3,6 +3,7 @@ import BookshelfCore
 
 @MainActor final class BookChatModel: ObservableObject {
     let store: LibraryStore
+    private let bridgeFactory: () -> AgentBridge
     @Published private(set) var messages: [BookChatMessage] = []
     @Published var draft = ""
     @Published private(set) var backend: ChatBackend = .claude
@@ -23,8 +24,8 @@ import BookshelfCore
     private var assistantID: String?
     private var receivedAnswer = false
 
-    init(store: LibraryStore) {
-        self.store = store
+    init(store: LibraryStore, bridgeFactory: @escaping () -> AgentBridge = { AgentBridge() }) {
+        self.store = store; self.bridgeFactory = bridgeFactory
         if let saved = try? store.setting("agent.backend"), let value = ChatBackend(rawValue: saved) { backend = value }
         usePi = (try? store.setting("agent.usePi")) != "false"
     }
@@ -84,7 +85,7 @@ import BookshelfCore
     }
     private func start(_ request: AgentRequest) {
         let id = UUID(); runID = id; errorMessage = nil; busy = true; operation = request.action
-        let connection = AgentBridge(); bridge = connection
+        let connection = bridgeFactory(); bridge = connection
         task = Task {
             do {
                 for try await event in connection.events(for: request) {

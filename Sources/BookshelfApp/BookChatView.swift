@@ -65,6 +65,7 @@ struct BookChatView: View {
                                         Spacer()
                                         if message.state == "complete" {
                                             Button("메모에 담기") {
+                                                guard model.activeBook?.id == book.id else { return }
                                                 model.editNotebook(model.notebookText + (model.notebookText.isEmpty ? "" : "\n\n") + "[AI 대화 / PDF \(message.page)쪽]\n" + message.text)
                                             }
                                         }
@@ -132,11 +133,12 @@ struct BookChatView: View {
             }.padding(14)
         }.background(ReaderStyle.canvas)
             .task(id: book.id) {
+                guard !Task.isCancelled, model.activeBook?.id == book.id else { return }
                 if chat.selectBook(book.id), chat.account == nil, AgentRuntime.ready { chat.checkConnection() }
             }
     }
     private func send() {
-        guard model.flushPendingSave() else { return }
+        guard model.activeBook?.id == book.id, model.flushPendingSave() else { return }
         chat.send(context: AgentRequest.Context(id: book.id, title: book.title, page: model.page,
                   text: currentText, notes: includeNotes ? model.notebookText : "", selection: model.selection.map(\.quote).joined(separator: "\n")))
     }
