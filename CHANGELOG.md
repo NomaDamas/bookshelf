@@ -18,6 +18,12 @@ that its Git tag or GitHub Release has been published.
 - macOS CI and tag-triggered draft prereleases. CI artifacts are ad-hoc signed;
   Developer ID signing and notarization require separately configured credentials.
 
+### Fixed
+
+- Locate app metadata and OCR helpers inside the distributed app across Swift
+  resource-bundle layouts, without depending on the build machine's checkout.
+- Reject DMGs whose copied app still starts when its packaged resources are absent.
+
 ### Known limitations
 
 - macOS 14 is the deployment target; native UI verification has used macOS 26 on
