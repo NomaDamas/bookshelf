@@ -171,6 +171,7 @@ struct KeyboardHelp: View {
                 shortcut("첫 / 마지막 페이지", "Fn ← / Fn →")
                 shortcut("페이지 안에서 스크롤", "↑  ↓")
                 shortcut("읽기 화면으로", "⌘ ⇧ R")
+                shortcut("읽는 중인 책 모아보기", "⌘ ⇧ L")
             }
             Divider()
             Text("원문과 텍스트 보기에서 사용할 수 있습니다.\n메모와 검색어를 입력할 때는 글 편집에 쓰입니다.")

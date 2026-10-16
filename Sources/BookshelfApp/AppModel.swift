@@ -24,6 +24,8 @@ import BookshelfCore
     @Published var textMode = false
     @Published var readerFocusRequest = 0
     @Published var libraryRevealRequest = 0
+    @Published var readingShelfVisible = false
+    @Published private(set) var readingMembership: [String: Bool] = [:]
     @Published var continuousReading = false {
         didSet { try? store.setSetting("continuousReading", value: continuousReading ? "true" : "false") }
     }
@@ -61,6 +63,10 @@ import BookshelfCore
         if let language = try? store.setting("ocrLanguage") { ocrLanguage = language }
         continuousReading = (try? store.setting("continuousReading")) == "true"
         ignoreSearchWhitespace = (try? store.setting("ignoreSearchWhitespace")) != "false"
+        if let saved = try? store.setting("readingShelf.membership") {
+            do { readingMembership = try JSONDecoder().decode([String: Bool].self, from: Data(saved.utf8)) }
+            catch { errorMessage = "읽는 중 목록 설정을 불러오지 못했습니다." }
+        }
         let args = CommandLine.arguments
         if let index = args.firstIndex(of: "--open"), args.indices.contains(index + 1) {
             importLocation(URL(fileURLWithPath: args[index + 1]), select: true)
@@ -71,6 +77,31 @@ import BookshelfCore
     var filteredBooks: [Book] {
         let term = libraryQuery.replacingOccurrences(of: " ", with: "").lowercased()
         return term.isEmpty ? books : books.filter { ($0.title + $0.category).replacingOccurrences(of: " ", with: "").lowercased().contains(term) }
+    }
+    var readingBooks: [Book] {
+        books.filter(isInReadingShelf).sorted {
+            $0.lastOpened == $1.lastOpened ? $0.title.localizedStandardCompare($1.title) == .orderedAscending : $0.lastOpened > $1.lastOpened
+        }
+    }
+    func isInReadingShelf(_ book: Book) -> Bool { readingMembership[book.id] ?? (book.lastOpened > 0) }
+    func setReadingMembership(_ book: Book, included: Bool) {
+        var next = readingMembership; next[book.id] = included
+        do {
+            let text = String(decoding: try JSONEncoder().encode(next), as: UTF8.self)
+            try store.setSetting("readingShelf.membership", value: text)
+            readingMembership = next
+        } catch { errorMessage = "읽는 중 목록을 저장하지 못했습니다. " + error.localizedDescription }
+    }
+    func showReadingShelf() {
+        guard flushPendingSave() else { return }
+        savePositionNow(); readingShelfVisible = true
+    }
+    func showLibrary() {
+        readingShelfVisible = false; sidebarVisible = true; libraryQuery = ""
+    }
+    func toggleNotesPanel() {
+        if readingShelfVisible { readingShelfVisible = false; notesVisible = true }
+        else { notesVisible.toggle() }
     }
     func reloadLibrary() { do { books = try store.books() } catch { errorMessage = error.localizedDescription } }
     func chooseFiles(folder: Bool = false) {
@@ -96,6 +127,7 @@ import BookshelfCore
     }
     func selectBook(_ book: Book) {
         guard flushPendingSave() else { return }
+        readingShelfVisible = false
         savePositionNow(); openTask?.cancel(); searchTask?.cancel(); inspectionTask?.cancel()
         let book = (try? store.book(book.id)) ?? book
         let version = try? PDFFileVersion(book.url)
@@ -129,6 +161,9 @@ import BookshelfCore
                 }
                 activeBook = try store.book(book.id)
                 jumpSerial += 1
+                // Reading can finish opening while the overview is already visible.
+                // Record the start here instead of relying on a PDF-view callback.
+                savePositionNow()
                 inspect(book, version: opened.version)
             } catch is CancellationError { }
             catch { if !Task.isCancelled { isOpening = false; errorMessage = error.localizedDescription } }
@@ -169,7 +204,7 @@ import BookshelfCore
         }
     }
     func revealCurrentBook() {
-        libraryQuery = ""; sidebarVisible = true; libraryRevealRequest += 1
+        readingShelfVisible = false; libraryQuery = ""; sidebarVisible = true; libraryRevealRequest += 1
     }
     func editNotebook(_ text: String) {
         notebookText = text; hasUnsavedChanges = true; saveStatus = "저장 중…"
@@ -204,7 +239,12 @@ import BookshelfCore
     func savePositionNow() {
         positionWork?.cancel()
         guard let book = activeBook, document != nil else { return }
-        do { try store.savePosition(bookID: book.id, page: page) }
+        do {
+            try store.savePosition(bookID: book.id, page: page)
+            let saved = try store.book(book.id)
+            if let index = books.firstIndex(where: { $0.id == book.id }) { books[index] = saved }
+            if activeBook?.id == book.id { activeBook = saved }
+        }
         catch { errorMessage = error.localizedDescription }
     }
     func goToPage(_ number: Int, focusReader: Bool = false) {
@@ -214,6 +254,7 @@ import BookshelfCore
         if focusReader { self.focusReader() }
     }
     func focusReader() {
+        readingShelfVisible = false
         if textMode { readerFocusRequest += 1 }
         else if let pdfView { pdfView.window?.makeFirstResponder(pdfView) }
     }

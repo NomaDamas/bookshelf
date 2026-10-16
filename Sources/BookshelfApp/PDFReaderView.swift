@@ -100,11 +100,13 @@ struct PDFReaderView: NSViewRepresentable {
             tokens.forEach(NotificationCenter.default.removeObserver); tokens.removeAll(); view = nil
         }
         func changedPage() {
-            guard let view, let document = view.document, document === model.document, let page = view.currentPage else { return }
+            guard !model.readingShelfVisible, !model.textMode,
+                  let view, let document = view.document, document === model.document, let page = view.currentPage else { return }
             let index = document.index(for: page)
             if index != NSNotFound {
                 DispatchQueue.main.async { [weak self, weak document] in
-                    guard let self, let document, self.view?.document === document, self.model.document === document else { return }
+                    guard let self, !self.model.readingShelfVisible, !self.model.textMode,
+                          let document, self.view?.document === document, self.model.document === document else { return }
                     self.model.pageChanged(index + 1)
                 }
             }

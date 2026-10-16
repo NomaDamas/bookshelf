@@ -19,6 +19,19 @@ struct BookSidebar: View {
                     .background(ReaderStyle.muted, in: Capsule())
                     .accessibilityLabel("\(model.books.count)권")
             }.padding(.horizontal, 20).frame(height: ReaderStyle.toolbarHeight)
+            Button { model.showReadingShelf() } label: {
+                HStack(spacing: 9) {
+                    Image(systemName: "books.vertical")
+                    Text("읽는 중").fontWeight(.medium)
+                    Spacer()
+                    Text("\(model.readingBooks.count)").monospacedDigit().foregroundStyle(.secondary)
+                }.font(.system(size: 13)).padding(.horizontal, 12).frame(height: 36)
+                    .background(model.readingShelfVisible ? ReaderStyle.selection : ReaderStyle.muted,
+                                in: RoundedRectangle(cornerRadius: ReaderTokens.radiusLarge))
+                    .contentShape(RoundedRectangle(cornerRadius: ReaderTokens.radiusLarge))
+            }.buttonStyle(.plain).padding(.horizontal, 12).padding(.top, 4).padding(.bottom, 10)
+                .accessibilityLabel("읽는 중인 책").accessibilityValue("\(model.readingBooks.count)권")
+                .accessibilityAddTraits(model.readingShelfVisible ? .isSelected : [])
             ReaderSearchField(prompt: "제목 또는 분야 검색", label: "책 검색", text: $model.libraryQuery)
                 .padding(.horizontal, 12).padding(.top, 6).padding(.bottom, 16)
             HStack {
@@ -37,6 +50,11 @@ struct BookSidebar: View {
                         ForEach(model.filteredBooks) { book in
                             BookRow(book: book, currentPage: model.activeBook?.id == book.id ? model.page : nil) { model.selectBook(book) }
                                 .id(book.id)
+                                .contextMenu {
+                                    Button(model.isInReadingShelf(book) ? "읽는 중 목록에서 제외" : "읽는 중 목록에 추가") {
+                                        model.setReadingMembership(book, included: !model.isInReadingShelf(book))
+                                    }
+                                }
                         }
                     }.padding(.horizontal, 10).padding(.vertical, 2)
                 }

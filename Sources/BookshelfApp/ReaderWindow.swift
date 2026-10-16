@@ -27,7 +27,9 @@ struct ReaderWindow: View {
             }
             HSplitView {
                 if model.sidebarVisible { BookSidebar(model: model).frame(minWidth: 220, idealWidth: ReaderTokens.sidebarWidth, maxWidth: 340) }
-                if let book = model.activeBook {
+                if model.readingShelfVisible {
+                    ReadingShelfView(model: model).frame(minWidth: 450, maxWidth: .infinity, maxHeight: .infinity)
+                } else if let book = model.activeBook {
                     ReaderSurface(model: model, book: book)
                         .padding(8).frame(minWidth: 420, maxWidth: .infinity, maxHeight: .infinity)
                     if model.notesVisible { NotesPanel(model: model, book: book).frame(minWidth: 300, idealWidth: 340, maxWidth: 440) }
@@ -49,14 +51,16 @@ struct ReaderWindow: View {
         .toolbar {
             ToolbarItemGroup(placement: .navigation) {
                 Button { withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.15)) { model.sidebarVisible.toggle() } } label: { Image(systemName: "sidebar.left") }.help("책장 표시 (⌘0)").accessibilityLabel("책장 표시")
+                Button { model.showReadingShelf() } label: { Image(systemName: "books.vertical") }
+                    .help("읽는 중인 책 모아보기 (⌘⇧L)").accessibilityLabel("읽는 중인 책 모아보기")
                 Menu { Button("PDF 추가…") { model.chooseFiles() }; Button("폴더 추가…") { model.chooseFiles(folder: true) } } label: { Image(systemName: "plus") }.help("서재에 추가")
             }
             ToolbarItem(placement: .principal) {
-                HStack(spacing: 9) { Image(systemName: "book.pages").foregroundStyle(.secondary); Text(model.activeBook?.title ?? "서재").font(.system(size: 13, weight: .semibold)).lineLimit(1) }
+                HStack(spacing: 9) { Image(systemName: model.readingShelfVisible ? "books.vertical" : "book.pages").foregroundStyle(.secondary); Text(model.readingShelfVisible ? "읽는 중" : model.activeBook?.title ?? "서재").font(.system(size: 13, weight: .semibold)).lineLimit(1) }
             }
             ToolbarItemGroup(placement: .primaryAction) {
                 Button { model.showSettings = true } label: { Image(systemName: "slider.horizontal.3") }.help("OCR와 AI 연결 설정").accessibilityLabel("설정")
-                Button { withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.15)) { model.notesVisible.toggle() } } label: { Image(systemName: "sidebar.right") }.help("책별 메모 표시 (⌘⇧M)").accessibilityLabel("메모 패널 표시")
+                Button { withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.15)) { model.toggleNotesPanel() } } label: { Image(systemName: "sidebar.right") }.help("책별 메모 표시 (⌘⇧M)").accessibilityLabel("메모 패널 표시")
             }
         }
         .sheet(isPresented: $model.showSettings) { SettingsView(model: model) }
@@ -137,6 +141,10 @@ struct ReaderSurface: View {
                 }
             }
             Menu {
+                Button(model.isInReadingShelf(book) ? "읽는 중 목록에서 제외" : "읽는 중 목록에 추가", systemImage: "books.vertical") {
+                    model.setReadingMembership(book, included: !model.isInReadingShelf(book))
+                }
+                Divider()
                 Text(model.isInspecting ? "텍스트 확인 중" : book.textStatus)
                 Button("텍스트 인식…", systemImage: "text.viewfinder") { model.startOCR() }
                     .disabled(model.ocrRunning || !book.isAvailable || (book.pageCount > 0 && book.textPages == book.pageCount))

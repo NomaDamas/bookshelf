@@ -56,12 +56,14 @@ import BookshelfCore
                 Button("폴더 추가…") { model.chooseFiles(folder: true) }.keyboardShortcut("o", modifiers: [.command, .shift])
             }
             CommandMenu("읽기") {
+                Button("읽는 중인 책 모아보기") { model.showReadingShelf() }.keyboardShortcut("l", modifiers: [.command, .shift])
+                Divider()
                 Button("이전 페이지") { model.goToPage(model.page - 1, focusReader: true) }.keyboardShortcut(.leftArrow, modifiers: [.command, .option])
                 Button("다음 페이지") { model.goToPage(model.page + 1, focusReader: true) }.keyboardShortcut(.rightArrow, modifiers: [.command, .option])
                 Button("읽기 화면으로") { model.focusReader() }.keyboardShortcut("r", modifiers: [.command, .shift]).disabled(model.document == nil)
                 Button("책갈피") { model.toggleBookmark() }.keyboardShortcut("d")
                 Divider()
-                Button("이 책에서 찾기") { model.notesVisible = true; model.panelTab = "search" }.keyboardShortcut("f")
+                Button("이 책에서 찾기") { model.readingShelfVisible = false; model.notesVisible = true; model.panelTab = "search" }.keyboardShortcut("f")
                 Button("선택 문장 메모") { model.saveSelection() }.keyboardShortcut("h", modifiers: [.command, .shift]).disabled(model.selection.isEmpty)
                 Button("메모 저장") { model.flushPendingSave() }.keyboardShortcut("s")
                 Button("메모 내보내기…") { model.exportNotes() }.disabled(model.activeBook == nil)
@@ -73,7 +75,7 @@ import BookshelfCore
             }
             CommandGroup(after: .sidebar) {
                 Button("책장 표시") { model.sidebarVisible.toggle() }.keyboardShortcut("0")
-                Button("메모 패널 표시") { model.notesVisible.toggle() }.keyboardShortcut("m", modifiers: [.command, .shift])
+                Button("메모 패널 표시") { model.toggleNotesPanel() }.keyboardShortcut("m", modifiers: [.command, .shift])
             }
         }
         Settings { SettingsView(model: model).preferredColorScheme(appearance.colorScheme) }

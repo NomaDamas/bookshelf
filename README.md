@@ -14,6 +14,7 @@ A native macOS PDF reader with per-book notebooks, local Apple Vision OCR, and r
 - Per-book notebooks with autosave, save-failure feedback, and revision conflict protection.
 - Quoted passages with page coordinates, persistent highlights, comments, and Markdown export.
 - Bookmarks and reading position restored after quitting and relaunching.
+- A “읽는 중” shelf with recent books, per-book page progress, and one-click resume.
 - Local OCR through OCRmyPDF + AppleOCR using the public Vision `accurate` mode.
 - OCR output is a new `_ocr.pdf` file. Existing files are never overwritten.
 - The original and its OCR output retain one book ID, notebook, bookmarks, and progress.
@@ -36,6 +37,7 @@ field keep their normal editing keys.
 | Home / End (Fn-Left / Fn-Right) | First / last PDF page |
 | Up / Down | Scroll within the reading area |
 | Command-Shift-R | Return keyboard focus to the current reading view |
+| Command-Shift-L | Show the currently reading shelf |
 | Command-Option-Left / Right | Previous / next page from anywhere in the reader |
 
 Enter a page number and press Return to jump and keep reading with the keyboard.
@@ -45,6 +47,25 @@ The keyboard button beside the page controls opens an in-app reference.
 The reading area keeps the current book title visible above the controls. Opening a book
 preserves the sidebar's visibility. The library marks the current row with its live page;
 “책장에서 보기” clears a library filter and scrolls to that book.
+
+## Currently reading
+
+Choose “읽는 중” in the sidebar or press Command-Shift-L to open the dedicated reading shelf.
+Cards show covers, saved pages and progress in recent-reading order. Selecting a card resumes
+that book; “읽던 책으로” returns to the previously open reading surface.
+
+Books with a saved reading position appear automatically. A card's menu can exclude a book
+from this shelf; the book, notebook and position remain in the library. Reopening an excluded
+book preserves that choice. Add it again from the book options or the sidebar context menu.
+The context menu can also add a book before it has been opened. These choices persist locally.
+Opening the shelf saves pending notes and the current page; a note-save conflict keeps the
+editor open so the draft can be recovered.
+
+[Light preview](Resources/Design/evidence/reading-shelf-light.png) /
+[Dark preview](Resources/Design/evidence/reading-shelf-dark.png) /
+[Compact window](Resources/Design/evidence/reading-shelf-narrow.png).
+Previews use authored sample books. [Native checks](Resources/Design/evidence/reading-shelf-checks.json)
+cover resume, live progress, exclusions across restart, empty state, re-adding, the shortcut and note preservation.
 
 ## Loading performance
 
