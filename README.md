@@ -14,7 +14,7 @@ A native macOS PDF reader with per-book notebooks, local Apple Vision OCR, and r
 - Per-book notebooks with autosave, save-failure feedback, and revision conflict protection.
 - Quoted passages with page coordinates, persistent highlights, comments, and Markdown export.
 - Bookmarks and reading position restored after quitting and relaunching.
-- A “읽는 중” shelf with recent books, per-book page progress, and one-click resume.
+- Three reading shelves, dated read-through history, note-count badges and persistent sorting.
 - Local OCR through OCRmyPDF + AppleOCR using the public Vision `accurate` mode.
 - OCR output is a new `_ocr.pdf` file. Existing files are never overwritten.
 - The original and its OCR output retain one book ID, notebook, bookmarks, and progress.
@@ -48,24 +48,38 @@ The reading area keeps the current book title visible above the controls. Openin
 preserves the sidebar's visibility. The library marks the current row with its live page;
 “책장에서 보기” clears a library filter and scrolls to that book.
 
-## Currently reading
+## Reading shelves, history and sorting
 
-Choose “읽는 중” in the sidebar or press Command-Shift-L to open the dedicated reading shelf.
-Cards show covers, saved pages and progress in recent-reading order. Selecting a card resumes
-that book; “읽던 책으로” returns to the previously open reading surface.
+The sidebar separates **읽기 전** (not started), **읽는 중** (reading) and **읽은 책**
+(finished). Command-Shift-L opens the reading shelf. Cards show covers, the saved page,
+progress and read-through counts; “펼친 책으로” returns to the open document.
 
-Books with a saved reading position appear automatically. A card's menu can exclude a book
-from this shelf; the book, notebook and position remain in the library. Reopening an excluded
-book preserves that choice. Add it again from the book options or the sidebar context menu.
-The context menu can also add a book before it has been opened. These choices persist locally.
-Opening the shelf saves pending notes and the current page; a note-save conflict keeps the
-editor open so the draft can be recovered.
+- Opening a new book starts its first reading. Choose **읽기 완료** in its menu to
+  record a completed read-through and its date. Jumping to the last page never completes a book.
+- Reopening a finished book is a review. **다시 읽기 시작** starts the next read-through
+  at page one and preserves all previous completions and notes.
+- **회독 기록 보기** lists completion dates. **최근 완료 기록 취소** undoes only the
+  latest completion and returns to reading. Repeated completion clicks cannot add duplicates.
+- Shelving a first read returns it to not started; cancelling a reread returns it to
+  finished with the earlier counts intact. Saved pages and notes remain available.
+- Red badges count one nonempty book notebook plus each saved excerpt. Editing or autosaving
+  an item does not increase its count. Zero is hidden; 100 or more is displayed as **99+**,
+  with the exact number exposed to accessibility. A card's badge opens that book's notes.
+- Sort by recently read, recently finished, recently added, title, note count or read-through
+  count, with ascending/descending order. The last selection applies across all shelves and
+  the sidebar, and survives relaunch. Title ties use a stable secondary order.
 
-[Light preview](Resources/Design/evidence/reading-shelf-light.png) /
-[Dark preview](Resources/Design/evidence/reading-shelf-dark.png) /
-[Compact window](Resources/Design/evidence/reading-shelf-narrow.png).
-Previews use authored sample books. [Native checks](Resources/Design/evidence/reading-shelf-checks.json)
-cover resume, live progress, exclusions across restart, empty state, re-adding, the shortcut and note preservation.
+Reading state and completion events live in additive SQLite tables. Legacy reading-shelf
+membership and saved positions are carried forward; no historical completions or start dates
+are invented. Opening a shelf or changing reading state first saves pending notes; a save
+conflict preserves the draft in the reader.
+
+[Light preview](Resources/Design/evidence/reading-history-light.png) /
+[Dark preview](Resources/Design/evidence/reading-history-dark.png) /
+[Compact window](Resources/Design/evidence/reading-history-narrow.png) /
+[Completion history](Resources/Design/evidence/reading-history-dates.png).
+Previews use authored sample books. See [native checks](Resources/Design/evidence/reading-history-checks.json)
+and [upgrade checks](Resources/Design/evidence/reading-history-migration.json).
 
 ## Loading performance
 

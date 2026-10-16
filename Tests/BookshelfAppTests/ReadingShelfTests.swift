@@ -37,11 +37,11 @@ import BookshelfCore
         XCTAssertEqual(model.readingBooks.first?.lastPage, 2)
         try await open(second, model: model); model.showReadingShelf()
         XCTAssertEqual(model.readingBooks.map(\.id), [second.id, first.id])
-        model.setReadingMembership(second, included: false)
-        model.setReadingMembership(waiting, included: true)
-        XCTAssertEqual(model.readingBooks.map(\.id), [first.id, waiting.id])
+        model.shelveReading(second)
+        model.startReading(waiting, open: false)
+        XCTAssertEqual(model.readingBooks.map(\.id), [waiting.id, first.id])
         let restarted = AppModel(store: try LibraryStore(directory: store.directory))
-        XCTAssertEqual(restarted.readingBooks.map(\.id), [first.id, waiting.id])
+        XCTAssertEqual(restarted.readingBooks.map(\.id), [waiting.id, first.id])
     }
     func testExcludedBookStaysOutWhenReopenedAndKeepsNotesAndPosition() async throws {
         let root = try directory(); defer { try? FileManager.default.removeItem(at: root) }
@@ -51,13 +51,13 @@ import BookshelfCore
         try await open(book, model: model)
         model.editNotebook("책별 메모는 목록에서 제외해도 남아야 합니다.")
         model.goToPage(3); model.showReadingShelf()
-        model.setReadingMembership(book, included: false)
+        model.shelveReading(book)
         XCTAssertTrue(model.readingBooks.isEmpty)
         XCTAssertEqual(try store.notebook(bookID: book.id).body, "책별 메모는 목록에서 제외해도 남아야 합니다.")
         XCTAssertEqual(try store.book(book.id).lastPage, 3)
         try await open(book, model: model); model.showReadingShelf()
         XCTAssertTrue(model.readingBooks.isEmpty)
-        model.setReadingMembership(book, included: true)
+        model.startReading(book, open: false)
         XCTAssertEqual(model.readingBooks.first?.id, book.id)
         XCTAssertEqual(model.readingBooks.first?.lastPage, 3)
     }
@@ -125,6 +125,73 @@ import BookshelfCore
             try await Task.sleep(for: .milliseconds(30))
             XCTAssertEqual(model.page, 2, "Hidden PDF reflow must not replace the saved position")
         }
+    }
+
+    func testFinishedBookReviewAndRereadPreserveCountsAndResetOnlyRereadPosition() async throws {
+        let root = try directory(); defer { try? FileManager.default.removeItem(at: root) }
+        let store = try LibraryStore(directory: root.appendingPathComponent("data"))
+        let book = try fixture("Repeated reading", in: root, store: store)
+        let model = AppModel(store: store)
+        try await open(book, model: model)
+        model.goToPage(3); model.completeReading(book)
+        model.showReadingShelf(.finished)
+        XCTAssertEqual(model.shelfBooks.map(\.id), [book.id])
+        try await open(book, model: model)
+        XCTAssertEqual(model.page, 3)
+        XCTAssertEqual(model.readingSummary(book).status, .finished)
+        model.startReading(book)
+        XCTAssertEqual(model.page, 1)
+        model.showReadingShelf()
+        XCTAssertEqual(try store.book(book.id).lastPage, 1)
+        XCTAssertEqual(model.readingSummary(book).label, "2회독 중")
+        model.completeReading(book); model.completeReading(book)
+        XCTAssertEqual(model.readingSummary(book).completedCount, 2)
+    }
+
+    func testSortDirectionPersistsAcrossShelvesAndRestartAndCountsUpdateAfterEditing() async throws {
+        let root = try directory(); defer { try? FileManager.default.removeItem(at: root) }
+        let store = try LibraryStore(directory: root.appendingPathComponent("data"))
+        let alpha = try fixture("Alpha", in: root, store: store)
+        let beta = try fixture("Beta", in: root, store: store)
+        let model = AppModel(store: store)
+        model.setSort(.title); model.setSortAscending(false)
+        XCTAssertEqual(model.filteredBooks.map(\.id), [beta.id, alpha.id])
+        model.showReadingShelf(.unread)
+        XCTAssertEqual(model.shelfBooks.map(\.id), [beta.id, alpha.id])
+        let restarted = AppModel(store: try LibraryStore(directory: store.directory))
+        XCTAssertEqual(restarted.sortPreferences.criterion, .title)
+        XCTAssertFalse(restarted.sortPreferences.ascending)
+        XCTAssertEqual(restarted.filteredBooks.map(\.id), [beta.id, alpha.id])
+        try await open(alpha, model: model)
+        model.editNotebook("메모 한 개"); model.showReadingShelf()
+        XCTAssertEqual(model.noteCount(alpha).total, 1)
+        model.setSort(.notes)
+        XCTAssertEqual(model.filteredBooks.map(\.id), [alpha.id, beta.id])
+        model.selection = [Highlight(bookID: alpha.id, page: 2, quote: "또 하나의 메모")]
+        model.saveSelection()
+        XCTAssertEqual(model.noteCount(alpha).total, 2)
+        model.deleteHighlight(try XCTUnwrap(model.highlights.first))
+        XCTAssertEqual(model.noteCount(alpha).total, 1)
+        model.completeReading(beta); model.setSort(.readCount)
+        XCTAssertEqual(model.filteredBooks.map(\.id), [beta.id, alpha.id])
+        model.showReadingShelf(.finished)
+        XCTAssertEqual(model.sortPreferences.criterion, .readCount)
+        model.libraryQuery = "no match"
+        XCTAssertTrue(model.shelfBooks.isEmpty)
+    }
+
+    func testCompletionCannotLoseConflictingUnsavedNotes() async throws {
+        let root = try directory(); defer { try? FileManager.default.removeItem(at: root) }
+        let store = try LibraryStore(directory: root.appendingPathComponent("data"))
+        let book = try fixture("Protected draft", in: root, store: store)
+        let model = AppModel(store: store)
+        try await open(book, model: model)
+        model.editNotebook("내 초안")
+        try store.saveNotebook(bookID: book.id, body: "외부 수정", expectedRevision: 0)
+        model.completeReading(book)
+        XCTAssertEqual(model.readingSummary(book).completedCount, 0)
+        XCTAssertEqual(model.notebookText, "내 초안")
+        XCTAssertTrue(model.hasUnsavedChanges)
     }
 
 }

@@ -1,0 +1,102 @@
+{
+  "environment": "macOS 26.6.2 / Apple Silicon",
+  "fixtures": "Four authored sample PDFs and isolated SQLite data; no personal book pages.",
+  "checks": [
+    {
+      "name": "Selected sort is saved",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "Three exclusive shelves",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "Badge exposes real count beyond 99",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "Four completion records in history",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "Fifth read starts at page one",
+      "passed": true,
+      "detail": [
+        "reading",
+        4,
+        1
+      ]
+    },
+    {
+      "name": "Reader page reset",
+      "passed": true,
+      "detail": "1"
+    },
+    {
+      "name": "Completion records fifth read",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "Undo removes only latest completion",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "Cancelling reread preserves four completed reads",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "Review does not start reread",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "Badge opens the book excerpts",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "Deleting excerpt updates count",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "Updated real count remains 99+",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "Descending title order selected",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "Sort persists across categories",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "Sort and direction survive restart",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "History and note counts survive restart",
+      "passed": true,
+      "detail": null
+    }
+  ],
+  "visual_checks": [
+    "Light and dark shelves inspected",
+    "1000 by 700 point window inspected",
+    "4 completion dates inspected",
+    "Zero badge hidden and 99+ displayed; exact 102/103 counts accessible"
+  ],
+  "automation_notes": "Waited for asynchronous menu actions before checking persistence; reaped QA processes separately after restart checks."
+}
