@@ -19,25 +19,30 @@ struct BookSidebar: View {
                     .background(ReaderStyle.muted, in: Capsule())
                     .accessibilityLabel("\(model.books.count)권")
             }.padding(.horizontal, 20).frame(height: ReaderStyle.toolbarHeight)
-            Button { model.showReadingShelf() } label: {
-                HStack(spacing: 9) {
-                    Image(systemName: "books.vertical")
-                    Text("읽는 중").fontWeight(.medium)
-                    Spacer()
-                    Text("\(model.readingBooks.count)").monospacedDigit().foregroundStyle(.secondary)
-                }.font(.system(size: 13)).padding(.horizontal, 12).frame(height: 36)
-                    .background(model.readingShelfVisible ? ReaderStyle.selection : ReaderStyle.muted,
-                                in: RoundedRectangle(cornerRadius: ReaderTokens.radiusLarge))
-                    .contentShape(RoundedRectangle(cornerRadius: ReaderTokens.radiusLarge))
-            }.buttonStyle(.plain).padding(.horizontal, 12).padding(.top, 4).padding(.bottom, 10)
-                .accessibilityLabel("읽는 중인 책").accessibilityValue("\(model.readingBooks.count)권")
-                .accessibilityAddTraits(model.readingShelfVisible ? .isSelected : [])
+            VStack(spacing: 3) {
+                ForEach(ReadingStatus.allCases, id: \.self) { status in
+                    Button { model.showReadingShelf(status) } label: {
+                        HStack(spacing: 9) {
+                            Image(systemName: status.symbol).frame(width: 18)
+                            Text(status.title).fontWeight(.medium)
+                            Spacer()
+                            Text("\(model.bookCount(in: status))").monospacedDigit().foregroundStyle(.secondary)
+                        }.font(.system(size: 13)).padding(.horizontal, 12).frame(height: 34)
+                            .background(model.readingShelfVisible && model.shelfStatus == status ? ReaderStyle.selection : .clear,
+                                        in: RoundedRectangle(cornerRadius: ReaderTokens.radiusLarge))
+                            .contentShape(RoundedRectangle(cornerRadius: ReaderTokens.radiusLarge))
+                    }.buttonStyle(.plain).accessibilityLabel(status.title + " 책장")
+                        .accessibilityValue("\(model.bookCount(in: status))권")
+                        .accessibilityAddTraits(model.readingShelfVisible && model.shelfStatus == status ? .isSelected : [])
+                }
+            }.padding(.horizontal, 12).padding(.top, 4).padding(.bottom, 10)
             ReaderSearchField(prompt: "제목 또는 분야 검색", label: "책 검색", text: $model.libraryQuery)
                 .padding(.horizontal, 12).padding(.top, 6).padding(.bottom, 16)
             HStack {
-                Text(model.libraryQuery.isEmpty ? "책장" : "검색 결과")
+                Text(model.libraryQuery.isEmpty ? "전체 책장" : "검색 결과")
                 Spacer()
                 if !model.libraryQuery.isEmpty { Text("\(model.filteredBooks.count)권").monospacedDigit() }
+                LibrarySortMenu(model: model, compact: true)
             }.font(.system(size: 11, weight: .medium)).foregroundStyle(.secondary)
                 .padding(.horizontal, 20).padding(.bottom, 8)
             if model.isImporting {
@@ -48,13 +53,9 @@ struct BookSidebar: View {
                 ScrollView {
                     LazyVStack(spacing: 4) {
                         ForEach(model.filteredBooks) { book in
-                            BookRow(book: book, currentPage: model.activeBook?.id == book.id ? model.page : nil) { model.selectBook(book) }
+                            BookRow(book: book, currentPage: model.activeBook?.id == book.id ? model.page : nil, summary: model.readingSummary(book), noteCount: model.noteCount(book)) { model.selectBook(book) }
                                 .id(book.id)
-                                .contextMenu {
-                                    Button(model.isInReadingShelf(book) ? "읽는 중 목록에서 제외" : "읽는 중 목록에 추가") {
-                                        model.setReadingMembership(book, included: !model.isInReadingShelf(book))
-                                    }
-                                }
+                                .contextMenu { ReadingActions(model: model, book: book) }
                         }
                     }.padding(.horizontal, 10).padding(.vertical, 2)
                 }
@@ -89,6 +90,8 @@ struct BookSidebar: View {
 private struct BookRow: View {
     let book: Book
     let currentPage: Int?
+    let summary: ReadingSummary
+    let noteCount: NoteCount
     let action: () -> Void
     @State private var hovering = false
     private var selected: Bool { currentPage != nil }
@@ -101,15 +104,16 @@ private struct BookRow: View {
                     Text(book.title).font(.system(size: ReaderTokens.controlFont, weight: selected ? .semibold : .medium))
                         .lineLimit(2).foregroundStyle(.primary)
                     if let currentPage {
-                        Label("읽는 중  \(currentPage)쪽", systemImage: "book.fill")
+                        Label("펼친 책  \(currentPage)쪽", systemImage: "book.fill")
                             .font(.system(size: 11, weight: .medium)).monospacedDigit()
                             .foregroundStyle(ReaderStyle.accent).lineLimit(1)
                     } else {
-                        Text(book.lastOpened > 0 ? "\(book.lastPage)쪽에서 이어 읽기" : book.displayCategory)
+                        Text(summary.status == .reading ? "\(summary.label), \(book.lastPage)쪽" : summary.label)
                             .font(.system(size: 11)).monospacedDigit().foregroundStyle(.secondary).lineLimit(1)
                     }
                 }
                 Spacer(minLength: 0)
+                NoteCountBadge(count: noteCount)
                 if !FileAccess.hasLocalData(book.url) {
                     Image(systemName: "icloud.and.arrow.down").font(.system(size: 12)).foregroundStyle(.secondary)
                         .accessibilityLabel("iCloud 다운로드 필요")
@@ -120,7 +124,7 @@ private struct BookRow: View {
                 .contentShape(RoundedRectangle(cornerRadius: ReaderTokens.radiusLarge))
         }.buttonStyle(.plain).onHover { hovering = $0 }
             .help(book.title).accessibilityLabel(book.title).accessibilityAddTraits(selected ? .isSelected : [])
-            .accessibilityValue(currentPage.map { "읽는 중, PDF \($0)쪽" } ?? book.displayCategory)
+            .accessibilityValue(summary.label + ", 메모 \(noteCount.total)개" + (currentPage.map { ", 펼친 책 PDF \($0)쪽" } ?? ""))
     }
 }
 

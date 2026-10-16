@@ -25,6 +25,7 @@ The forest wallpaper, experimental Liquid Glass shader layers, Aside logo and bu
 ## Screen rules
 
 - The library is a quiet material sidebar with a search field and neutral selected row. Cover/title/progress form one hit target.
+- Reading status uses three shelves: 읽기 전, 읽는 중 and 읽은 책. Read-through counts and dates stay with each book. Red count badges are reserved for saved note items; they hide zero and cap the display at 99+. Shelf and sidebar sorting share one persisted selection.
 - The reader has one inset surface. Its toolbar and footer use the same shared heights. The document remains the largest area; hiding either side panel preserves the reading context.
 - Notes use an opaque writing surface inside a material inspector. Save status, book title and bookmarks stay near the editor. Search and excerpts share the same panel grammar.
 - Settings use grouped surfaces and native pickers. Appearance can follow the system or use light/dark mode, persisted in app preferences.

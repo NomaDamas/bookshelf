@@ -17,8 +17,10 @@ The interface currently uses Korean labels; the guides explain the relevant cont
 
 ## What you can do
 
-- **Read and resume.** PDFKit rendering, text view, keyboard navigation, and a
-  currently reading shelf that remembers each book's page.
+- **Read and resume.** PDFKit rendering, text view, keyboard navigation, and three
+  shelves for not started, reading and finished books, with dated read-through history.
+- **Organize your reading.** Note-count badges and sorting by title, activity, notes
+  or read-through count; the last order survives relaunch.
 - **Write beside the book.** Autosaved notebooks, quoted passages with comments,
   persistent highlights, bookmarks, and Markdown export.
 - **Find text through OCR spacing.** Korean and English keyword search ignores
@@ -33,9 +35,9 @@ The interface currently uses Korean labels; the guides explain the relevant cont
 <details>
 <summary>More native app screenshots</summary>
 
-**Currently reading**
+**Reading shelves and history**
 
-![Currently reading shelf with sample books and saved page progress](Resources/Design/evidence/reading-shelf-light.png)
+![Finished sample books with read-through counts and note badges](Resources/Design/evidence/reading-history-light.png)
 
 **Dark appearance**
 

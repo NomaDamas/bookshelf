@@ -34,3 +34,31 @@ Native materials and controls intentionally differ from the web reference's pixe
 Reduced-transparency, increased-contrast and reduced-motion branches were inspected in code; the user's global accessibility settings were not changed for this run. Full VoiceOver navigation, every hover state, OCR cancellation/error presentation and macOS 14/15 rendering were not re-exercised in this design pass. Existing OCR integration checks are documented in the [development guide](../../docs/06-development.md#ocr-and-mcp-integration-checks).
 
 The legacy web prototype and the ongoing library maintenance worker were left intact. The worker uses its own fixed CLI snapshot; installing the reader does not replace that executable. This verification does not mean the library-wide OCR batch has finished.
+
+
+## Reading history and sorting
+
+Verified on the same macOS environment, 2026-10-16. The three reading shelves now share
+persistent sorting, completion history and red note-count badges. Native checks used four
+authored PDFs with 0, 3, 5 and over 99 notes, plus one- and four-read-through histories.
+
+- `swift test`: 34 tests passed, including read-through persistence, idempotent completion,
+  undo, OCR identity, legacy membership migration, note item counts, note-save conflicts,
+  reread page reset and sort preference persistence.
+- [17 native behavior checks](evidence/reading-history-checks.json): sorting and direction
+  across categories/relaunch, dated history, fifth read-through and undo, review without
+  starting a reread, note-badge navigation and count updates after deletion.
+- [Light](evidence/reading-history-light.png), [dark](evidence/reading-history-dark.png),
+  [1000x700-point window](evidence/reading-history-narrow.png) and
+  [history](evidence/reading-history-dates.png) were visually inspected. Exact counts are
+  exposed through Accessibility, while the displayed badge caps at 99+.
+- [Real-library-copy migration](evidence/reading-history-migration.json): all 711 books,
+  note/highlight/bookmark hashes and saved positions were preserved. Twelve books retained
+  their reading status; past completions were not inferred.
+- [Installed app](evidence/reading-history-installation.json): release build and installed
+  executable match. The running app was closed normally, reopened after installation,
+  and its active book/page and all note/highlight/bookmark records were preserved.
+
+Full VoiceOver navigation and older macOS versions were not tested in this change.
+Native automation waited for asynchronous menu actions before checking database state.
+Private backup data and installed-app captures remain in the ignored runtime directory.

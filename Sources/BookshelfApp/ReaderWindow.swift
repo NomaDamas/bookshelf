@@ -52,11 +52,11 @@ struct ReaderWindow: View {
             ToolbarItemGroup(placement: .navigation) {
                 Button { withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.15)) { model.sidebarVisible.toggle() } } label: { Image(systemName: "sidebar.left") }.help("책장 표시 (⌘0)").accessibilityLabel("책장 표시")
                 Button { model.showReadingShelf() } label: { Image(systemName: "books.vertical") }
-                    .help("읽는 중인 책 모아보기 (⌘⇧L)").accessibilityLabel("읽는 중인 책 모아보기")
+                    .help("독서 현황 (⌘⇧L)").accessibilityLabel("독서 현황")
                 Menu { Button("PDF 추가…") { model.chooseFiles() }; Button("폴더 추가…") { model.chooseFiles(folder: true) } } label: { Image(systemName: "plus") }.help("서재에 추가")
             }
             ToolbarItem(placement: .principal) {
-                HStack(spacing: 9) { Image(systemName: model.readingShelfVisible ? "books.vertical" : "book.pages").foregroundStyle(.secondary); Text(model.readingShelfVisible ? "읽는 중" : model.activeBook?.title ?? "서재").font(.system(size: 13, weight: .semibold)).lineLimit(1) }
+                HStack(spacing: 9) { Image(systemName: model.readingShelfVisible ? "books.vertical" : "book.pages").foregroundStyle(.secondary); Text(model.readingShelfVisible ? model.shelfStatus.title : model.activeBook?.title ?? "서재").font(.system(size: 13, weight: .semibold)).lineLimit(1) }
             }
             ToolbarItemGroup(placement: .primaryAction) {
                 Button { model.showSettings = true } label: { Image(systemName: "slider.horizontal.3") }.help("OCR와 AI 연결 설정").accessibilityLabel("설정")
@@ -64,6 +64,7 @@ struct ReaderWindow: View {
             }
         }
         .sheet(isPresented: $model.showSettings) { SettingsView(model: model) }
+        .sheet(item: $model.historyBook) { book in ReadingHistoryView(model: model, book: book) }
         .sheet(item: $model.ocrReview) { review in OCRReviewView(model: model, review: review) }
         .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in model.reloadLibrary() }
         .onDisappear { model.flushPendingSave(); model.savePositionNow() }
@@ -105,7 +106,10 @@ struct ReaderSurface: View {
     private var currentBookHeading: some View {
         HStack(spacing: 12) {
             VStack(alignment: .leading, spacing: 5) {
-                Text("읽는 중").font(.system(size: 11, weight: .medium)).foregroundStyle(.secondary)
+                Menu { ReadingActions(model: model, book: book) } label: {
+                    Label(model.readingSummary(book).label, systemImage: model.readingSummary(book).status.symbol)
+                        .font(.system(size: 11, weight: .medium)).foregroundStyle(.secondary)
+                }.menuStyle(.borderlessButton).fixedSize().accessibilityLabel("읽기 상태 변경")
                 Text(book.title).font(.system(size: 16, weight: .semibold)).lineLimit(2)
                     .accessibilityIdentifier("current-book-title").help(book.title)
             }.frame(maxWidth: .infinity, alignment: .leading)
@@ -141,9 +145,7 @@ struct ReaderSurface: View {
                 }
             }
             Menu {
-                Button(model.isInReadingShelf(book) ? "읽는 중 목록에서 제외" : "읽는 중 목록에 추가", systemImage: "books.vertical") {
-                    model.setReadingMembership(book, included: !model.isInReadingShelf(book))
-                }
+                ReadingActions(model: model, book: book)
                 Divider()
                 Text(model.isInspecting ? "텍스트 확인 중" : book.textStatus)
                 Button("텍스트 인식…", systemImage: "text.viewfinder") { model.startOCR() }
