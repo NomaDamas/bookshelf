@@ -50,7 +50,7 @@ public final class OCRService: @unchecked Sendable {
         if value { throw ShelfError.cancelled }
     }
     private func prepareReplacement(source: URL, output: URL, ocrExecutable: URL, log: FileHandle) throws {
-        guard let script = Bundle.module.url(forResource: "prepare-ocr-replacement", withExtension: "py") else {
+        guard let script = CoreResources.url(forResource: "prepare-ocr-replacement", withExtension: "py") else {
             throw ShelfError.message("OCR 개선 도구가 앱에 없습니다. 앱을 다시 설치해 주세요.")
         }
         let handle = try FileHandle(forReadingFrom: ocrExecutable); defer { try? handle.close() }
