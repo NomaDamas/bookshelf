@@ -27,6 +27,7 @@ private library: use an absolute `BOOKSHELF_DATA_DIR` and synthetic PDFs.
 ```sh
 swift test
 python3 scripts/generate-reader-tokens.py --check
+python3 scripts/app-metadata.py check
 git diff --check
 ```
 
@@ -39,7 +40,9 @@ No OCR engine or AI credentials are needed for `swift test`.
 ## OCR and MCP integration checks
 
 First install the [OCR dependencies](04-ocr.md#install-the-optional-engine) and
-build the bundle. Run these checks **sequentially**:
+build the bundle. These integration checks also require Poppler (`brew install poppler`)
+and a discoverable `pdftotext`. It is optional for manual app review, but
+`check-ocr.py` requires successful automatic attachment. Run the checks **sequentially**:
 
 ```sh
 python3 scripts/check-ocr.py dist/Bookshelf.app/Contents/MacOS/bookshelf-cli
@@ -62,7 +65,7 @@ logs are written under `.runtime/`, which is ignored by Git. Do not run multiple
 copies of this integration sequence in the same checkout: summary filenames are shared.
 
 Known issue: under a macOS temporary checkout, `/var` and `/private/var` aliases
-can bypass candidate withholding and fail the review check. See [issue #2](https://github.com/seungwonme/bookshelf/issues/2).
+can bypass candidate withholding and fail the review check. See [issue #2](https://github.com/NomaDamas/bookshelf/issues/2).
 The same check passes from a regular development directory. Use a non-aliased
 checkout for the standard verification path; do not interpret that pass as a fix
 for the temporary-path regression.
@@ -120,7 +123,9 @@ The JSON is canonical; commit both it and generated Swift after a token change.
 The generator command writes the Swift file, while `--check` only checks drift.
 For module responsibilities, see [architecture](05-architecture.md).
 
-There is currently no checked-in CI workflow. A local passing test run is evidence
-for that machine/toolchain, not a supported-platform matrix. Include commands,
-results, and any untested paths in your pull request. No version bump or binary
-release is implied by a documentation change.
+The [macOS CI workflow](../.github/workflows/ci.yml) verifies builds, XCTest, and
+DMG/CLI execution on Apple Silicon and Intel. OCR and interactive native UI checks
+remain separate. A local passing run is evidence for that machine/toolchain. Include commands,
+results, and any untested paths in your pull request. No version bump or public binary
+release is implied by a documentation change. Follow [releasing](09-releasing.md)
+for version changes, signing, packaging, and tags.

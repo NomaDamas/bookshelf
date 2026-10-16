@@ -1,0 +1,52 @@
+name: macOS CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    name: Build and package (${{ matrix.arch }})
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: macos-26
+            arch: arm64
+          - runner: macos-26-intel
+            arch: x86_64
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - name: Record toolchain
+        run: |
+          sw_vers
+          xcodebuild -version
+          swift --version
+      - name: Check generated metadata and tokens
+        run: |
+          python3 scripts/app-metadata.py check
+          python3 scripts/generate-reader-tokens.py --check
+          git diff --check
+      - name: Test
+        run: swift test
+      - name: Build, create DMG, and verify copied app
+        run: python3 scripts/release.py package
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: Bookshelf-preview-${{ matrix.arch }}
+          path: dist/release/*
+          if-no-files-found: error
+          retention-days: 7

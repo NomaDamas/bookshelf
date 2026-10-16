@@ -57,7 +57,7 @@ for the build helpers. The deployment target is macOS 14; verification has been
 performed on macOS 26.6.2 with Xcode 27 / Swift 6.4 on Apple Silicon.
 
 ```sh
-git clone https://github.com/seungwonme/bookshelf.git
+git clone https://github.com/NomaDamas/bookshelf.git
 cd bookshelf
 ./scripts/build-app.sh
 ./scripts/open-app.command
@@ -72,7 +72,11 @@ To install the built app in `~/Applications/Bookshelf.app`:
 ./scripts/install-local.command
 ```
 
-The local app is ad-hoc signed. See [setup and troubleshooting](docs/01-getting-started.md)
+To package a verified local DMG, run `python3 scripts/release.py package`. See the
+[release guide](docs/09-releasing.md) for versions, architecture-specific assets,
+signing, and draft GitHub Releases.
+
+The local app is ad-hoc signed by default. See [setup and troubleshooting](docs/01-getting-started.md)
 for toolchain selection, updates, and an isolated sample library.
 
 ## Optional: connect an AI client
@@ -104,6 +108,7 @@ and [data and privacy guide](docs/07-data-and-privacy.md).
 | Build changes and run the relevant checks | [Development and testing](docs/06-development.md) |
 | Back up data or understand privacy boundaries | [Data and privacy](docs/07-data-and-privacy.md) |
 | Audit and repair an existing OCR text layer | [Advanced PDF maintenance](docs/08-pdf-maintenance.md) |
+| Package a DMG or prepare a version/tag/release | [Release guide](docs/09-releasing.md) |
 | Report a bug or submit a pull request | [Contributing](CONTRIBUTING.md) |
 | Work on this repository with a coding agent | [AGENTS.md](AGENTS.md) |
 

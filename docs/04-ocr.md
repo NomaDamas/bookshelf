@@ -19,7 +19,9 @@ The integration has been verified with OCRmyPDF 17.10.0 and AppleOCR 0.4.0.
 The command above resolves upstream packages at installation time; it is not a
 reproducible dependency lock. Python, OCRmyPDF, AppleOCR, and Ghostscript are
 external tools, not bundled app components. Install Poppler with `brew install poppler`
-if you also want the optional second text extractor used by quality checks.
+if you also want the second text extractor used by quality checks. Without it,
+results require manual review and default CLI automatic attachment exits with a
+review-needed error. Poppler is required by the integration test sequence.
 
 ## Create and review a copy
 
@@ -36,7 +38,7 @@ if you also want the optional second text extractor used by quality checks.
 
 The app always opens review before attaching output. Unaccepted candidates stay
 excluded from rescans and can be reopened with **생성한 OCR 사본 검토…**.
-A known [temporary-path alias issue](https://github.com/seungwonme/bookshelf/issues/2)
+A known [temporary-path alias issue](https://github.com/NomaDamas/bookshelf/issues/2)
 can bypass candidate withholding under `/var` / `/private/var`; use a regular
 library path while that issue is open.
 

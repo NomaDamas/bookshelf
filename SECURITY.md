@@ -10,14 +10,14 @@ tools up to date.
 ## Report a vulnerability
 
 If GitHub shows **Report a vulnerability** on the repository's
-[Security page](https://github.com/seungwonme/bookshelf/security), use that private
+[Security page](https://github.com/NomaDamas/bookshelf/security), use that private
 reporting channel. If it is unavailable, open a minimal issue requesting a private
 contact route, without exploit steps, private files, or sensitive data. Do not post
 credentials, book contents, notebook databases, or weaponized PDFs in a public issue.
 
 Once a private channel is established, include the affected commit, environment,
 impact, and a minimal synthetic reproduction. Ordinary bugs and documentation
-problems can use the public [issue tracker](https://github.com/seungwonme/bookshelf/issues).
+problems can use the public [issue tracker](https://github.com/NomaDamas/bookshelf/issues).
 
 ## Boundaries to understand
 

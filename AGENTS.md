@@ -11,6 +11,7 @@ MCP tool surface. Follow [CONTRIBUTING.md](CONTRIBUTING.md) for changes and PR e
 - OCR lifecycle/flags: [OCR guide](docs/04-ocr.md). In-place repairs: [maintenance](docs/08-pdf-maintenance.md).
 - Test selection or screenshots: [development](docs/06-development.md).
 - Data locations, backup, or external exposure: [data and privacy](docs/07-data-and-privacy.md).
+- Versioning, bundle identity, DMGs, or GitHub workflows: [release guide](docs/09-releasing.md).
 - Native styling: [design](Resources/Design/DESIGN.md) and its token source.
 
 ## Preserve these contracts
@@ -25,6 +26,9 @@ MCP tool surface. Follow [CONTRIBUTING.md](CONTRIBUTING.md) for changes and PR e
 - Search normalization changes the matching projection, not source text or PDF pages.
 - `Resources/Design/tokens.json` owns generated `ReaderTokens.swift`; regenerate and
   check both together. Native materials/semantic colors remain in `ReaderStyle.swift`.
+- Product/version metadata lives in `Sources/BookshelfCore/Resources/AppMetadata.json`;
+  generate/check `Resources/Info.plist` with `scripts/app-metadata.py`. Preserve the
+  existing library location and legacy-preference migration across bundle ID changes.
 - Preserve the selected reading context across asynchronous loads; stale view events
   must not overwrite another book's position.
 
