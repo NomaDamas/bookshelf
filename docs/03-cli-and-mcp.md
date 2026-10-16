@@ -21,8 +21,9 @@ This shell variable is just for these examples. `BOOKSHELF_DATA_DIR` selects the
 database; the default is `~/Library/Application Support/Bookshelf`. `doctor` reports
 that path, the discovered OCR executable, book count, and version.
 
-Commands print JSON to stdout except `help` and `export` (Markdown). `mcp` reserves
-stdout for protocol messages. Errors and OCR progress go to stderr; command failures
+Commands print JSON to stdout except `help`/`--help` and `version`/`--version`
+(plain text), and `export` (Markdown). For structured version information, use
+`doctor` fields `version` and `build_number`. `mcp` reserves stdout for protocol messages. Errors and OCR progress go to stderr; command failures
 exit with status 1. Quote paths, multiword queries, and note text.
 
 ## Commands
