@@ -1,0 +1,94 @@
+[
+  {
+    "name": "Shelf lists three started books",
+    "pass": true,
+    "detail": {
+      "count": "3권"
+    }
+  },
+  {
+    "name": "Unread book is not added automatically",
+    "pass": true,
+    "detail": {}
+  },
+  {
+    "name": "Card resumes saved page",
+    "pass": true,
+    "detail": {
+      "page": "5"
+    }
+  },
+  {
+    "name": "Shelf reflects latest page immediately",
+    "pass": true,
+    "detail": {
+      "card": "PDF 6 / 12쪽"
+    }
+  },
+  {
+    "name": "Exclude removes only that reading card",
+    "pass": true,
+    "detail": {
+      "count": "2권"
+    }
+  },
+  {
+    "name": "Exclusion survives app restart",
+    "pass": true,
+    "detail": {
+      "count": "2권"
+    }
+  },
+  {
+    "name": "Empty shelf offers library navigation",
+    "pass": true,
+    "detail": {}
+  },
+  {
+    "name": "Book options can add excluded books again",
+    "pass": true,
+    "detail": {
+      "count": "3권"
+    }
+  },
+  {
+    "name": "Keyboard shortcut opens the shelf",
+    "pass": true,
+    "detail": {}
+  },
+  {
+    "name": "List management preserves the saved notebook",
+    "pass": true,
+    "detail": {
+      "note_preserved": true
+    }
+  },
+  {
+    "name": "Reading position set before view transition",
+    "pass": true,
+    "detail": {
+      "page": "12"
+    }
+  },
+  {
+    "name": "Overview keeps position after PDF teardown",
+    "pass": true,
+    "detail": {
+      "card": "PDF 12 / 24쪽"
+    }
+  },
+  {
+    "name": "Overview resize preserves saved progress",
+    "pass": true,
+    "detail": {
+      "card": "PDF 12 / 24쪽"
+    }
+  },
+  {
+    "name": "Returning from overview preserves page",
+    "pass": true,
+    "detail": {
+      "page": "12"
+    }
+  }
+]

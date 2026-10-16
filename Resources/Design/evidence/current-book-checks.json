@@ -1,0 +1,80 @@
+[
+  {
+    "name": "Current title stays in the reading surface",
+    "pass": true,
+    "detail": {
+      "title": "검수용 OCR 책"
+    }
+  },
+  {
+    "name": "Current book is marked in library",
+    "pass": true,
+    "detail": {
+      "row_value": "읽는 중, PDF 2쪽"
+    }
+  },
+  {
+    "name": "Current title remains when library is hidden",
+    "pass": true,
+    "detail": {
+      "title": "검수용 OCR 책"
+    }
+  },
+  {
+    "name": "Reveal opens the library",
+    "pass": true,
+    "detail": {
+      "query": ""
+    }
+  },
+  {
+    "name": "Filter can hide the current row",
+    "pass": true,
+    "detail": {
+      "query": "없는 책 검색 검수"
+    }
+  },
+  {
+    "name": "Reveal clears filter and locates current book",
+    "pass": true,
+    "detail": {
+      "query": "",
+      "row_value": "읽는 중, PDF 2쪽"
+    }
+  },
+  {
+    "name": "Text left key still turns page",
+    "pass": true,
+    "detail": {
+      "page": "1"
+    }
+  },
+  {
+    "name": "Text right key still turns page",
+    "pass": true,
+    "detail": {
+      "page": "2"
+    }
+  },
+  {
+    "name": "Library reading marker follows current page",
+    "pass": true,
+    "detail": {
+      "row_value": "읽는 중, PDF 2쪽"
+    }
+  },
+  {
+    "name": "Note editing keeps page position",
+    "pass": true,
+    "detail": {
+      "page": "2"
+    }
+  },
+  {
+    "name": "PDF left key still turns page",
+    "pass": true,
+    "detail": {
+      "page": "1"
+    }
+  }
+]

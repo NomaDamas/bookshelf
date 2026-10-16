@@ -1,0 +1,12 @@
+{
+  "notes_unchanged": true,
+  "reading_page_restored": true,
+  "installed_executable_matches_release": true,
+  "sha256": "8eef439e56d02c3878f030f1ee6a65d4b2c59f4a72c32eee9f7ee0d1e61e987c",
+  "native_ui": {
+    "title_correct": true,
+    "page_correct": true,
+    "reading_marker_visible": true,
+    "pdf_view_present": true
+  }
+}
