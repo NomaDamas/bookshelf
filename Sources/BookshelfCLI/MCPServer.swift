@@ -3,7 +3,7 @@ import BookshelfCore
 import MCP
 
 func runMCP(store: LibraryStore) async throws {
-    let server = Server(name: "bookshelf", version: "0.1.0", capabilities: .init(tools: .init(listChanged: false)))
+    let server = Server(name: "bookshelf", version: AppMetadata.current.version, capabilities: .init(tools: .init(listChanged: false)))
     func schema(_ properties: [String: Value], required: [String] = []) -> Value {
         .object(["type": .string("object"), "properties": .object(properties), "required": .array(required.map(Value.string)), "additionalProperties": .bool(false)])
     }

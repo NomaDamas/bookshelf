@@ -19,7 +19,7 @@ check requires the fixture/state produced by `check-ocr.py` first.
 
 ## Report a bug
 
-Search [existing issues](https://github.com/seungwonme/bookshelf/issues) first, then
+Search [existing issues](https://github.com/NomaDamas/bookshelf/issues) first, then
 use the bug template. Include:
 
 - What you did, expected behavior, and actual behavior.

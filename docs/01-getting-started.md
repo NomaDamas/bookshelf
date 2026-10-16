@@ -19,7 +19,7 @@ end-to-end run on Swift 6.0, macOS 14/15, or an Intel Mac.
 ## Build and open
 
 ```sh
-git clone https://github.com/seungwonme/bookshelf.git
+git clone https://github.com/NomaDamas/bookshelf.git
 cd bookshelf
 ./scripts/build-app.sh
 ./scripts/open-app.command
@@ -102,5 +102,5 @@ The separate database does not isolate macOS appearance/window preferences.
 | New code is not visible | Rebuild before reopening/reinstalling. Open/install helpers reuse an existing bundle. |
 | OCR engine not found | Use [engine troubleshooting](04-ocr.md#engine-discovery-and-troubleshooting). |
 
-For a reproducible failure, open a [bug report](https://github.com/seungwonme/bookshelf/issues/new?template=bug_report.yml)
+For a reproducible failure, open a [bug report](https://github.com/NomaDamas/bookshelf/issues/new?template=bug_report.yml)
 with the command, toolchain, and a synthetic example. Remove private paths/text from logs.

@@ -26,6 +26,9 @@ Use your normal macOS account/device protections for sensitive material.
 | `BOOKSHELF_OCRMYPDF` | OCR service | Explicit executable path; otherwise discovery uses PATH and conventional installation locations. |
 | `BOOKSHELF_OCR_PYTHON` | OCR replacement helper | Python in the OCRmyPDF environment, including `pikepdf`; needed for custom launchers. |
 | `BOOKSHELF_BUILD_CONFIGURATION` | `build-app.sh` | Swift configuration; default `release`, or `debug` for iteration. |
+| `BOOKSHELF_APP_PATH` | MCP registration helper | Select an installed app bundle, especially when both Applications locations contain it. |
+| `BOOKSHELF_SIGNING_IDENTITY` | Build/packaging | Developer ID Application identity, or `-` for the default ad-hoc signature. |
+| `BOOKSHELF_NOTARY_PROFILE` | Packaging with `--notarize` | Name of an existing notarytool Keychain profile. |
 | `DEVELOPER_DIR` | Apple build tools | Select a compatible Xcode developer directory. |
 
 Use the same data directory in the app and MCP client if they should see the same

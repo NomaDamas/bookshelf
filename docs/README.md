@@ -15,6 +15,7 @@ used independently.
 | [06. Development](06-development.md) | Test prerequisites, native UI checks, and screenshot provenance. |
 | [07. Data and privacy](07-data-and-privacy.md) | Storage, backup, iCloud, environment variables, and trust boundaries. |
 | [08. PDF maintenance](08-pdf-maintenance.md) | Advanced audit, spacing repair, validation, and rollback tools. |
+| [09. Releases](09-releasing.md) | Product identity, versioning, DMGs, signing, and tag-triggered drafts. |
 
 ## Participate
 

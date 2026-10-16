@@ -48,7 +48,7 @@ OCR 사본 검토:
 macOS, 호환되는 Xcode/Swift 도구 체인, 빌드 보조 스크립트용 Python 3가 필요합니다.
 
 ```sh
-git clone https://github.com/seungwonme/bookshelf.git
+git clone https://github.com/NomaDamas/bookshelf.git
 cd bookshelf
 ./scripts/build-app.sh
 ./scripts/open-app.command
@@ -68,7 +68,9 @@ cd bookshelf
 
 최소 배포 대상은 macOS 14입니다. 실제 검증 환경은 Apple Silicon,
 macOS 26.6.2, Xcode 27 / Swift 6.4이며, 이전 macOS와 Intel Mac의 전체 동작은 검증되지 않았습니다.
-로컬 빌드는 임시 서명(ad-hoc signing)을 사용합니다. [설치 및 문제 해결](docs/01-getting-started.md)
+로컬 빌드는 기본적으로 임시 서명(ad-hoc signing)을 사용합니다.
+`python3 scripts/release.py package`로 검증된 DMG를 만들 수 있습니다.
+버전 관리, 아키텍처별 파일, 정식 서명과 GitHub 초안 릴리스는 [배포 안내](docs/09-releasing.md)를 참고하세요. [설치 및 문제 해결](docs/01-getting-started.md)
 문서에서 도구 체인 선택과 별도 샘플 서재 실행을 설명합니다.
 
 ## 선택 기능: OCR과 AI 연결
@@ -103,6 +105,7 @@ MCP 도구는 읽기 전용입니다. CLI에는 메모 저장, 가져오기, OCR
 | 개발 환경, 테스트 순서, 화면 검증 | [개발과 검증](docs/06-development.md) |
 | 데이터 위치, 백업, 개인정보 | [데이터 안내](docs/07-data-and-privacy.md) |
 | 기존 OCR 레이어 점검과 복구 | [고급 PDF 유지보수](docs/08-pdf-maintenance.md) |
+| DMG 생성, 버전, 태그, GitHub Release | [배포 안내](docs/09-releasing.md) |
 | 버그 제보와 코드 기여 | [CONTRIBUTING](CONTRIBUTING.md) |
 | 코딩 에이전트의 작업 기준 | [AGENTS.md](AGENTS.md) |
 

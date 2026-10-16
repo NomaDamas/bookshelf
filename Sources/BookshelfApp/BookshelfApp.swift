@@ -35,6 +35,7 @@ import BookshelfCore
     @StateObject private var model = AppModel()
     @AppStorage("readerAppearance") private var appearance = ReaderAppearance.system
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var delegate
+    init() { PreferenceMigration.migrateCurrentInstallation() }
     var body: some Scene {
         WindowGroup("서재") {
             ReaderWindow(model: model)

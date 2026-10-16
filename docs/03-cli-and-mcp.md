@@ -33,7 +33,8 @@ are **1-based PDF page indices**, which may differ from printed page numbers.
 | Command | Effect |
 | --- | --- |
 | `help` or `--help` | Print usage; no database is opened. |
-| `doctor` | Report environment and library diagnostics. |
+| `--version` or `version` | Print product version/build without opening a database. |
+| `doctor` | Report library diagnostics, product version/build, and bundle identifier. |
 | `import <PDF-or-folder>` | Register PDFs and original/OCR pairs; update the index. |
 | `books [title]` | List books, optionally filtered by title/category. |
 | `inspect <book-id>` | Count PDF/text pages and **persist** inspection metadata. |
@@ -79,14 +80,16 @@ review is retained but not automatically attached. For controlled review, use th
 
 ## Register MCP
 
-After installing the app in `~/Applications/Bookshelf.app`:
+After installing the app in `~/Applications/Bookshelf.app` or `/Applications/Bookshelf.app`:
 
 ```sh
 ./scripts/register-mcp.command
 ```
 
 The helper calls each available client's official registration command and keeps
-existing `bookshelf` entries unchanged. Its final message alone does not prove a
+existing `bookshelf` entries unchanged. If both installation locations exist, set
+`BOOKSHELF_APP_PATH` to the desired absolute app path. Missing apps or supported
+clients produce an error. Its final message alone does not prove a
 client was installed, a registration was added, or a connection succeeded.
 
 Verify in the clients you use:
@@ -105,6 +108,22 @@ For another MCP client, configure a **stdio** server with the absolute installed
 binary path as `command`, `["mcp"]` as `args`, and an optional absolute
 `BOOKSHELF_DATA_DIR` in its environment. JSON configs generally do not expand `~`,
 `$HOME`, or shell variables. Use your actual full path and the client's schema.
+
+### DMG-only installation
+
+The registration helper lives in the source checkout. If you installed only the
+DMG, configure a stdio server directly in your client with
+`/Applications/Bookshelf.app/Contents/MacOS/bookshelf-cli` and the argument `mcp`.
+For a new registration with the corresponding client installed:
+
+```sh
+codex mcp add bookshelf -- /Applications/Bookshelf.app/Contents/MacOS/bookshelf-cli mcp
+claude mcp add --scope user --transport stdio bookshelf -- /Applications/Bookshelf.app/Contents/MacOS/bookshelf-cli mcp
+```
+
+Use only the command for your client and adjust the path if you installed elsewhere.
+Inspect an existing `bookshelf` registration first rather than replacing it blindly.
+Restart the client and verify an actual tool call as described above.
 
 ## MCP tools
 

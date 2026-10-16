@@ -11,8 +11,9 @@ These scripts serve an advanced audit/repair workflow. Most readers should use
 The optional scripts below audit and repair one specific failure mode in some AppleOCR PDFs:
 standalone invisible spaces inserted between Korean characters. They do not rewrite grammar,
 run a language model, or replace recognized letters. They require Poppler and a Python environment
-with `pikepdf` and Pillow, in addition to the Swift/PDFKit probe. The batch maintenance
-runner also uses `hashlib.file_digest` and requires Python 3.11 or newer.
+with `pikepdf` and Pillow, in addition to the Swift/PDFKit probe. Use Python 3.11
+or newer for this workflow: validation, application, and batch maintenance all
+use `hashlib.file_digest`.
 
 - `pdf-text-probe.swift`: extract PDFKit text/geometry for selected pages or `all` pages.
 - `audit-text-layer.py`: compare sampled PDFKit/Poppler text. A clean sample is not proof that every page is accurate.
