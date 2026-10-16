@@ -8,6 +8,7 @@ import platform
 import plistlib
 import shutil
 import subprocess
+import sys
 import tempfile
 from pathlib import Path
 
@@ -17,12 +18,16 @@ METADATA = ROOT / "Sources/BookshelfCore/Resources/AppMetadata.json"
 
 
 def run(*args, capture=False, env=None):
-    return subprocess.run(
-        [str(a) for a in args], check=True, cwd=ROOT,
+    result = subprocess.run(
+        [str(a) for a in args], check=False, cwd=ROOT,
         stdout=subprocess.PIPE if capture else None,
         stderr=subprocess.PIPE if capture else None,
         env=env,
-    ).stdout
+    )
+    if result.returncode and capture:
+        sys.stderr.write(result.stderr.decode("utf-8", errors="replace"))
+    result.check_returncode()
+    return result.stdout
 
 
 def product():
@@ -85,8 +90,33 @@ def verify_bundle(bundle, expected_arch=None):
             raise ValueError("Runtime metadata does not match the packaged app")
     if not (bundle / "Contents/Resources/ThirdParty").is_dir():
         raise ValueError("Dependency notices are missing")
+    resources = bundle / "Contents/Resources/Bookshelf_BookshelfCore.bundle"
+    for filename in ("AppMetadata.json", "prepare-ocr-replacement.py"):
+        if not any((directory / filename).is_file() for directory in (resources, resources / "Contents/Resources")):
+            raise ValueError(f"Required packaged resource is missing: {filename}")
     return {"version": info["CFBundleShortVersionString"], "buildNumber": info["CFBundleVersion"],
             "bundleIdentifier": info["CFBundleIdentifier"], "architectures": architectures}
+
+
+def verify_resource_isolation(bundle):
+    """A copied app must fail without its own resources, even on its build machine."""
+    resources = bundle / "Contents/Resources/Bookshelf_BookshelfCore.bundle"
+    with tempfile.TemporaryDirectory(prefix="bookshelf-resource-check-", dir=bundle.parent) as temporary:
+        withheld = Path(temporary) / resources.name
+        resources.rename(withheld)
+        try:
+            result = subprocess.run(
+                [str(bundle / "Contents/MacOS/bookshelf-cli"), "--version"],
+                capture_output=True, text=True,
+                env={**os.environ, "BOOKSHELF_DATA_DIR": str(Path(temporary) / "data")},
+            )
+            if result.returncode == 0:
+                raise ValueError("App loaded resources outside its bundle; a build-directory fallback masked missing packaged files")
+            if "Bookshelf product metadata is missing" not in result.stderr:
+                raise ValueError("Missing-resource probe failed for an unexpected reason: " + result.stderr[-2000:])
+        finally:
+            withheld.rename(resources)
+    run("codesign", "--verify", "--deep", "--strict", bundle)
 
 
 def verify_dmg(dmg, expected_arch=None):
@@ -105,7 +135,9 @@ def verify_dmg(dmg, expected_arch=None):
             installed.parent.mkdir()
             run("ditto", mount / "Bookshelf.app", installed)
             result = verify_bundle(installed, expected_arch)
-            print(json.dumps({"dmg": dmg.name, "copied_app_verified": True, **result}, indent=2))
+            verify_resource_isolation(installed)
+            print(json.dumps({"dmg": dmg.name, "copied_app_verified": True,
+                              "packaged_resources_required": True, **result}, indent=2))
             return result
         finally:
             if attached:

@@ -29,6 +29,8 @@ MCP tool surface. Follow [CONTRIBUTING.md](CONTRIBUTING.md) for changes and PR e
 - Product/version metadata lives in `Sources/BookshelfCore/Resources/AppMetadata.json`;
   generate/check `Resources/Info.plist` with `scripts/app-metadata.py`. Preserve the
   existing library location and legacy-preference migration across bundle ID changes.
+- Packaged resources must resolve inside the app. Keep the DMG resource-isolation
+  check so a checkout's `.build` cache cannot make a broken package pass.
 - Preserve the selected reading context across asynchronous loads; stale view events
   must not overwrite another book's position.
 

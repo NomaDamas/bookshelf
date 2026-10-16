@@ -49,6 +49,10 @@ The command builds release configuration, checks the app's version/identity and
 signature, packages it, mounts the DMG read-only, copies its app to a temporary
 installation, and executes the copied CLI with an isolated data directory.
 It also checks the `/Applications` drag-and-drop shortcut and required notices.
+A negative probe temporarily withholds the copied app's resource bundle and requires
+CLI failure, then restores it and verifies the signature again. This prevents a
+build-machine `.build` cache from masking incomplete distribution assets. Resources
+are resolved inside the app for both flat and macOS-style SwiftPM bundle layouts.
 Temporary mounts are detached when verification exits.
 
 On Apple Silicon, output is:

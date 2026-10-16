@@ -12,7 +12,7 @@ public struct ProductMetadata: Decodable, Sendable {
 
 public enum AppMetadata {
     public static let current: ProductMetadata = {
-        guard let url = Bundle.module.url(forResource: "AppMetadata", withExtension: "json"),
+        guard let url = CoreResources.url(forResource: "AppMetadata", withExtension: "json"),
               let data = try? Data(contentsOf: url),
               let metadata = try? JSONDecoder().decode(ProductMetadata.self, from: data) else {
             fatalError("Bookshelf product metadata is missing or invalid. Rebuild the app bundle.")
