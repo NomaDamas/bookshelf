@@ -1,6 +1,6 @@
 # Native verification
 
-Verified on macOS 26.6.2 / Apple Silicon, 2026-10-16. The source remains compatible with the macOS 14 deployment target; earlier macOS versions were not exercised.
+Aside design baseline verified on macOS 26.6.2 / Apple Silicon, 2026-10-16, in commit `b48c9a5`. Later loading and current-book changes are recorded in [PERFORMANCE.md](PERFORMANCE.md). The source remains compatible with the macOS 14 deployment target; earlier macOS versions were not exercised.
 
 ## Scope and evidence
 

@@ -78,6 +78,8 @@ struct ReaderSurface: View {
 
     var body: some View {
         VStack(spacing: 0) {
+            currentBookHeading
+            ReaderHairline()
             readingTools
             ReaderHairline()
             ZStack(alignment: .bottom) {
@@ -94,6 +96,22 @@ struct ReaderSurface: View {
         .modifier(ReaderSurfaceBorder(radius: ReaderTokens.radiusPanel))
         .onChange(of: model.page) { _, number in pageEntry = String(number) }
         .onAppear { pageEntry = String(model.page) }
+    }
+
+    private var currentBookHeading: some View {
+        HStack(spacing: 12) {
+            VStack(alignment: .leading, spacing: 5) {
+                Text("읽는 중").font(.system(size: 11, weight: .medium)).foregroundStyle(.secondary)
+                Text(book.title).font(.system(size: 16, weight: .semibold)).lineLimit(2)
+                    .accessibilityIdentifier("current-book-title").help(book.title)
+            }.frame(maxWidth: .infinity, alignment: .leading)
+            Button { model.revealCurrentBook() } label: {
+                Label("책장에서 보기", systemImage: "books.vertical")
+                    .font(.system(size: 11)).foregroundStyle(.primary)
+                    .padding(.horizontal, 10).frame(height: ReaderTokens.controlSize)
+                    .background(ReaderStyle.muted, in: RoundedRectangle(cornerRadius: ReaderTokens.radiusMedium))
+            }.buttonStyle(.plain).accessibilityLabel("책장에서 현재 책 보기")
+        }.padding(.horizontal, 20).padding(.vertical, 14)
     }
 
     private var readingTools: some View {

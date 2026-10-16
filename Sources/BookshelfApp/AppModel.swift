@@ -23,6 +23,7 @@ import BookshelfCore
     @Published var panelTab = "notes"
     @Published var textMode = false
     @Published var readerFocusRequest = 0
+    @Published var libraryRevealRequest = 0
     @Published var continuousReading = false {
         didSet { try? store.setSetting("continuousReading", value: continuousReading ? "true" : "false") }
     }
@@ -42,16 +43,19 @@ import BookshelfCore
     @Published var ocrLanguage = "kor"
     @Published var ocrReview: OCRReview?
     @Published var showSettings = false
-    var pdfView: PDFView?
+    weak var pdfView: PDFView?
     private var revision = 0
     private var saveWork: DispatchWorkItem?
     private var positionWork: DispatchWorkItem?
     private var openTask: Task<Void, Never>?
     private var searchTask: Task<Void, Never>?
+    private var inspectionTask: Task<Void, Never>?
+    private let documents = ReaderDocumentLoader()
+    private var documentVersion: PDFFileVersion?
     private var ocrService: OCRService?
 
-    init() {
-        do { store = try LibraryStore() }
+    init(store suppliedStore: LibraryStore? = nil) {
+        do { store = try suppliedStore ?? LibraryStore() }
         catch { fatalError("Bookshelf could not open its local store: \(error.localizedDescription)") }
         reloadLibrary()
         if let language = try? store.setting("ocrLanguage") { ocrLanguage = language }
@@ -92,45 +96,80 @@ import BookshelfCore
     }
     func selectBook(_ book: Book) {
         guard flushPendingSave() else { return }
-        savePositionNow(); openTask?.cancel(); searchTask?.cancel()
+        savePositionNow(); openTask?.cancel(); searchTask?.cancel(); inspectionTask?.cancel()
         let book = (try? store.book(book.id)) ?? book
-        activeBook = book; document = nil; selection = []; searchResults = []; searchQuery = ""
-        page = max(book.lastPage, 1); requestedPage = page
+        let version = try? PDFFileVersion(book.url)
+        let keepDocument = activeBook?.id == book.id && document != nil && version != nil && version == documentVersion
+        activeBook = book; selection = []; searchResults = []; searchQuery = ""; isSearching = false; isInspecting = false
+        if !keepDocument { document = nil; documentVersion = nil; page = max(book.lastPage, 1); requestedPage = page }
         do {
             let n = try store.notebook(bookID: book.id)
             notebookText = n.body; revision = n.revision; hasUnsavedChanges = false; saveStatus = "저장됨"
             highlights = try store.highlights(bookID: book.id); bookmarks = try store.bookmarks(bookID: book.id)
         } catch { errorMessage = error.localizedDescription }
-        guard book.isAvailable else { isOpening = false; return }
+        if keepDocument, let version {
+            isOpening = false
+            inspect(book, version: version)
+            focusReader()
+            return
+        }
+        guard FileAccess.hasLocalData(book.url) else { isOpening = false; return }
         isOpening = true
         openTask = Task {
             do {
-                let pdf = try await Task.detached(priority: .userInitiated) { try PDFService.document(at: book.url) }.value
+                let opened = try await documents.load(book.url)
                 guard !Task.isCancelled, activeBook?.id == book.id else { return }
                 let latest = try store.book(book.id)
                 guard latest.activePath == book.activePath else { selectBook(latest); return }
-                document = pdf; page = min(page, max(pdf.pageCount, 1)); requestedPage = page
-                isOpening = false; sidebarVisible = false
-                try store.updateInspection(bookID: book.id, pageCount: pdf.pageCount, textPages: book.textPages)
+                document = opened.document; documentVersion = opened.version
+                page = min(page, max(opened.pageCount, 1)); requestedPage = page
+                isOpening = false
+                if latest.pageCount != opened.pageCount {
+                    try store.updateInspection(bookID: book.id, pageCount: opened.pageCount, textPages: -1)
+                }
                 activeBook = try store.book(book.id)
                 jumpSerial += 1
-                inspect(book)
-            } catch { if !Task.isCancelled { isOpening = false; errorMessage = error.localizedDescription } }
+                inspect(book, version: opened.version)
+            } catch is CancellationError { }
+            catch { if !Task.isCancelled { isOpening = false; errorMessage = error.localizedDescription } }
         }
     }
-    func inspect(_ book: Book) {
+    private func inspect(_ book: Book, version: PDFFileVersion) {
+        inspectionTask?.cancel()
+        if let cached = CachedPDFInspection.read(bookID: book.id, version: version, store: store) {
+            isInspecting = false
+            if book.textPages != cached.textPages || book.pageCount != cached.pageCount {
+                try? store.updateInspection(bookID: book.id, pageCount: cached.pageCount, textPages: cached.textPages)
+                if activeBook?.id == book.id { activeBook = try? store.book(book.id) }
+            }
+            return
+        }
         isInspecting = true
-        Task {
+        inspectionTask = Task {
+            defer { if activeBook?.id == book.id && !Task.isCancelled { isInspecting = false } }
             do {
-                let inspection = try await Task.detached(priority: .utility) { try PDFService.inspect(book.url) }.value
+                // Let the first page render; rapid book switches cancel this scan.
+                try await Task.sleep(for: .milliseconds(500))
+                let worker = Task.detached(priority: .utility) {
+                    try PDFService.inspect(book.url, isCancelled: { Task.isCancelled })
+                }
+                let inspection = try await withTaskCancellationHandler {
+                    try await worker.value
+                } onCancel: { worker.cancel() }
+                try Task.checkCancellation()
                 let current = try store.book(book.id)
-                if current.activePath == book.activePath {
+                guard current.activePath == book.activePath, try PDFFileVersion(book.url) == version else { return }
+                try CachedPDFInspection(version: version, result: inspection).save(bookID: book.id, store: store)
+                if current.pageCount != inspection.pageCount || current.textPages != inspection.textPages {
                     try store.updateInspection(bookID: book.id, pageCount: inspection.pageCount, textPages: inspection.textPages)
                     if activeBook?.id == book.id { activeBook = try store.book(book.id) }
                 }
-            } catch { if activeBook?.id == book.id { errorMessage = error.localizedDescription } }
-            if activeBook?.id == book.id { isInspecting = false }
+            } catch is CancellationError { return }
+            catch { if activeBook?.id == book.id && !Task.isCancelled { errorMessage = error.localizedDescription } }
         }
+    }
+    func revealCurrentBook() {
+        libraryQuery = ""; sidebarVisible = true; libraryRevealRequest += 1
     }
     func editNotebook(_ text: String) {
         notebookText = text; hasUnsavedChanges = true; saveStatus = "저장 중…"

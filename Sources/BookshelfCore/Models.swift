@@ -79,6 +79,13 @@ public enum ShelfError: LocalizedError {
 }
 
 public enum FileAccess {
+    /// Cheap local metadata for list indicators. Opening still performs the full
+    /// iCloud availability check below, outside the list's rendering path.
+    public static func hasLocalData(_ url: URL) -> Bool {
+        var info = stat()
+        return url.path.withCString { lstat($0, &info) } == 0
+            && info.st_size > 0 && (info.st_flags & 0x40000000) == 0
+    }
     public static func isResident(_ url: URL) -> Bool {
         var info = stat()
         if url.path.withCString({ lstat($0, &info) }) != 0 || (info.st_flags & 0x40000000) != 0 { return false }

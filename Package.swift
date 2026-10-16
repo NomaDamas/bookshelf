@@ -16,6 +16,7 @@ let package = Package(
         .executableTarget(name: "BookshelfApp", dependencies: ["BookshelfCore"]),
         .executableTarget(name: "BookshelfCLI", dependencies: ["BookshelfCore", .product(name: "MCP", package: "swift-sdk")]),
         .testTarget(name: "BookshelfCoreTests", dependencies: ["BookshelfCore"]),
+        .testTarget(name: "BookshelfAppTests", dependencies: ["BookshelfApp", "BookshelfCore"]),
     ],
     swiftLanguageModes: [.v5]
 )

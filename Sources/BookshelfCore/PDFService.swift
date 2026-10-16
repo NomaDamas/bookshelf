@@ -14,11 +14,13 @@ public enum PDFService {
         guard !document.isLocked else { throw ShelfError.message("암호로 잠긴 PDF입니다. 잠금이 해제된 사본을 추가해 주세요.") }
         return document
     }
-    public static func inspect(_ url: URL) throws -> PDFInspection {
+    public static func inspect(_ url: URL, isCancelled: () -> Bool = { false }) throws -> PDFInspection {
         try autoreleasepool {
+            if isCancelled() { throw CancellationError() }
             let pdf = try document(at: url)
             var empty: [Int] = []
             for index in 0..<pdf.pageCount {
+                if isCancelled() { throw CancellationError() }
                 if (pdf.page(at: index)?.string ?? "").trimmingCharacters(in: .whitespacesAndNewlines).isEmpty { empty.append(index + 1) }
             }
             return PDFInspection(pageCount: pdf.pageCount, textPages: pdf.pageCount - empty.count, emptyPages: empty)

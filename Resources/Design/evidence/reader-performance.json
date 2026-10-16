@@ -1,0 +1,69 @@
+{
+  "date": "2026-10-16",
+  "baseline_commit": "b48c9a5",
+  "environment": "macOS 26.6.2, Apple Silicon; library OCR job running during both measurements",
+  "measurement": "Main-actor book selection to PDFView document assignment and go(to:) completion; excludes process launch before selection and is not a GPU presentation timestamp",
+  "method": "One native window. Same downloaded files and copied library database. Four sidebar selections per version; file-system caches were warm. URL-driven extra-window trials excluded.",
+  "baseline": {
+    "startup": {
+      "book": "630-page Korean PDF (411.2 MiB)",
+      "model_ms": 1937.12,
+      "pdf_view_connected_ms": 2009.31
+    },
+    "switches": [
+      {
+        "book": "220-page English PDF (92.3 MiB)",
+        "model_ms": 1155.36,
+        "pdf_view_connected_ms": 2417.89
+      },
+      {
+        "book": "630-page Korean PDF (411.2 MiB)",
+        "model_ms": 1204.54,
+        "pdf_view_connected_ms": 2702.48
+      },
+      {
+        "book": "220-page English PDF (92.3 MiB)",
+        "model_ms": 1159.1,
+        "pdf_view_connected_ms": 2325.52
+      },
+      {
+        "book": "630-page Korean PDF (411.2 MiB)",
+        "model_ms": 1314.99,
+        "pdf_view_connected_ms": 2831.01
+      }
+    ],
+    "median_ms": 2560.18
+  },
+  "optimized": {
+    "startup": {
+      "book": "630-page Korean PDF (411.2 MiB)",
+      "model_ms": 1086.28,
+      "pdf_view_connected_ms": 1154.77
+    },
+    "switches": [
+      {
+        "book": "220-page English PDF (92.3 MiB)",
+        "model_ms": 51.38,
+        "pdf_view_connected_ms": 124.69
+      },
+      {
+        "book": "630-page Korean PDF (411.2 MiB)",
+        "model_ms": 51.08,
+        "pdf_view_connected_ms": 96.65
+      },
+      {
+        "book": "220-page English PDF (92.3 MiB)",
+        "model_ms": 50.56,
+        "pdf_view_connected_ms": 90.24
+      },
+      {
+        "book": "630-page Korean PDF (411.2 MiB)",
+        "model_ms": 51.28,
+        "pdf_view_connected_ms": 94.98
+      }
+    ],
+    "median_ms": 95.82
+  },
+  "reduction_percent": 96.3,
+  "boundary": "Local sample, not a general guarantee for all PDFs, iCloud downloads or other hardware."
+}

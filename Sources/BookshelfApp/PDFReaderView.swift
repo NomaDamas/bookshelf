@@ -42,6 +42,11 @@ final class ReaderPDFView: PDFView {
 struct PDFReaderView: NSViewRepresentable {
     @ObservedObject var model: AppModel
     func makeCoordinator() -> Coordinator { Coordinator(model: model) }
+    static func dismantleNSView(_ view: ReaderPDFView, coordinator: Coordinator) {
+        if coordinator.model.pdfView === view { coordinator.model.pdfView = nil }
+        view.navigate = nil
+        coordinator.detach()
+    }
     func makeNSView(context: Context) -> ReaderPDFView {
         let view = ReaderPDFView()
         view.autoScales = true; view.displayMode = model.continuousReading ? .singlePageContinuous : .singlePage
@@ -63,7 +68,7 @@ struct PDFReaderView: NSViewRepresentable {
         }
         if view.document !== model.document {
             view.document = model.document; view.autoScales = true
-            coordinator.lastJump = -1; coordinator.highlightIDs = []
+            coordinator.lastJump = -1; coordinator.highlightIDs = nil
             DispatchQueue.main.async { [weak view] in
                 guard let view, let window = view.window, window.attachedSheet == nil else { return }
                 if let editor = window.firstResponder as? NSTextView, editor.isEditable { return }
@@ -81,7 +86,8 @@ struct PDFReaderView: NSViewRepresentable {
         let model: AppModel
         weak var view: PDFView?
         var lastJump = -1
-        var highlightIDs: Set<String> = []
+        var highlightIDs: Set<String>?
+        private static let annotatedPages = NSMapTable<PDFDocument, NSIndexSet>(keyOptions: .weakMemory, valueOptions: .strongMemory)
         var tokens: [NSObjectProtocol] = []
         init(model: AppModel) { self.model = model }
         func attach(_ view: PDFView) {
@@ -90,12 +96,21 @@ struct PDFReaderView: NSViewRepresentable {
             tokens.append(NotificationCenter.default.addObserver(forName: .PDFViewSelectionChanged, object: view, queue: .main) { [weak self] _ in Task { @MainActor in self?.changedSelection() } })
         }
         deinit { tokens.forEach(NotificationCenter.default.removeObserver) }
+        func detach() {
+            tokens.forEach(NotificationCenter.default.removeObserver); tokens.removeAll(); view = nil
+        }
         func changedPage() {
-            guard let view, let document = view.document, let page = view.currentPage else { return }
+            guard let view, let document = view.document, document === model.document, let page = view.currentPage else { return }
             let index = document.index(for: page)
-            if index != NSNotFound { DispatchQueue.main.async { [weak self] in self?.model.pageChanged(index + 1) } }
+            if index != NSNotFound {
+                DispatchQueue.main.async { [weak self, weak document] in
+                    guard let self, let document, self.view?.document === document, self.model.document === document else { return }
+                    self.model.pageChanged(index + 1)
+                }
+            }
         }
         func changedSelection() {
+            guard let current = view?.document, current === model.document else { return }
             guard let view, let document = view.document, let selection = view.currentSelection, let book = model.activeBook, !(selection.string ?? "").trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { model.selection = []; return }
             var drafts: [Highlight] = []
             for page in selection.pages {
@@ -113,12 +128,17 @@ struct PDFReaderView: NSViewRepresentable {
         func drawHighlights(_ highlights: [Highlight]) {
             let ids = Set(highlights.map(\.id))
             guard ids != highlightIDs, let document = view?.document else { return }
-            for i in 0..<document.pageCount {
+            // A cached PDF may still contain marks drawn by a previous view.
+            // Track only our touched pages; never walk the entire book to redraw.
+            let previous = (Self.annotatedPages.object(forKey: document) ?? NSIndexSet()) as IndexSet
+            for i in previous {
                 guard let page = document.page(at: i) else { continue }
                 for annotation in page.annotations where annotation.userName == "Bookshelf" { page.removeAnnotation(annotation) }
             }
+            var touched = IndexSet()
             for h in highlights {
                 guard let page = document.page(at: h.page - 1) else { continue }
+                touched.insert(h.page - 1)
                 let bounds = page.bounds(for: .mediaBox)
                 for normalized in h.rects {
                     let rect = CGRect(x: bounds.minX + normalized.x*bounds.width, y: bounds.minY + normalized.y*bounds.height, width: normalized.width*bounds.width, height: normalized.height*bounds.height)
@@ -127,6 +147,7 @@ struct PDFReaderView: NSViewRepresentable {
                     page.addAnnotation(mark)
                 }
             }
+            Self.annotatedPages.setObject(touched as NSIndexSet, forKey: document)
             highlightIDs = ids
         }
     }

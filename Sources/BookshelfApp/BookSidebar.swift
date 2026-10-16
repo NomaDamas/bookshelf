@@ -11,6 +11,9 @@ struct BookSidebar: View {
                 Image(systemName: "books.vertical").foregroundStyle(.secondary)
                 Text("나의 서재").font(.system(size: 16, weight: .semibold))
                 Spacer()
+                if model.activeBook != nil {
+                    ReaderIconButton(symbol: "scope", label: "현재 읽는 책 찾기") { model.revealCurrentBook() }
+                }
                 Text("\(model.books.count)").font(.system(size: 11, weight: .medium)).monospacedDigit()
                     .foregroundStyle(.secondary).padding(.horizontal, 7).padding(.vertical, 3)
                     .background(ReaderStyle.muted, in: Capsule())
@@ -28,20 +31,31 @@ struct BookSidebar: View {
                 HStack(spacing: 8) { ProgressView().controlSize(.small); Text("PDF 목록을 읽고 있습니다.") }
                     .font(.system(size: 12)).foregroundStyle(.secondary).padding(16)
             }
-            List(model.filteredBooks) { book in
-                BookRow(book: book, selected: model.activeBook?.id == book.id) { model.selectBook(book) }
-                    .listRowInsets(EdgeInsets(top: 2, leading: 10, bottom: 2, trailing: 10))
-                    .listRowSeparator(.hidden).listRowBackground(Color.clear)
-            }.listStyle(.plain).scrollContentBackground(.hidden)
-                .overlay {
-                    if model.filteredBooks.isEmpty && !model.isImporting {
-                        VStack(spacing: 10) {
-                            Image(systemName: model.libraryQuery.isEmpty ? "books.vertical" : "magnifyingglass").font(.system(size: 24, weight: .light))
-                            Text(model.libraryQuery.isEmpty ? "PDF를 추가해 서재를 시작하세요." : "검색한 책이 없습니다.")
-                                .font(.system(size: 12)).multilineTextAlignment(.center)
-                        }.foregroundStyle(.secondary).padding(20).allowsHitTesting(false)
-                    }
+            ScrollViewReader { proxy in
+                ScrollView {
+                    LazyVStack(spacing: 4) {
+                        ForEach(model.filteredBooks) { book in
+                            BookRow(book: book, currentPage: model.activeBook?.id == book.id ? model.page : nil) { model.selectBook(book) }
+                                .id(book.id)
+                        }
+                    }.padding(.horizontal, 10).padding(.vertical, 2)
                 }
+                    .overlay {
+                        if model.filteredBooks.isEmpty && !model.isImporting {
+                            VStack(spacing: 10) {
+                                Image(systemName: model.libraryQuery.isEmpty ? "books.vertical" : "magnifyingglass").font(.system(size: 24, weight: .light))
+                                Text(model.libraryQuery.isEmpty ? "PDF를 추가해 서재를 시작하세요." : "검색한 책이 없습니다.")
+                                    .font(.system(size: 12)).multilineTextAlignment(.center)
+                            }.foregroundStyle(.secondary).padding(20).allowsHitTesting(false)
+                        }
+                    }
+                    .onAppear { if let id = model.activeBook?.id { proxy.scrollTo(id, anchor: .center) } }
+                    .onChange(of: model.libraryRevealRequest) { _, _ in
+                        if let id = model.activeBook?.id {
+                            Task { @MainActor in await Task.yield(); proxy.scrollTo(id, anchor: .center) }
+                        }
+                    }
+            }
             ReaderHairline().padding(.horizontal, 16)
             HStack(spacing: 8) {
                 Image(systemName: "internaldrive")
@@ -56,9 +70,10 @@ struct BookSidebar: View {
 
 private struct BookRow: View {
     let book: Book
-    let selected: Bool
+    let currentPage: Int?
     let action: () -> Void
     @State private var hovering = false
+    private var selected: Bool { currentPage != nil }
     var body: some View {
         Button(action: action) {
             HStack(spacing: 11) {
@@ -67,11 +82,17 @@ private struct BookRow: View {
                 VStack(alignment: .leading, spacing: 4) {
                     Text(book.title).font(.system(size: ReaderTokens.controlFont, weight: selected ? .semibold : .medium))
                         .lineLimit(2).foregroundStyle(.primary)
-                    Text(book.lastOpened > 0 ? "\(book.lastPage)쪽에서 이어 읽기" : book.displayCategory)
-                        .font(.system(size: 11)).monospacedDigit().foregroundStyle(.secondary).lineLimit(1)
+                    if let currentPage {
+                        Label("읽는 중  \(currentPage)쪽", systemImage: "book.fill")
+                            .font(.system(size: 11, weight: .medium)).monospacedDigit()
+                            .foregroundStyle(ReaderStyle.accent).lineLimit(1)
+                    } else {
+                        Text(book.lastOpened > 0 ? "\(book.lastPage)쪽에서 이어 읽기" : book.displayCategory)
+                            .font(.system(size: 11)).monospacedDigit().foregroundStyle(.secondary).lineLimit(1)
+                    }
                 }
                 Spacer(minLength: 0)
-                if !book.isAvailable {
+                if !FileAccess.hasLocalData(book.url) {
                     Image(systemName: "icloud.and.arrow.down").font(.system(size: 12)).foregroundStyle(.secondary)
                         .accessibilityLabel("iCloud 다운로드 필요")
                 }
@@ -81,37 +102,47 @@ private struct BookRow: View {
                 .contentShape(RoundedRectangle(cornerRadius: ReaderTokens.radiusLarge))
         }.buttonStyle(.plain).onHover { hovering = $0 }
             .help(book.title).accessibilityLabel(book.title).accessibilityAddTraits(selected ? .isSelected : [])
+            .accessibilityValue(currentPage.map { "읽는 중, PDF \($0)쪽" } ?? book.displayCategory)
     }
 }
 
 struct BookThumbnail: View {
     let book: Book
     @State private var image: NSImage?
-    private static let cache = NSCache<NSString, NSImage>()
     var body: some View {
         Group {
             if let image { Image(nsImage: image).resizable().aspectRatio(contentMode: .fill) }
             else { RoundedRectangle(cornerRadius: 3).fill(Color.accentColor.opacity(0.12)).overlay(Image(systemName: "book.closed").foregroundStyle(.secondary)) }
         }.clipped().clipShape(RoundedRectangle(cornerRadius: 3))
-            .task(id: book.activePath) {
-                if let cached = Self.cache.object(forKey: book.activePath as NSString) { image = cached; return }
-                let b = book
-                let loaded = await Task.detached(priority: .utility) { () -> NSImage? in
-                    autoreleasepool {
-                        for source in [b.activePath, b.sourcePath] where source.hasPrefix(b.rootPath + "/") {
-                            let relative = String(source.dropFirst(b.rootPath.count + 1))
-                            for value in [relative, relative.decomposedStringWithCanonicalMapping] {
-                                let digest = Insecure.SHA1.hash(data: Data(value.utf8)).map { String(format: "%02x", $0) }.joined().prefix(20)
-                                let cached = URL(fileURLWithPath: b.rootPath).appendingPathComponent(".bookshelf-cache/thumbs/\(digest).jpg")
-                                if FileAccess.isResident(cached), let cover = NSImage(contentsOf: cached) { return cover }
-                            }
-                        }
-                        guard b.isAvailable else { return nil }
-                        return PDFDocument(url: b.url)?.page(at: 0)?.thumbnail(of: CGSize(width: 90, height: 130), for: .mediaBox)
-                    }
-                }.value
+            .task(id: book.activePath, priority: .utility) {
+                let loaded = await BookCoverLoader.shared.cover(for: book)
                 guard !Task.isCancelled else { return }
-                if let loaded { Self.cache.countLimit = 80; Self.cache.setObject(loaded, forKey: book.activePath as NSString); image = loaded }
+                image = loaded
             }
+    }
+}
+
+/// Serialize uncached cover rendering so opening a large library cannot launch
+/// dozens of PDFKit parses alongside the book the user is trying to read.
+private actor BookCoverLoader {
+    static let shared = BookCoverLoader()
+    private let cache = NSCache<NSString, NSImage>()
+    func cover(for book: Book) -> NSImage? {
+        guard !Task.isCancelled else { return nil }
+        if let cover = cache.object(forKey: book.activePath as NSString) { return cover }
+        let image: NSImage? = autoreleasepool {
+            for source in [book.activePath, book.sourcePath] where source.hasPrefix(book.rootPath + "/") {
+                let relative = String(source.dropFirst(book.rootPath.count + 1))
+                for value in [relative, relative.decomposedStringWithCanonicalMapping] {
+                    let digest = Insecure.SHA1.hash(data: Data(value.utf8)).map { String(format: "%02x", $0) }.joined().prefix(20)
+                    let cached = URL(fileURLWithPath: book.rootPath).appendingPathComponent(".bookshelf-cache/thumbs/\(digest).jpg")
+                    if FileAccess.hasLocalData(cached), let cover = NSImage(contentsOf: cached) { return cover }
+                }
+            }
+            guard !Task.isCancelled, book.isAvailable else { return nil }
+            return PDFDocument(url: book.url)?.page(at: 0)?.thumbnail(of: CGSize(width: 90, height: 130), for: .mediaBox)
+        }
+        if let image { cache.countLimit = 80; cache.setObject(image, forKey: book.activePath as NSString) }
+        return image
     }
 }

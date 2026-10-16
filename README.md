@@ -42,6 +42,22 @@ Enter a page number and press Return to jump and keep reading with the keyboard.
 The first and last pages are clamped. PDF layout selection is saved between launches.
 The keyboard button beside the page controls opens an in-app reference.
 
+The reading area keeps the current book title visible above the controls. Opening a book
+preserves the sidebar's visibility. The library marks the current row with its live page;
+“책장에서 보기” clears a library filter and scrolls to that book.
+
+## Loading performance
+
+The sidebar creates only visible rows and serializes cover generation. The reader retains
+up to two unchanged PDF documents within a source-size budget, reuses full-text inspection
+results for the exact file version, and cancels obsolete inspection work between pages.
+Replacing a PDF or switching its OCR version invalidates the cached data.
+
+In a local two-book comparison, the median time from sidebar selection to PDF-view connection
+fell from 2,560 ms to 96 ms. This measures downloaded files with warm filesystem caches,
+while a separate OCR batch was running; it is not an iCloud-download or GPU-presentation benchmark.
+See [measurement details and regression checks](Resources/Design/PERFORMANCE.md).
+
 ## Native design
 
 The reader adapts the [Aside / Glass workspace](https://github.com/seungwonme/ui-references/tree/main/references/aside-glass)
