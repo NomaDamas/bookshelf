@@ -38,7 +38,8 @@ import BookshelfCore
         let model = AppModel(store: store)
         model.sidebarVisible = true
         let first = try await open(book, in: model)
-        XCTAssertTrue(model.sidebarVisible, "Opening a book must not hide its location in the library")
+        XCTAssertTrue(model.sidebarVisible, "Opening a book keeps its book tools available")
+        XCTAssertTrue(model.isReadingBook)
         model.goToPage(2)
         let again = try await open(book, in: model)
         XCTAssertTrue(first === again, "Selecting the current book must not parse and rebuild its PDF")

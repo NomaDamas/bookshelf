@@ -5,6 +5,7 @@ import BookshelfCore
 
 @MainActor final class AppModel: ObservableObject {
     let store: LibraryStore
+    let chat: BookChatModel
     @Published var books: [Book] = []
     @Published var libraryQuery = ""
     @Published var activeBook: Book?
@@ -19,8 +20,8 @@ import BookshelfCore
     @Published var saveStatus = "저장됨"
     @Published var hasUnsavedChanges = false
     @Published var sidebarVisible = true
-    @Published var notesVisible = true
-    @Published var panelTab = "notes"
+    @Published var aiPanelVisible = true
+    @Published var panelTab = "pages"
     @Published var textMode = false
     @Published var readerFocusRequest = 0
     @Published var libraryRevealRequest = 0
@@ -50,6 +51,9 @@ import BookshelfCore
     @Published var ocrLanguage = "kor"
     @Published var ocrReview: OCRReview?
     @Published var showSettings = false
+    @Published var settingsTab = "general"
+    @Published private(set) var shortcuts = AppShortcuts()
+    @Published var shortcutError: String?
     weak var pdfView: PDFView?
     private var revision = 0
     private var saveWork: DispatchWorkItem?
@@ -64,6 +68,8 @@ import BookshelfCore
     init(store suppliedStore: LibraryStore? = nil) {
         do { store = try suppliedStore ?? LibraryStore() }
         catch { fatalError("Bookshelf could not open its local store: \(error.localizedDescription)") }
+        chat = BookChatModel(store: store)
+        if let saved = try? store.setting("keyboard.shortcuts"), let value = try? JSONDecoder().decode(AppShortcuts.self, from: Data(saved.utf8)) { shortcuts = value }
         reloadLibrary()
         if let language = try? store.setting("ocrLanguage") { ocrLanguage = language }
         continuousReading = (try? store.setting("continuousReading")) == "true"
@@ -172,14 +178,39 @@ import BookshelfCore
     func showNotes(_ book: Book) {
         guard flushPendingSave() else { return }
         selectBook(book)
-        notesVisible = true; panelTab = noteCount(book).notebook > 0 ? "notes" : "quotes"
+        sidebarVisible = true; panelTab = noteCount(book).notebook > 0 ? "notes" : "quotes"
+    }
+    var isReadingBook: Bool { activeBook != nil && !readingShelfVisible }
+    func openBookTool(_ tab: String) {
+        guard activeBook != nil else { return }
+        readingShelfVisible = false; sidebarVisible = true; panelTab = tab
+    }
+    func setShortcut(_ value: AppKeyBinding, for action: ReaderAction) {
+        do {
+            var next = shortcuts; try next.set(value, for: action)
+            try store.setSetting("keyboard.shortcuts", value: String(decoding: JSONEncoder().encode(next), as: UTF8.self))
+            shortcuts = next; shortcutError = nil
+        } catch { shortcutError = error.localizedDescription }
+    }
+    func resetShortcuts() {
+        do {
+            let defaults = AppShortcuts()
+            try store.setSetting("keyboard.shortcuts", value: String(decoding: JSONEncoder().encode(defaults), as: UTF8.self))
+            shortcuts = defaults; shortcutError = nil
+        } catch { shortcutError = error.localizedDescription }
     }
     func showLibrary() {
-        readingShelfVisible = false; sidebarVisible = true; libraryQuery = ""
+        guard flushPendingSave() else { return }
+        savePositionNow(); readingShelfVisible = true; sidebarVisible = true; libraryQuery = ""
     }
     func toggleNotesPanel() {
-        if readingShelfVisible { readingShelfVisible = false; notesVisible = true }
-        else { notesVisible.toggle() }
+        if readingShelfVisible { readingShelfVisible = false; sidebarVisible = true }
+        else { sidebarVisible.toggle() }
+    }
+    func toggleAIPanel() {
+        guard activeBook != nil else { return }
+        if readingShelfVisible { readingShelfVisible = false; aiPanelVisible = true }
+        else { aiPanelVisible.toggle() }
     }
     func reloadLibrary() {
         do {
@@ -214,6 +245,7 @@ import BookshelfCore
     }
     func selectBook(_ book: Book) {
         guard flushPendingSave() else { return }
+        guard chat.selectBook(book.id) else { errorMessage = chat.errorMessage; return }
         readingShelfVisible = false
         savePositionNow(); openTask?.cancel(); searchTask?.cancel(); inspectionTask?.cancel()
         let book = (try? store.book(book.id)) ?? book
@@ -291,7 +323,7 @@ import BookshelfCore
         }
     }
     func revealCurrentBook() {
-        readingShelfVisible = false; libraryQuery = ""; sidebarVisible = true; libraryRevealRequest += 1
+        showLibrary(); libraryRevealRequest += 1
     }
     func editNotebook(_ text: String) {
         notebookText = text; hasUnsavedChanges = true; saveStatus = "저장 중…"
@@ -358,7 +390,7 @@ import BookshelfCore
             for quote in selection { try store.saveHighlight(quote) }
             highlights = try store.highlights(bookID: book.id); selection = []; pdfView?.clearSelection()
             refreshNoteCount(book.id)
-            notesVisible = true; panelTab = "quotes"
+            sidebarVisible = true; panelTab = "quotes"
         } catch { errorMessage = error.localizedDescription }
     }
     func updateHighlight(_ highlight: Highlight, comment: String) {
@@ -376,7 +408,7 @@ import BookshelfCore
         guard !searchQuery.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
             searchResults = []; isSearching = false; return
         }
-        notesVisible = true; panelTab = "search"; isSearching = true
+        sidebarVisible = true; panelTab = "search"; isSearching = true
         let query = searchQuery, ignoreWhitespace = ignoreSearchWhitespace
         searchTask = Task {
             do {

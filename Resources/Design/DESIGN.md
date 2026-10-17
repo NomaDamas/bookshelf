@@ -24,10 +24,11 @@ The forest wallpaper, experimental Liquid Glass shader layers, Aside logo and bu
 
 ## Screen rules
 
-- The library is a quiet material sidebar with a search field and neutral selected row. Cover/title/progress form one hit target.
+- The library is a quiet material sidebar with a search field and neutral selected row. Cover/title/progress form one hit target. Opening a PDF replaces this with the book's pages, notes, excerpts and search tools; returning to the library restores book navigation.
 - Reading status uses three shelves: 읽기 전, 읽는 중 and 읽은 책. Read-through counts and dates stay with each book. Red count badges are reserved for saved note items; they hide zero and cap the display at 99+. Shelf and sidebar sorting share one persisted selection.
 - The reader has one inset surface. Its toolbar and footer use the same shared heights. The document remains the largest area; hiding either side panel preserves the reading context.
-- Notes use an opaque writing surface inside a material inspector. Save status, book title and bookmarks stay near the editor. Search and excerpts share the same panel grammar.
+- Notes use an opaque writing surface inside the left material sidebar. Save status, book title and bookmarks stay near the editor. Search, excerpts and PDFKit thumbnails share that location. The optional AI panel is exclusively on the right.
+- The AI composer groups page/notes context, explanation profile, input, attachments, model selection and send/stop. Assistant prose uses the panel canvas; the user's questions and rich visuals have their own quiet surfaces. Edit, retry, clear and undo remain discoverable controls.
 - Settings use grouped surfaces and native pickers. Appearance can follow the system or use light/dark mode, persisted in app preferences.
 - OCR review is the new screen used to check reuse beyond the reference: equal source/result panes, plain metrics, native page controls, explicit acceptance. Return in a field does not accept a PDF; acceptance remains Command-Return.
 
@@ -36,5 +37,23 @@ The forest wallpaper, experimental Liquid Glass shader layers, Aside logo and bu
 Buttons retain native actions, labels and keyboard access. Search fields keep their visible magnifier and a focus outline. Disabled page actions are visibly dimmed. Reduced transparency selects an opaque system background; increased contrast strengthens surface edges; reduced motion removes panel-toggle animation. These fallback paths are implemented, with live verification scope recorded separately.
 
 The native minimum window is 1000 by 650 points. Panels can be resized or hidden; no mobile/web breakpoint is added to this macOS app. Notes and search text keep normal editing keys. PDF and text reading views retain page navigation keys.
+
+## Preview layout and Aside motion
+
+Preview 11.0's compiled `PVDocument.nib` identifies `LeftSplitRootView`, `SidebarView`,
+`MainSplitRootView` and `PVSplitViewController`. Its menu archive contains thumbnail and
+sidebar-toggle actions. This supports the document/sidebar layout; it does not establish
+runtime pixel measurements or a copied Preview appearance. The AI inspector is a Bookshelf
+addition.
+
+The bounded REA archive result and the verified Aside source facts are recorded in
+[`reader-workspace-reference.json`](evidence/reader-workspace-reference.json).
+
+Aside's matching source CSS declares a 150ms default transition with `cubic-bezier(.4,0,.2,1)`.
+The composer source uses a radius-2xl card, a fine ring, and grouped editor/attachment/send
+controls. The token source preserves these origins. Bookshelf's 240ms native split animation
+and 200ms message treatment are adaptations, not measured Aside interaction durations.
+Reduced Motion removes optional animations. Streaming text is batched at short intervals;
+scrolling back through a conversation leaves a control to return to the newest reply.
 
 See `verification.md` for observed behavior and screenshots. Screenshots contain an authored synthetic book, not a user's copyrighted library or personal notes.

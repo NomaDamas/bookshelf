@@ -1,0 +1,109 @@
+{
+  "sources": [
+    {
+      "name": "Aside",
+      "version": "1.0.928.1",
+      "method": "Reuse of prior REA/static CSS and JavaScript extraction; source CSS hash rechecked",
+      "reference": "https://github.com/seungwonme/ui-references/tree/main/references/aside-glass",
+      "css_sha256": "9d5f63f361b349b6302461df33f7f819006815a90178057ae78627776dff88fa",
+      "facts": [
+        "150ms default transition",
+        "cubic-bezier(.4,0,.2,1)",
+        "radius-2xl composer card with fine ring",
+        "grouped editor, attachment and send/stop controls"
+      ]
+    },
+    {
+      "name": "Apple Preview",
+      "version": "11.0",
+      "method": "REA open_binary and bounded decode_interface_builder",
+      "executable_sha256": "9992534fbe7587b06232c9c997c4c94f6f0d1c2003a5e0ee97841fd2bb137440",
+      "evidence_id": "ev_a0fee95f124e1568eb7bfa89c778ff6182d473952ec16bb69809741a262601e9",
+      "documents": [
+        {
+          "relative_path": "Contents/Resources/PDFContentView.nib",
+          "archive_sha256": "aa57d80e4891a940d5119f7b50a9de2c49aef3d42245f222c5cd5014f20e9b12",
+          "document_kind": "nib",
+          "object_count": 5,
+          "connection_count": 1,
+          "hierarchy_complete": true
+        },
+        {
+          "relative_path": "Contents/Resources/Base.lproj/MainMenu.nib",
+          "archive_sha256": "12650df7d51058e3efda9748af55e418d6f5b9e62f94df426c062d9671d6d495",
+          "document_kind": "nib",
+          "object_count": 462,
+          "connection_count": 140,
+          "hierarchy_complete": true
+        },
+        {
+          "relative_path": "Contents/Resources/Base.lproj/PVDocument.nib",
+          "archive_sha256": "23b61e95d7876a4e9e58e0a8ce2b4ab07700a96051a7039bd1a7c1521ba41af6",
+          "document_kind": "nib",
+          "object_count": 52,
+          "connection_count": 33,
+          "hierarchy_complete": true
+        }
+      ],
+      "nodes": [
+        {
+          "name": "PVPDFView",
+          "kind": "view",
+          "id": "ib:Contents/Resources/PDFContentView.nib:object:8"
+        },
+        {
+          "name": "toggleHideSidebar:",
+          "kind": "action",
+          "id": "ib:Contents/Resources/Base.lproj/MainMenu.nib:action:127:connection:0"
+        },
+        {
+          "name": "toggleHideSidebar:",
+          "kind": "objc_selector",
+          "id": "ib:Contents/Resources/Base.lproj/MainMenu.nib:selector:unknown:toggleHideSidebar:"
+        },
+        {
+          "name": "setViewModeContentAndThumbnails:",
+          "kind": "action",
+          "id": "ib:Contents/Resources/Base.lproj/MainMenu.nib:action:137:connection:0"
+        },
+        {
+          "name": "setViewModeContentAndThumbnails:",
+          "kind": "objc_selector",
+          "id": "ib:Contents/Resources/Base.lproj/MainMenu.nib:selector:unknown:setViewModeContentAndThumbnails:"
+        },
+        {
+          "name": "LeftSplitRootView",
+          "kind": "view",
+          "id": "ib:Contents/Resources/Base.lproj/PVDocument.nib:object:24"
+        },
+        {
+          "name": "SidebarView",
+          "kind": "view",
+          "id": "ib:Contents/Resources/Base.lproj/PVDocument.nib:object:26"
+        },
+        {
+          "name": "MainSplitRootView",
+          "kind": "view",
+          "id": "ib:Contents/Resources/Base.lproj/PVDocument.nib:object:48"
+        },
+        {
+          "name": "PVSplitViewController",
+          "kind": "view_controller",
+          "id": "ib:Contents/Resources/Base.lproj/PVDocument.nib:object:120"
+        }
+      ],
+      "limits": [
+        "The graph reflects recognized Interface Builder archive fields and connections; omitted private or unrecognized archive fields remain unknown.",
+        "A target-action selector is an Interface Builder observation and does not prove that the binary contains a matching implementation.",
+        "Decoded constraints, runtime visibility, dynamic UI creation, and pixel geometry are not inferred from these archives.",
+        "Compiled Interface Builder archives are private serialized object graphs. The decoder reports only recognized keyed-archive objects and connections; unrecognized object classes and fields remain unknown."
+      ]
+    }
+  ],
+  "adaptations": [
+    "Preview-style left document tools and center PDF",
+    "Bookshelf adds a dedicated right AI panel",
+    "Native AppKit split animation uses 240ms; it is not a measured Aside duration",
+    "macOS system fonts and materials replace web fonts and background assets"
+  ]
+}

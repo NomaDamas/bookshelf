@@ -4,9 +4,11 @@
 
 ## The workspace
 
-The left sidebar lists PDFs by title/category. The center shows the original PDF
-or extracted text. The right panel switches between **메모** (notebook), **발췌**
-(quotations), and **검색** (search). Resize or hide panels to give the document more room.
+The library sidebar lists PDFs by title/category. After opening a book, it becomes
+a book-specific sidebar with **페이지** (page thumbnails), **메모** (notebook),
+**발췌** (quotations), and **검색** (search). The original PDF or extracted text stays
+in the center. The optional learning preview places its AI conversation on the right.
+The **서재** toolbar button returns to the library even when the left sidebar is hidden.
 
 ![Native PDF reader with sample notes](../Resources/Design/evidence/readme-reader-light.jpg)
 
@@ -42,7 +44,7 @@ field keep their normal editing keys.
 | Home / End (Fn-Left / Fn-Right) | First / last PDF page |
 | Up / Down | Scroll within the reading area |
 | Command-Shift-R | Return keyboard focus to the current reading view |
-| Command-Shift-L | Show the currently reading shelf |
+| Command-Shift-L | Return to the library |
 | Command-Option-Left / Right | Previous / next page from anywhere in the reader |
 
 Enter a page number and press Return to jump and keep reading with the keyboard.
@@ -53,7 +55,7 @@ The reading area keeps the current book title visible above the controls. Openin
 preserves the sidebar's visibility. The library marks the current row with its live page;
 “책장에서 보기” clears a library filter and scrolls to that book.
 
-Additional shortcuts:
+Default app shortcuts (change them in **Settings > 단축키**):
 
 | Key | Action |
 | --- | --- |
@@ -62,13 +64,20 @@ Additional shortcuts:
 | Command-D | Toggle a bookmark |
 | Command-Shift-H | Save selected text as a quotation |
 | Command-S | Save pending notebook edits |
-| Command-0 | Toggle the library sidebar |
-| Command-Shift-M | Toggle the notes panel |
+| Command-0 | Toggle the left sidebar |
+| Command-1 / 2 / 3 | Open pages / notes / excerpts |
+| Command-Shift-A | Toggle the AI panel in the learning preview |
+| Command-Return | Send a question in the learning preview |
+
+Click a shortcut recorder and press the new combination. Escape cancels recording.
+Duplicate app shortcuts and reserved editing/window commands are rejected. **기본값 복원**
+restores the defaults. The selected bindings persist in the local library database.
+Plain arrow keys and text editing remain native to the focused reading/editing view.
 
 ## Reading shelves, history and sorting
 
 The sidebar separates **읽기 전** (not started), **읽는 중** (reading) and **읽은 책**
-(finished). Command-Shift-L opens the reading shelf. Cards show covers, the saved page,
+(finished). The library button opens the shelf overview. Cards show covers, the saved page,
 progress and read-through counts; “펼친 책으로” returns to the open document.
 
 - Opening a new book starts its first reading. Choose **읽기 완료** in its menu to
@@ -113,7 +122,7 @@ CLI search uses the same default. Pass `--exact-spacing` to preserve spacing.
 The MCP `search_book` tool accepts `ignore_whitespace: false` for the same behavior and returns
 the chosen mode alongside original page excerpts.
 
-The sidebar filter searches book titles/categories. The right-hand search panel
+The library filter searches book titles/categories. The reading sidebar's search tool
 searches the current book's text, returning up to 20 matching pages. Select a
 result to jump to its PDF page.
 
@@ -123,6 +132,10 @@ Settings offer system, light, and dark appearance. Native materials surround opa
 reading/writing surfaces. Reduced transparency, increased contrast, and reduced
 motion have fallback paths; see [design and verification](../Resources/Design/DESIGN.md).
 
-**AI로 이어가기** copies a prompt identifying the current book and PDF page to the
+In the ordinary build, **AI로 이어가기** copies a prompt identifying the current book and PDF page to the
 clipboard. Paste it into a configured client. It does not run a model in Bookshelf.
 For tool access, follow [CLI and MCP setup](03-cli-and-mcp.md).
+
+The optional [learning preview](../Resources/Design/PI-AGENT.md) provides a separate AI
+panel. Its settings contain Pi/account/model choices, and its conversation supports
+visual previews, audio playback, question editing, retry and reversible clearing.

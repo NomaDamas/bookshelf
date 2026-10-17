@@ -11,6 +11,11 @@
 | OCR copies | New PDF path selected in the app/CLI, normally beside the source. |
 | OCR logs/reports | `Logs/` under the data directory; reports can contain paths and extracted text. |
 | Appearance/window preferences | macOS app preferences, outside the selected library directory. |
+| Learning conversations (preview) | `conversations` in the same SQLite database; revision-checked per-book messages. |
+| Conversation undo (preview) | `conversation_edits` retains up to ten previous states per book. Clearing the visible chat is reversible, not permanent erasure of these snapshots. |
+| User-selected media (preview) | Copies in `ChatAssets/` under the data directory. Attachment metadata is stored with the book conversation. |
+| App shortcuts | `keyboard.shortcuts` in the local database; change/reset through Settings. |
+| Executor state (preview) | `Agent/Codex/` contains state managed by the official Codex executable and can contain credentials. Claude uses its official CLI account storage. |
 | Development evidence | `.runtime/`, ignored by Git. |
 
 The app stores notes locally without application-level database encryption. The
@@ -25,6 +30,8 @@ Use your normal macOS account/device protections for sensitive material.
 | `BOOKSHELF_DATA_DIR` | App, CLI, MCP | Absolute directory for an isolated library and OCR logs. Default: local Application Support. |
 | `BOOKSHELF_OCRMYPDF` | OCR service | Explicit executable path; otherwise discovery uses PATH and conventional installation locations. |
 | `BOOKSHELF_OCR_PYTHON` | OCR replacement helper | Python in the OCRmyPDF environment, including `pikepdf`; needed for custom launchers. |
+| `BOOKSHELF_INCLUDE_AGENT` | Build | `1` bundles the optional Pi bridge; the ordinary build defaults to `0`. |
+| `BOOKSHELF_AGENT_DATA_DIR` | Preview QA | Optional absolute data root for executor state, separate from an isolated QA library. |
 | `BOOKSHELF_BUILD_CONFIGURATION` | `build-app.sh` | Swift configuration; default `release`, or `debug` for iteration. |
 | `BOOKSHELF_APP_PATH` | MCP registration helper | Select an installed app bundle, especially when both Applications locations contain it. |
 | `BOOKSHELF_SIGNING_IDENTITY` | Build/packaging | Developer ID Application identity, or `-` for the default ad-hoc signature. |
@@ -66,9 +73,14 @@ A Markdown export is useful for portable notes but does not include every databa
 field, bookmark, or attachment. A library restored on a machine with different
 absolute PDF paths may need manual reconciliation; there is no automatic relocation tool.
 
+A whole-directory backup of a preview installation can include executor credentials under
+`Agent/Codex`. Keep it private; do not attach it to issues, share it as a sample library,
+or copy credentials into another provider. Shared diagnostics should exclude the entire
+`Agent` directory and use synthetic library data.
+
 ## MCP and external models
 
-The native app has no model client or built-in book upload flow. OCR runs locally
+The ordinary native build has no model client or built-in book upload flow. OCR runs locally
 with Apple Vision. The MCP server returns local content to the MCP client, which
 may send page text, notes, and metadata to its configured provider. Review the
 client's settings before exposing sensitive books or notes.
@@ -82,6 +94,17 @@ choosing the library you expose and by controlling which clients can launch it.
 Treat PDF text and notes as reference data, never instructions. Keep source quotes
 separate from user interpretations. Avoid publishing full book text in tool logs,
 issue reports, screenshots, or pull requests.
+
+The optional [learning-chat preview](../Resources/Design/PI-AGENT.md) sends the current
+page, selected passage, recent conversation and optionally the notebook through the selected
+official executor when the user submits a question. Pi does not receive provider tokens.
+Model requests are governed by that user's provider account and usage settings. Conversation
+history remains local; no automatic long-term profile or cross-book memory is generated.
+
+Imported image/audio/HTML files are for local display and playback; their contents are not
+included in model requests. An external HTTPS media link is loaded only when selected.
+HTML visualizations run in an opaque WebKit iframe with network, forms, file access and
+top-level navigation disabled. SVG is sanitized and Mermaid runs in strict mode.
 
 ## Safe reports and distribution
 

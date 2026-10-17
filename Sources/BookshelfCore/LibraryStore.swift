@@ -41,6 +41,13 @@ public final class LibraryStore: @unchecked Sendable {
             PRIMARY KEY(book_id, page)
         );
         CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT NOT NULL);
+        CREATE TABLE IF NOT EXISTS conversations (
+            book_id TEXT PRIMARY KEY REFERENCES books(id), body TEXT NOT NULL,
+            revision INTEGER NOT NULL, updated REAL NOT NULL
+        );
+        CREATE TABLE IF NOT EXISTS conversation_edits (
+            id INTEGER PRIMARY KEY AUTOINCREMENT, book_id TEXT NOT NULL REFERENCES books(id), body TEXT NOT NULL
+        );
         CREATE TABLE IF NOT EXISTS ocr_candidates (
             path TEXT PRIMARY KEY, book_id TEXT NOT NULL REFERENCES books(id), report_path TEXT NOT NULL
         );
@@ -213,6 +220,48 @@ public final class LibraryStore: @unchecked Sendable {
         else { _ = try query("INSERT INTO bookmarks(book_id,page) VALUES(?,?)", [bookID,String(page)]) }
     }
     public func setting(_ key: String) throws -> String? { try query("SELECT value FROM settings WHERE key=?", [key]).first?["value"] }
+    public func conversation(bookID: String) throws -> BookConversation {
+        _ = try book(bookID)
+        guard let row = try query("SELECT body,revision FROM conversations WHERE book_id=?", [bookID]).first else { return BookConversation() }
+        let messages = try JSONDecoder().decode([BookChatMessage].self, from: Data(row["body"]!.utf8))
+        return BookConversation(messages: messages, revision: Int(row["revision"]!)!)
+    }
+    @discardableResult public func saveConversation(bookID: String, messages: [BookChatMessage], expectedRevision: Int, preservePrevious: Bool = false) throws -> BookConversation {
+        let data = try JSONEncoder().encode(messages)
+        guard data.count <= 4_000_000,
+              messages.allSatisfy({ ["user", "assistant"].contains($0.role) && $0.page > 0 && ["complete", "interrupted", "failed"].contains($0.state) }) else {
+            throw ShelfError.message("대화 기록의 크기나 형식을 확인해 주세요.")
+        }
+        return try readingTransaction {
+            let current = try conversation(bookID: bookID)
+            guard current.revision == expectedRevision else { throw ShelfError.conflict }
+            if preservePrevious {
+                let previous = String(decoding: try JSONEncoder().encode(current.messages), as: UTF8.self)
+                _ = try query("INSERT INTO conversation_edits(book_id,body) VALUES(?,?)", [bookID, previous])
+                _ = try query("DELETE FROM conversation_edits WHERE book_id=? AND id NOT IN (SELECT id FROM conversation_edits WHERE book_id=? ORDER BY id DESC LIMIT 10)", [bookID, bookID])
+            }
+            let next = expectedRevision + 1
+            _ = try query("INSERT INTO conversations(book_id,body,revision,updated) VALUES(?,?,?,?) ON CONFLICT(book_id) DO UPDATE SET body=excluded.body,revision=excluded.revision,updated=excluded.updated",
+                          [bookID,String(decoding: data, as: UTF8.self),String(next),String(Date().timeIntervalSince1970)])
+            return BookConversation(messages: messages, revision: next)
+        }
+    }
+    public func canUndoConversationEdit(bookID: String) throws -> Bool {
+        !(try query("SELECT id FROM conversation_edits WHERE book_id=? LIMIT 1", [bookID])).isEmpty
+    }
+    public func undoConversationEdit(bookID: String, expectedRevision: Int) throws -> BookConversation {
+        try readingTransaction {
+            let current = try conversation(bookID: bookID)
+            guard current.revision == expectedRevision else { throw ShelfError.conflict }
+            guard let saved = try query("SELECT id,body FROM conversation_edits WHERE book_id=? ORDER BY id DESC LIMIT 1", [bookID]).first,
+                  let body = saved["body"], let id = saved["id"] else { return current }
+            let messages = try JSONDecoder().decode([BookChatMessage].self, from: Data(body.utf8))
+            let next = current.revision + 1
+            _ = try query("UPDATE conversations SET body=?,revision=?,updated=? WHERE book_id=?", [body, String(next), String(Date().timeIntervalSince1970), bookID])
+            _ = try query("DELETE FROM conversation_edits WHERE id=? AND book_id=?", [id, bookID])
+            return BookConversation(messages: messages, revision: next)
+        }
+    }
     public func setSetting(_ key: String, value: String) throws { _ = try query("INSERT INTO settings(key,value) VALUES(?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value", [key,value]) }
     public func exportMarkdown(bookID: String) throws -> String {
         let b = try book(bookID), n = try notebook(bookID: bookID), hs = try highlights(bookID: bookID)

@@ -77,6 +77,25 @@ import BookshelfCore
         XCTAssertFalse(model.readingShelfVisible)
         XCTAssertTrue(model.document === pdf)
     }
+    func testBookToolsAndAIPanelStayIndependentWhenReturningToLibrary() async throws {
+        let root = try directory(); defer { try? FileManager.default.removeItem(at: root) }
+        let store = try LibraryStore(directory: root.appendingPathComponent("data"))
+        let book = try fixture("Workspace", in: root, store: store)
+        let model = AppModel(store: store)
+        try await open(book, model: model)
+        let document = model.document
+        model.toggleAIPanel()
+        XCTAssertFalse(model.aiPanelVisible); XCTAssertTrue(model.sidebarVisible)
+        model.panelTab = "search"; model.toggleNotesPanel()
+        XCTAssertFalse(model.sidebarVisible); XCTAssertTrue(model.isReadingBook)
+        model.editNotebook("서재로 돌아가도 보존할 메모")
+        model.showLibrary()
+        XCTAssertFalse(model.isReadingBook); XCTAssertTrue(model.readingShelfVisible)
+        XCTAssertEqual(try store.notebook(bookID: book.id).body, "서재로 돌아가도 보존할 메모")
+        model.selectBook(book)
+        XCTAssertTrue(model.isReadingBook); XCTAssertTrue(model.document === document)
+        XCTAssertFalse(model.aiPanelVisible); XCTAssertEqual(model.panelTab, "search")
+    }
     func testNoteConflictKeepsDraftInReader() async throws {
         let root = try directory(); defer { try? FileManager.default.removeItem(at: root) }
         let store = try LibraryStore(directory: root.appendingPathComponent("data"))

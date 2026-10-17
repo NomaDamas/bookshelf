@@ -9,7 +9,10 @@ import BookshelfCore
     }
     func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
         guard let model else { return .terminateNow }
+        guard !model.chat.importingAssets else { model.information = "자료를 보관하고 있습니다. 완료 후 종료할 수 있습니다."; return .terminateCancel }
         guard model.flushPendingSave() else { return .terminateCancel }
+        model.chat.stop()
+        guard model.chat.persist() else { return .terminateCancel }
         model.savePositionNow()
         if model.ocrRunning {
             let alert = NSAlert(); alert.messageText = "텍스트 인식이 진행 중입니다."
@@ -57,16 +60,19 @@ import BookshelfCore
                 Button("폴더 추가…") { model.chooseFiles(folder: true) }.keyboardShortcut("o", modifiers: [.command, .shift])
             }
             CommandMenu("읽기") {
-                Button("읽는 중인 책 모아보기") { model.showReadingShelf() }.keyboardShortcut("l", modifiers: [.command, .shift])
+                Button("서재로 돌아가기") { model.showLibrary() }.keyboardShortcut(model.shortcuts[.library].value)
                 Divider()
-                Button("이전 페이지") { model.goToPage(model.page - 1, focusReader: true) }.keyboardShortcut(.leftArrow, modifiers: [.command, .option])
-                Button("다음 페이지") { model.goToPage(model.page + 1, focusReader: true) }.keyboardShortcut(.rightArrow, modifiers: [.command, .option])
-                Button("읽기 화면으로") { model.focusReader() }.keyboardShortcut("r", modifiers: [.command, .shift]).disabled(model.document == nil)
-                Button("책갈피") { model.toggleBookmark() }.keyboardShortcut("d")
+                Button("이전 페이지") { model.goToPage(model.page - 1, focusReader: true) }.keyboardShortcut(model.shortcuts[.previousPage].value)
+                Button("다음 페이지") { model.goToPage(model.page + 1, focusReader: true) }.keyboardShortcut(model.shortcuts[.nextPage].value)
+                Button("읽기 화면으로") { model.focusReader() }.keyboardShortcut(model.shortcuts[.focusReader].value).disabled(model.document == nil)
+                Button("책갈피") { model.toggleBookmark() }.keyboardShortcut(model.shortcuts[.bookmark].value)
                 Divider()
-                Button("이 책에서 찾기") { model.readingShelfVisible = false; model.notesVisible = true; model.panelTab = "search" }.keyboardShortcut("f")
+                Button("페이지 목록") { model.openBookTool("pages") }.keyboardShortcut(model.shortcuts[.pages].value)
+                Button("책 메모") { model.openBookTool("notes") }.keyboardShortcut(model.shortcuts[.notes].value)
+                Button("발췌") { model.openBookTool("quotes") }.keyboardShortcut(model.shortcuts[.excerpts].value)
+                Button("이 책에서 찾기") { model.openBookTool("search") }.keyboardShortcut(model.shortcuts[.search].value)
                 Button("선택 문장 메모") { model.saveSelection() }.keyboardShortcut("h", modifiers: [.command, .shift]).disabled(model.selection.isEmpty)
-                Button("메모 저장") { model.flushPendingSave() }.keyboardShortcut("s")
+                Button("메모 저장") { model.flushPendingSave() }.keyboardShortcut(model.shortcuts[.saveNote].value)
                 Button("메모 내보내기…") { model.exportNotes() }.disabled(model.activeBook == nil)
                 Divider()
                 Button("텍스트 인식…") { model.startOCR() }.disabled(model.activeBook == nil || model.ocrRunning)
@@ -75,8 +81,8 @@ import BookshelfCore
                 Button("원본 PDF 사용") { model.useOriginalPDF() }.disabled(model.activeBook?.ocrPath == nil || model.ocrRunning)
             }
             CommandGroup(after: .sidebar) {
-                Button("책장 표시") { model.sidebarVisible.toggle() }.keyboardShortcut("0")
-                Button("메모 패널 표시") { model.toggleNotesPanel() }.keyboardShortcut("m", modifiers: [.command, .shift])
+                Button("왼쪽 사이드바 표시") { model.sidebarVisible.toggle() }.keyboardShortcut(model.shortcuts[.leftSidebar].value)
+                Button("AI 패널 표시") { model.toggleAIPanel() }.keyboardShortcut(model.shortcuts[.aiPanel].value).disabled(AgentRuntime.bridgeURL == nil)
             }
         }
         Settings { SettingsView(model: model).preferredColorScheme(appearance.colorScheme) }
