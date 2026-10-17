@@ -6,6 +6,7 @@ import {
 	stopChild,
 } from "./process.js";
 import type { AccountStatus, Emit, Request } from "./types.js";
+import { codexUsage } from "./usage.js";
 
 export function codexArguments(): string[] {
 	return [
@@ -176,12 +177,24 @@ async function connection(request: Request, signal: AbortSignal) {
 export async function codexStatus(
 	request: Request,
 	signal: AbortSignal,
+	emit?: Emit,
 ): Promise<AccountStatus> {
 	if (!request.codexPath)
 		return { connected: false, billing: "none", label: "Codex CLI 설치 필요" };
 	const client = await connection(request, signal);
 	try {
-		return await client.status();
+		const status = await client.status();
+		if (status.connected && emit) {
+			const result = await client.call("model/list", { includeHidden: false });
+			emit({
+				type: "models",
+				models: (result.data ?? []).map((model: any) => ({
+					id: model.model ?? model.id,
+					label: model.displayName ?? model.model ?? model.id,
+				})),
+			});
+		}
+		return status;
 	} finally {
 		client.close();
 	}
@@ -248,8 +261,13 @@ export async function codexChat(
 		emit({ type: "status", status });
 		if (!status.connected) throw new Error(status.label);
 		const models = await client.call("model/list", { includeHidden: false });
-		const selected =
-			models.data?.find((model: any) => model.isDefault) ?? models.data?.[0];
+		const selected = request.model
+			? models.data?.find(
+					(model: any) =>
+						model.model === request.model || model.id === request.model,
+				)
+			: (models.data?.find((model: any) => model.isDefault) ??
+				models.data?.[0]);
 		if (!selected)
 			throw new Error(
 				"이 계정에서 사용할 수 있는 Codex 모델을 찾지 못했습니다.",
@@ -295,6 +313,13 @@ export async function codexChat(
 			client.onFailure = finish;
 			client.onEvent = (method, params) => {
 				if (params.threadId && params.threadId !== thread.thread.id) return;
+				if (method === "thread/tokenUsage/updated") {
+					const usage = codexUsage(
+						params.tokenUsage,
+						selected.model ?? selected.id,
+					);
+					if (usage) emit({ type: "usage", usage });
+				}
 				if (
 					method === "item/started" &&
 					![

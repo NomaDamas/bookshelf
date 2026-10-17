@@ -4,6 +4,7 @@ export type Request = {
 	clientVersion?: string;
 	action: "status" | "login" | "chat";
 	backend: Backend;
+	model?: string;
 	usePi: boolean;
 	skill: "explain" | "compare" | "visualize";
 	workspace: string;

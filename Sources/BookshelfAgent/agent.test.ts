@@ -7,6 +7,7 @@ import { codexArguments } from "./codex.js";
 import { composePrompt, handle, validateRequest } from "./index.js";
 import { learningSkills, systemInstructions } from "./instructions.js";
 import { runtimeEnvironment } from "./process.js";
+import { claudeUsage, codexUsage } from "./usage.js";
 
 const base = {
 	action: "chat",
@@ -83,10 +84,10 @@ test("Pi and direct paths both stream through the same official-executor adapter
 const args=process.argv.slice(2);
 if(args.includes('status')) { console.log(JSON.stringify({loggedIn:true,authMethod:'claude.ai',apiProvider:'firstParty',subscriptionType:'test'})); process.exit(0); }
 let input=''; process.stdin.on('data',c=>input+=c); process.stdin.on('end',()=>{
-if (!input.includes('Previous answer') || !args.includes('--safe-mode')) process.exit(2);
+if (!input.includes('Previous answer') || !args.includes('--safe-mode') || args[args.indexOf('--model')+1]!=='haiku') process.exit(2);
 console.log(JSON.stringify({type:'system',subtype:'init',tools:[],mcp_servers:[],skills:[]}));
 for (const text of ['한국어 ', '답변 [p. 3]']) console.log(JSON.stringify({type:'stream_event',event:{type:'content_block_delta',delta:{type:'text_delta',text}}}));
-console.log(JSON.stringify({type:'result',subtype:'success',is_error:false,result:'한국어 답변 [p. 3]'})); });`,
+console.log(JSON.stringify({type:'result',subtype:'success',is_error:false,result:'한국어 답변 [p. 3]',usage:{input_tokens:50,cache_read_input_tokens:300,cache_creation_input_tokens:100,output_tokens:20},modelUsage:{fixture:{inputTokens:50,cacheReadInputTokens:300,cacheCreationInputTokens:100,outputTokens:20,contextWindow:200000}}})); });`,
 		);
 		await chmod(cli, 0o700);
 		for (const usePi of [true, false]) {
@@ -95,6 +96,7 @@ console.log(JSON.stringify({type:'result',subtype:'success',is_error:false,resul
 				{
 					...base,
 					usePi,
+					model: "haiku",
 					workspace: root,
 					codexHome: join(root, "codex"),
 					claudePath: cli,
@@ -115,6 +117,11 @@ console.log(JSON.stringify({type:'result',subtype:'success',is_error:false,resul
 			expect(events.find((x) => x.type === "profile").engine).toBe(
 				usePi ? "pi" : "direct",
 			);
+			expect(events.find((x) => x.type === "usage").usage).toMatchObject({
+				inputTokens: 450,
+				outputTokens: 20,
+				contextWindow: 200000,
+			});
 		}
 	} finally {
 		await rm(root, { recursive: true, force: true });
@@ -166,14 +173,15 @@ const reply=result=>send({id:r.id,result});
 switch(r.method){
 case 'initialize':reply({userAgent:'fixture'});break;
 case 'account/read':reply({account:{type:'chatgpt',planType:'test'}});break;
-case 'model/list':reply({data:[{id:'test-model',model:'test-model',isDefault:true}]});break;
+case 'model/list':reply({data:[{id:'test-model',model:'test-model',isDefault:true},{id:'test-fast',model:'test-fast',isDefault:false}]});break;
 case 'thread/start':
- if(r.params.sandbox!=='read-only'||r.params.approvalPolicy!=='never'||!r.params.baseInstructions.includes('reading companion'))process.exit(2);
+ if(r.params.sandbox!=='read-only'||r.params.approvalPolicy!=='never'||!r.params.baseInstructions.includes('reading companion')||r.params.model!=='test-fast')process.exit(2);
  reply({thread:{id:'test-thread'}});break;
 case 'turn/start':
  if(!r.params.input[0].text.includes('Previous Claude answer'))process.exit(3);
  reply({turn:{id:'test-turn'}});
  send({method:'item/agentMessage/delta',params:{threadId:'test-thread',delta:'이전 설명을 이어서 답합니다. [p. 3]'}});
+ send({method:'thread/tokenUsage/updated',params:{threadId:'test-thread',tokenUsage:{last:{inputTokens:900,outputTokens:40,cachedInputTokens:300},total:{inputTokens:9000},modelContextWindow:128000}}});
  send({method:'turn/completed',params:{threadId:'test-thread',turn:{status:'completed'}}});break;
 default:reply({});
 }});`,
@@ -184,6 +192,7 @@ default:reply({});
 			{
 				...base,
 				backend: "codex",
+				model: "test-fast",
 				workspace: root,
 				codexHome: join(root, "codex-home"),
 				codexPath: cli,
@@ -193,12 +202,60 @@ default:reply({});
 			(e) => events.push(e),
 		);
 		expect(events.find((e) => e.type === "answer").text).toContain("이전 설명");
+		expect(events.find((e) => e.type === "usage").usage).toMatchObject({
+			inputTokens: 900,
+			outputTokens: 40,
+			contextWindow: 128000,
+		});
 		expect(events.find((e) => e.type === "status").status.billing).toBe(
 			"subscription",
 		);
 	} finally {
 		await rm(root, { recursive: true, force: true });
 	}
+});
+
+test("Context meters use the last request and never invent an unavailable model limit", () => {
+	const actual = claudeUsage(
+		{
+			usage: { output_tokens: 60 },
+			modelUsage: {
+				primary: {
+					inputTokens: 10,
+					cacheReadInputTokens: 800,
+					contextWindow: 1000000,
+				},
+			},
+		},
+		{
+			model: "primary",
+			usage: {
+				input_tokens: 10,
+				cache_read_input_tokens: 800,
+				cache_creation_input_tokens: 90,
+			},
+		},
+	);
+	expect(actual).toMatchObject({
+		inputTokens: 900,
+		outputTokens: 60,
+		contextWindow: 1000000,
+	});
+	expect(
+		codexUsage(
+			{
+				last: { inputTokens: 50, outputTokens: 20 },
+				total: { inputTokens: 5000 },
+				modelContextWindow: null,
+			},
+			"reported",
+		),
+	).toMatchObject({
+		inputTokens: 50,
+		outputTokens: 20,
+		contextWindow: undefined,
+	});
+	expect(claudeUsage({})).toBeUndefined();
 });
 
 test("API authentication does not silently fall back from subscription mode", async () => {

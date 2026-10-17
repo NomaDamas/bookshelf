@@ -83,10 +83,15 @@ for toolchain selection, updates, and an isolated sample library.
 
 ## Optional: in-app learning chat preview
 
-The experiment on this branch adds a **대화** tab with English learning instructions,
-Pi conversation management and official Claude Code/Codex execution. It sends the current
-page, selected text and optionally the notebook to the selected provider. Replies are
-saved per book; switching executors transfers recent conversation context.
+The experiment on this branch adds a dedicated AI panel beside a Preview-style reading
+workspace. Page thumbnails, notes, excerpts and search live on the left. Pi manages the
+conversation through official Claude Code/Codex executors, with model selection and
+English learning instructions. Questions use the current page, selection and optional notes.
+
+The panel renders Mermaid, SVG and isolated HTML, displays reported context usage, and
+plays user-selected audio/media. Questions can be edited and retried; conversation edits
+and clearing can be undone. **Settings > AI 연결** manages accounts and Pi;
+**Settings > 단축키** changes app shortcuts. Replies stay with each book.
 
 The ordinary build remains independent of Node. To build the separate preview, install
 Node.js 22.19 or later, pnpm and Bun, then run:
@@ -96,8 +101,8 @@ Node.js 22.19 or later, pnpm and Bun, then run:
 ```
 
 Read [the experiment's scope, official account routes and verification](Resources/Design/PI-AGENT.md)
-before connecting. Claude subscription inference was verified through the bridge.
-The live Codex sign-in and native send/resume flow still require interactive verification.
+before connecting. Verification evidence distinguishes local tests and native interactions
+from live Codex sign-in, which still requires the user's official login.
 
 ## Optional: connect an AI client
 

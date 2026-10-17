@@ -18,6 +18,12 @@ public struct AgentEvent: Decodable, Sendable {
     public var status: AgentAccountStatus?
     public var url: String?
     public var openAutomatically: Bool?
+    public var usage: AgentContextUsage?
+    public var models: [AgentModelChoice]?
+}
+public struct AgentModelChoice: Codable, Identifiable, Equatable, Sendable {
+    public let id: String
+    public let label: String
 }
 public struct AgentRequest: Encodable, Sendable {
     public struct Message: Encodable, Sendable {
@@ -40,6 +46,7 @@ public struct AgentRequest: Encodable, Sendable {
     public var action: String
     public var clientVersion: String
     public var backend: ChatBackend
+    public var model: String?
     public var usePi: Bool
     public var skill: String
     public var workspace: String
@@ -50,13 +57,14 @@ public struct AgentRequest: Encodable, Sendable {
     public var messages: [Message]
     public var book: Context?
     public init(action: String, backend: ChatBackend, directory: URL, usePi: Bool = true, skill: String = "explain",
-                question: String? = nil, messages: [Message] = [], book: Context? = nil) {
+                question: String? = nil, messages: [Message] = [], book: Context? = nil, model: String? = nil) {
         self.action = action; self.clientVersion = AppMetadata.current.version; self.backend = backend; self.usePi = usePi; self.skill = skill
         let agentBase = ProcessInfo.processInfo.environment["BOOKSHELF_AGENT_DATA_DIR"].map { URL(fileURLWithPath: $0, isDirectory: true) } ?? directory
         workspace = agentBase.appendingPathComponent("Agent/Workspace", isDirectory: true).path
         codexHome = agentBase.appendingPathComponent("Agent/Codex", isDirectory: true).path
         claudePath = AgentRuntime.findExecutable("claude")?.path; codexPath = AgentRuntime.findExecutable("codex")?.path
         self.question = question; self.messages = messages; self.book = book
+        self.model = model?.isEmpty == false ? model : nil
     }
 }
 public enum AgentRuntime {
@@ -104,8 +112,17 @@ public final class AgentBridge: @unchecked Sendable {
                     if stopped { task.terminate() }
                     try input.fileHandleForWriting.write(contentsOf: payload); try input.fileHandleForWriting.close()
                     var buffer = Data(), reportedError = false
-                    while let chunk = try output.fileHandleForReading.read(upToCount: 8192), !chunk.isEmpty {
-                        buffer.append(chunk)
+                    var bytes = [UInt8](repeating: 0, count: 8192)
+                    while true {
+                        // FileHandle.read(upToCount:) can wait to fill its buffer on a pipe.
+                        // POSIX read returns the next available bytes, including a small delta.
+                        let count = bytes.withUnsafeMutableBytes { Darwin.read(output.fileHandleForReading.fileDescriptor, $0.baseAddress, $0.count) }
+                        if count == 0 { break }
+                        if count < 0 {
+                            if errno == EINTR { continue }
+                            throw POSIXError(POSIXErrorCode(rawValue: errno) ?? .EIO)
+                        }
+                        buffer.append(contentsOf: bytes.prefix(count))
                         guard buffer.count < 2_000_000 else { cancel(); throw ShelfError.message("AI 실행기 응답이 너무 큽니다.") }
                         while let end = buffer.firstIndex(of: 10) {
                             let line = Data(buffer[..<end]); buffer.removeSubrange(...end)

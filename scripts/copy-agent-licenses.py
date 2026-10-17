@@ -7,7 +7,9 @@ output = Path(sys.argv[1]) / 'PiAgent'
 output.mkdir(parents=True, exist_ok=True)
 root = Path.cwd()
 agent = root / 'Sources/BookshelfAgent'
-metadata = json.loads((root / 'dist/agent/metafile.json').read_text())
+metadata = {'outputs': {}}
+for name in ('metafile.json', 'renderer-metafile.json'):
+    metadata['outputs'].update(json.loads((root / 'dist/agent' / name).read_text())['outputs'])
 seen = set()
 index = []
 for bundle in metadata['outputs'].values():
@@ -35,6 +37,9 @@ for bundle in metadata['outputs'].values():
         if not notices and name.startswith('@earendil-works/') and version == '0.85.1':
             # The pinned monorepo packages omit their shared license from npm tarballs.
             notices = [agent / 'LICENSE.pi.txt']
+        if not notices and name == 'fastdom' and version == '1.0.12':
+            # This package includes the complete MIT notice in its published README.
+            notices = [folder / 'README.md']
         if not notices:
             raise RuntimeError('Missing license text for bundled dependency: ' + name)
         for notice in notices:

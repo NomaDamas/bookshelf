@@ -6,10 +6,12 @@ import {
 	stopChild,
 } from "./process.js";
 import type { AccountStatus, Emit, Request } from "./types.js";
+import { claudeUsage } from "./usage.js";
 
 export async function claudeStatus(
 	request: Request,
 	signal: AbortSignal,
+	emit?: Emit,
 ): Promise<AccountStatus> {
 	if (!request.claudePath)
 		return {
@@ -28,6 +30,14 @@ export async function claudeStatus(
 		status.loggedIn &&
 		status.authMethod === "claude.ai" &&
 		status.apiProvider === "firstParty";
+	emit?.({
+		type: "models",
+		models: [
+			{ id: "sonnet", label: "Sonnet" },
+			{ id: "opus", label: "Opus" },
+			{ id: "haiku", label: "Haiku" },
+		],
+	});
 	return {
 		connected: Boolean(subscription),
 		billing: subscription ? "subscription" : status.loggedIn ? "api" : "none",
@@ -39,8 +49,12 @@ export async function claudeStatus(
 	};
 }
 
-export function claudeArguments(instructions: string): string[] {
+export function claudeArguments(
+	instructions: string,
+	model?: string,
+): string[] {
 	return [
+		...(model ? ["--model", model] : []),
 		"--safe-mode",
 		"--restricted",
 		"--disable-slash-commands",
@@ -77,12 +91,13 @@ export async function claudeChat(
 	return new Promise((resolve, reject) => {
 		const child = startChild(
 			request.claudePath!,
-			claudeArguments(instructions),
+			claudeArguments(instructions, request.model),
 			request.workspace,
 		);
 		let text = "",
 			result: string | undefined,
 			error: Error | undefined;
+		let lastMessage: any;
 		const cancel = () => {
 			error = new Error("답변 생성을 중단했습니다.");
 			stopChild(child);
@@ -124,7 +139,11 @@ export async function claudeChat(
 					text += delta;
 					emit({ type: "delta", text: delta });
 				}
+				if (record.type === "assistant" && record.message?.usage)
+					lastMessage = record.message;
 				if (record.type === "result") {
+					const usage = claudeUsage(record, lastMessage);
+					if (usage) emit({ type: "usage", usage });
 					if (record.is_error || record.subtype !== "success")
 						error = new Error(
 							redact(

@@ -1,18 +1,20 @@
 {
-  "name": "bookshelf-learning-agent",
-  "private": true,
-  "type": "module",
-  "scripts": {
-    "build": "bun build index.ts --target=node --format=esm --outfile=../../dist/agent/bridge.mjs --metafile=../../dist/agent/metafile.json && bun profile.ts",
-    "test": "bun test",
-    "typecheck": "tsc --noEmit"
-  },
-  "dependencies": {
-    "@earendil-works/pi-agent-core": "0.85.1",
-    "@earendil-works/pi-ai": "0.85.1"
-  },
-  "devDependencies": {
-    "@types/node": "22.19.0",
-    "typescript": "5.9.3"
-  }
+	"name": "bookshelf-learning-agent",
+	"private": true,
+	"type": "module",
+	"scripts": {
+		"build": "bun build index.ts --target=node --format=esm --outfile=../../dist/agent/bridge.mjs --metafile=../../dist/agent/metafile.json && bun build renderer.ts --target=browser --format=iife --minify --outfile=../../dist/agent/renderer.js --metafile=../../dist/agent/renderer-metafile.json && bun profile.ts",
+		"test": "bun test",
+		"typecheck": "tsc --noEmit"
+	},
+	"dependencies": {
+		"@earendil-works/pi-agent-core": "0.85.1",
+		"@earendil-works/pi-ai": "0.85.1",
+		"dompurify": "3.4.17",
+		"mermaid": "11.17.2"
+	},
+	"devDependencies": {
+		"@types/node": "22.19.0",
+		"typescript": "5.9.3"
+	}
 }

@@ -23,8 +23,11 @@ struct SettingsView: View {
                 Button("완료") { dismiss() }.keyboardShortcut(.defaultAction)
             }.padding(24)
             ReaderHairline()
+            ReaderPicker(choices: [("일반", "general"), ("AI 연결", "ai"), ("단축키", "shortcuts")], selection: $model.settingsTab, label: "설정 분류")
+                .frame(height: 28).padding(.horizontal, 24).padding(.vertical, 14)
             ScrollView {
                 VStack(alignment: .leading, spacing: 20) {
+                    if model.settingsTab == "general" {
                     HStack {
                         Label("화면 모양", systemImage: "circle.lefthalf.filled").font(.system(size: 13, weight: .medium))
                         Spacer()
@@ -58,9 +61,14 @@ struct SettingsView: View {
                                 .font(.system(size: 12)).foregroundStyle(.secondary).lineSpacing(4)
                         }
                     }
-                    settingsSection("앱 내 대화와 외부 연결", symbol: "bubble.left.and.bubble.right") {
+                    }
+                    if model.settingsTab == "ai" {
+                    if AgentRuntime.bridgeURL != nil {
+                        settingsSection("Pi와 모델 연결", symbol: "bubble.left.and.bubble.right") { AgentConnectionSettingsView(chat: model.chat) }
+                    }
+                    settingsSection("외부 CLI / MCP", symbol: "link") {
                         VStack(alignment: .leading, spacing: 14) {
-                            Text(AgentRuntime.bridgeURL != nil ? "책 패널의 대화 탭에서 Claude 또는 Codex를 선택하고 공식 계정으로 연결할 수 있습니다. 학습 전용 영어 지침을 사용하고 답변은 질문의 언어를 따릅니다." : "CLI의 MCP 서버를 연결하면 책 찾기, 페이지 읽기, 본문 검색, 책별 메모 조회를 사용할 수 있습니다.")
+                            Text("외부 CLI의 MCP 서버를 연결하면 책 찾기, 페이지 읽기, 본문 검색, 책별 메모 조회를 사용할 수 있습니다.")
                                 .font(.system(size: 13)).foregroundStyle(.secondary).lineSpacing(5)
                             HStack {
                                 Label("읽기 전용 연결", systemImage: "lock").font(.system(size: 12)).foregroundStyle(.secondary)
@@ -75,6 +83,26 @@ struct SettingsView: View {
                                 .font(.system(size: 12)).foregroundStyle(.secondary)
                         }
                     }
+                    }
+                    if model.settingsTab == "shortcuts" {
+                        HStack {
+                            Text("버튼을 클릭한 뒤 사용할 키를 누르세요. Escape로 취소할 수 있습니다.").font(.system(size: 12)).foregroundStyle(.secondary)
+                            Spacer()
+                            Button("기본값 복원") { model.resetShortcuts() }.controlSize(.small)
+                        }
+                        if let error = model.shortcutError { Text(error).font(.caption).foregroundStyle(.orange) }
+                        settingsSection("앱 단축키", symbol: "keyboard") {
+                            ForEach(ReaderAction.allCases) { action in
+                                HStack {
+                                    Text(action.title).font(.system(size: 13))
+                                    Spacer()
+                                    ShortcutRecorder(label: model.shortcuts[action].label, action: action.title) { model.setShortcut($0, for: action) }
+                                        .frame(width: 140, height: 28)
+                                }
+                            }
+                        }
+                    }
+                    if model.settingsTab == "general" {
                     HStack(spacing: 12) {
                         Image(systemName: "internaldrive").foregroundStyle(.secondary)
                         VStack(alignment: .leading, spacing: 4) {
@@ -84,6 +112,7 @@ struct SettingsView: View {
                         Spacer()
                         Button("Finder에서 보기") { NSWorkspace.shared.open(model.store.directory) }.controlSize(.small)
                     }.padding(.horizontal, 4)
+                    }
                 }.padding(24)
             }
         }.frame(width: 560, height: 650)

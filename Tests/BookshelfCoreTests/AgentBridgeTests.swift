@@ -2,6 +2,29 @@ import XCTest
 @testable import BookshelfCore
 
 final class AgentBridgeTests: XCTestCase {
+    func testSmallStreamingEventsArriveBeforeTheExecutorExits() async throws {
+        guard let node = AgentRuntime.findExecutable("node") else { throw XCTSkip("Node.js not installed") }
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let script = root.appendingPathComponent("stream.mjs"), marker = root.appendingPathComponent("finished")
+        try """
+        import {writeFileSync} from 'node:fs';
+        process.stdin.resume();process.stdin.on('end',()=>{
+          console.log(JSON.stringify({type:'delta',text:'첫 응답'}));
+          setTimeout(()=>{writeFileSync(new URL('finished',import.meta.url),'done');console.log(JSON.stringify({type:'done'}));},1800);
+        });
+        """.write(to: script, atomically: true, encoding: .utf8)
+        let bridge = AgentBridge(executable: node, script: script)
+        var received = false
+        for try await event in bridge.events(for: AgentRequest(action: "status", backend: .claude, directory: root)) {
+            if event.type == "delta" {
+                received = true
+                XCTAssertFalse(FileManager.default.fileExists(atPath: marker.path), "Small responses must stream before EOF, without waiting to fill an 8192-byte buffer")
+            }
+        }
+        XCTAssertTrue(received)
+    }
     func testNativeBridgeReceivesUnicodeEventsAndKeepsSecretsOutOfChildEnvironment() async throws {
         guard let node = AgentRuntime.findExecutable("node") else { throw XCTSkip("Node.js not installed") }
         let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)

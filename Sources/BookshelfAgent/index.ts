@@ -20,6 +20,13 @@ export function validateRequest(input: any): Request {
 	)
 		throw new Error("올바르지 않은 연결 요청입니다.");
 	if (
+		input.model !== undefined &&
+		(typeof input.model !== "string" ||
+			input.model.length > 160 ||
+			!/^[a-zA-Z0-9][a-zA-Z0-9._:/[\]()-]*$/.test(input.model))
+	)
+		throw new Error("모델 이름을 확인해 주세요.");
+	if (
 		typeof input.workspace !== "string" ||
 		!isAbsolute(input.workspace) ||
 		typeof input.codexHome !== "string" ||
@@ -76,7 +83,7 @@ export async function handle(input: unknown, signal: AbortSignal, emit: Emit) {
 	if (request.action === "status") {
 		const status = await (request.backend === "claude"
 			? claudeStatus
-			: codexStatus)(request, signal);
+			: codexStatus)(request, signal, emit);
 		emit({ type: "status", status });
 		return;
 	}
@@ -113,8 +120,8 @@ export async function handle(input: unknown, signal: AbortSignal, emit: Emit) {
 		return;
 	}
 	const model: Model<any> = {
-		id: request.backend,
-		name: request.backend,
+		id: request.model ?? request.backend,
+		name: request.model ?? request.backend,
 		api: "bookshelf-official-runtime",
 		provider: request.backend,
 		baseUrl: "",

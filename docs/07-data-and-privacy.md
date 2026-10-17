@@ -12,6 +12,9 @@
 | OCR logs/reports | `Logs/` under the data directory; reports can contain paths and extracted text. |
 | Appearance/window preferences | macOS app preferences, outside the selected library directory. |
 | Learning conversations (preview) | `conversations` in the same SQLite database; revision-checked per-book messages. |
+| Conversation undo (preview) | `conversation_edits` retains up to ten previous states per book. Clearing the visible chat is reversible, not permanent erasure of these snapshots. |
+| User-selected media (preview) | Copies in `ChatAssets/` under the data directory. Attachment metadata is stored with the book conversation. |
+| App shortcuts | `keyboard.shortcuts` in the local database; change/reset through Settings. |
 | Executor state (preview) | `Agent/Codex/` contains state managed by the official Codex executable and can contain credentials. Claude uses its official CLI account storage. |
 | Development evidence | `.runtime/`, ignored by Git. |
 
@@ -97,6 +100,11 @@ page, selected passage, recent conversation and optionally the notebook through 
 official executor when the user submits a question. Pi does not receive provider tokens.
 Model requests are governed by that user's provider account and usage settings. Conversation
 history remains local; no automatic long-term profile or cross-book memory is generated.
+
+Imported image/audio/HTML files are for local display and playback; their contents are not
+included in model requests. An external HTTPS media link is loaded only when selected.
+HTML visualizations run in an opaque WebKit iframe with network, forms, file access and
+top-level navigation disabled. SVG is sanitized and Mermaid runs in strict mode.
 
 ## Safe reports and distribution
 

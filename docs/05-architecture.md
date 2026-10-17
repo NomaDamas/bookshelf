@@ -72,6 +72,7 @@ initialization is not a general versioned migration framework.
 | `settings` | Library/UI settings, sort preference, legacy reading-shelf choices, inspection cache metadata. |
 | `reading_states` / `reading_completions` | Current reading status and dated read-through completions. |
 | `conversations` | Optional learning-chat messages and revision per book. |
+| `conversation_edits` | Up to ten previous message snapshots per book for undoing chat edits or clearing. |
 | `ocr_candidates` | Pending candidate paths and review report paths. |
 | `ocr_versions` | Accepted asset ownership across rescans. |
 

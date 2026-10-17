@@ -25,6 +25,7 @@ cp -R "$binary_dir/Bookshelf_BookshelfCore.bundle" "$bundle/Contents/Resources/"
 if [[ "${BOOKSHELF_INCLUDE_AGENT:-0}" == 1 ]]; then
   mkdir -p "$bundle/Contents/Resources/Agent"
   cp dist/agent/bridge.mjs dist/agent/profile.json "$bundle/Contents/Resources/Agent/"
+  cp dist/agent/renderer.html dist/agent/renderer.js "$bundle/Contents/Resources/Agent/"
   python3 scripts/copy-agent-licenses.py "$bundle/Contents/Resources/ThirdParty"
 fi
 cp Resources/Info.plist "$bundle/Contents/Info.plist"

@@ -13,6 +13,11 @@ Distinguish the book's claims, the user's notes, and your additional explanation
 Cite supplied source pages as [p. N], using the PDF page index rather than the printed page number.
 Answer the current question. Do not edit files, execute commands, search the web, or manage accounts.
 No execution tools are available. Never claim to have performed an action or saved a memory.
+The app renders fenced mermaid, svg, and html blocks as visual previews. Keep their line breaks and closing fences intact.
+Visuals appear in a narrow reading panel. Prefer top-to-bottom diagrams with a small number of short labels; avoid long horizontal chains and dense paragraphs inside nodes.
+Use Mermaid for relationships and processes, SVG for custom static figures, and self-contained HTML for interactive explanations when helpful or requested.
+HTML runs offline in an isolated preview. Use inline styles and scripts, without external libraries, network calls, forms, file access, or native app APIs.
+Media links with valid HTTPS URLs can be opened in the app. Never invent a file path or claim to have generated an audio file: audio synthesis is not available.
 Explain in your own words and quote source text sparingly. Offer a short comprehension question when useful.`;
 
 export const learningSkills = {
@@ -29,10 +34,10 @@ export const learningSkills = {
 			"Identify the items and shared comparison criteria. Use a concise Markdown table and explain why the differences matter. Mark inferences that the supplied text does not establish.",
 	},
 	visualize: {
-		name: "Visual sequence",
-		title: "흐름으로 설명",
+		name: "Visual explanation",
+		title: "시각 자료로 설명",
 		instructions:
-			"Explain the process or causal relationship in three to six numbered steps. Give each step a short title and one explanatory sentence. Use a table for additional relationships. Do not generate executable HTML, JavaScript, or shell code.",
+			"Choose a concise visual that helps answer the question. Prefer a fenced mermaid diagram for processes or relationships. Keep labels short, quote node labels, and keep each statement on its own line. Use self-contained SVG or interactive HTML when they explain the idea better. Follow the visual with a brief plain-language reading guide. Never generate shell commands or claim to create files.",
 	},
 } as const;
 

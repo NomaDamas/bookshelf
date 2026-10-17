@@ -1,5 +1,6 @@
 import SwiftUI
 import BookshelfCore
+import UniformTypeIdentifiers
 
 struct BookChatView: View {
     @ObservedObject var model: AppModel
@@ -7,26 +8,31 @@ struct BookChatView: View {
     let book: Book
     @AppStorage("agent.includeNotes") private var includeNotes = true
     @State private var showingProfile = false
+    @State private var followTail = true
+    @State private var confirmingClear = false
+    @State private var editingQuestion: BookChatMessage?
+    @FocusState private var composerFocused: Bool
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     private var currentText: String { model.document?.page(at: model.page - 1)?.string ?? "" }
 
     var body: some View {
         VStack(spacing: 0) {
             VStack(alignment: .leading, spacing: 12) {
                 HStack {
-                    Text("이 책과 대화").font(.system(size: 15, weight: .semibold))
+                    Label("AI와 읽기", systemImage: "bubble.left.and.bubble.right").font(.system(size: 15, weight: .semibold))
                     Spacer()
-                    Picker("대화 실행기", selection: Binding(get: { chat.backend }, set: { chat.chooseBackend($0) })) {
-                        ForEach(ChatBackend.allCases) { Text($0.title).tag($0) }
-                    }.labelsHidden().frame(width: 104).disabled(chat.busy)
+                    ReaderIconButton(symbol: "arrow.uturn.backward", label: "대화 변경 되돌리기") { chat.undoEdit() }
+                        .disabled(!chat.canUndoEdit || chat.busy)
+                    ReaderIconButton(symbol: "trash", label: "이 책의 대화 비우기") { confirmingClear = true }
+                        .disabled(chat.messages.isEmpty || chat.busy)
                 }
                 HStack(spacing: 6) {
                     Image(systemName: chat.account?.connected == true ? "checkmark.circle" : "person.crop.circle.badge.questionmark")
                     Text(chat.account?.label ?? "연결 확인 전").lineLimit(2)
                     Spacer(minLength: 4)
-                    Button(chat.account?.connected == true ? "다시 연결" : "로그인") { chat.login() }
-                        .controlSize(.small).disabled(chat.busy || !AgentRuntime.ready).accessibilityLabel("AI 공식 로그인")
-                        .contextMenu { Button("연결 상태 확인") { chat.checkConnection() } }
+                    Button("연결 설정") { openConnectionSettings() }.controlSize(.small).accessibilityLabel("AI 연결 설정")
                 }.font(.system(size: 11)).foregroundStyle(.secondary)
+                ContextUsageView(usage: chat.contextUsage)
                 if !AgentRuntime.ready {
                     Text("Node.js와 AI 연결 모듈이 필요합니다. 실험용 앱으로 실행해 주세요.")
                         .font(.system(size: 12)).foregroundStyle(.orange)
@@ -48,40 +54,71 @@ struct BookChatView: View {
                         ForEach(chat.messages) { message in
                             VStack(alignment: .leading, spacing: 9) {
                                 HStack {
-                                    Text(message.role == "user" ? "나" : (message.harness == "pi" ? "Pi + " : "") + (ChatBackend(rawValue: message.backend)?.title ?? "도우미"))
+                                    Text(message.attachments?.isEmpty == false ? "이 책의 자료" : message.role == "user" ? "나" : (message.harness == "pi" ? "Pi + " : "") + (ChatBackend(rawValue: message.backend)?.title ?? "도우미"))
                                         .font(.system(size: 11, weight: .semibold)).foregroundStyle(.secondary)
                                     Spacer()
+                                    if message.role == "user" && (message.attachments?.isEmpty ?? true) {
+                                        Button { editingQuestion = message } label: { Image(systemName: "pencil") }
+                                            .buttonStyle(.plain).accessibilityLabel("질문 수정").help("질문 수정").disabled(chat.busy)
+                                    }
+                                    Button { chat.deleteFrom(message.id) } label: { Image(systemName: "trash") }
+                                        .buttonStyle(.plain).accessibilityLabel("이 메시지부터 지우기").help("이 메시지부터 지우기").disabled(chat.busy)
                                     if message.role == "assistant" && message.state != "complete" {
                                         Text(chat.busy && message.id == chat.messages.last?.id ? "답변 중" : message.state == "failed" ? "완료하지 못함" : "중단됨")
                                             .font(.system(size: 10)).foregroundStyle(.secondary)
                                     }
                                 }
-                                if message.text.isEmpty && chat.busy { ProgressView().controlSize(.small) }
-                                else { ChatResponseText(text: message.text).textSelection(.enabled) }
+                                if let attachments = message.attachments {
+                                    ForEach(attachments) { ChatAttachmentView(attachment: $0, directory: model.store.directory) }
+                                }
+                                if message.text.isEmpty && message.role == "assistant" && chat.busy && message.id == chat.messages.last?.id {
+                                    HStack(spacing: 8) { ProgressView().controlSize(.small); Text("답변을 준비하고 있습니다.").font(.system(size: 12)).foregroundStyle(.secondary) }
+                                }
+                                else if !message.text.isEmpty { ChatResponseView(text: message.text, streaming: chat.busy && message.id == chat.messages.last?.id) }
                                 if message.role == "assistant" && !message.text.isEmpty {
                                     HStack(spacing: 10) {
                                         Button("질문한 \(message.page)쪽") { model.goToPage(message.page) }
                                             .help("질문할 때 전달한 PDF 페이지로 이동합니다.")
                                         Spacer()
+                                        if message.id == chat.messages.last?.id {
+                                            Button { retry() } label: { Image(systemName: "arrow.clockwise") }
+                                                .accessibilityLabel("답변 다시 생성").disabled(chat.busy || chat.lastQuestion == nil)
+                                        }
+                                        Button { copy(message.text) } label: { Image(systemName: "doc.on.doc") }.accessibilityLabel("답변 복사")
                                         if message.state == "complete" {
                                             Button("메모에 담기") {
                                                 guard model.activeBook?.id == book.id else { return }
                                                 model.editNotebook(model.notebookText + (model.notebookText.isEmpty ? "" : "\n\n") + "[AI 대화 / PDF \(message.page)쪽]\n" + message.text)
+                                                model.sidebarVisible = true; model.panelTab = "notes"
                                             }
                                         }
                                     }.font(.system(size: 11)).buttonStyle(.borderless)
                                 }
+                                if message.role == "assistant" && message.text.isEmpty && !chat.busy && message.id == chat.messages.last?.id {
+                                    Button("다시 시도") { retry() }.buttonStyle(.bordered).controlSize(.small)
+                                }
                             }.padding(14)
                                 .frame(maxWidth: .infinity, alignment: .leading)
-                                .background(message.role == "user" ? ReaderStyle.muted : ReaderStyle.panel,
+                                .background(message.role == "user" ? ReaderStyle.muted : .clear,
                                             in: RoundedRectangle(cornerRadius: ReaderTokens.radiusLarge))
                                 .id(message.id)
+                                .transition(.opacity.combined(with: .offset(y: 6)))
                         }
                         Color.clear.frame(height: 1).id("conversation-end")
-                    }.padding(14)
-                }.onChange(of: chat.messages.last?.text) { _, _ in proxy.scrollTo("conversation-end", anchor: .bottom) }
-                    .onChange(of: chat.messages.count) { _, _ in proxy.scrollTo("conversation-end", anchor: .bottom) }
+                            .background(ChatScrollObserver(nearBottom: { if $0 && !followTail { followTail = true } }, scrolledAway: { if followTail { followTail = false } }))
+                    }.padding(14).animation(reduceMotion ? nil : ReaderMotion.ease(ReaderTokens.messageDuration), value: chat.messages.count)
+                }.onChange(of: chat.messages.last?.text) { _, _ in if followTail { proxy.scrollTo("conversation-end", anchor: .bottom) } }
+                    .onChange(of: chat.messages.count) { _, _ in
+                        if chat.messages.last?.backend == "local" { followTail = true }
+                        if followTail { withAnimation(reduceMotion ? nil : ReaderMotion.ease(ReaderTokens.messageDuration)) { proxy.scrollTo("conversation-end", anchor: .bottom) } }
+                    }
                     .onAppear { proxy.scrollTo("conversation-end", anchor: .bottom) }
+                    .overlay(alignment: .bottom) {
+                        if !followTail {
+                            Button { followTail = true; withAnimation(reduceMotion ? nil : ReaderMotion.ease(ReaderTokens.messageDuration)) { proxy.scrollTo("conversation-end", anchor: .bottom) } } label: { Label("최신 답변", systemImage: "arrow.down") }
+                                .buttonStyle(.bordered).controlSize(.small).padding(.bottom, 10).transition(.opacity)
+                        }
+                    }
             }
             if let error = chat.errorMessage {
                 HStack(alignment: .top) {
@@ -98,49 +135,114 @@ struct BookChatView: View {
                     if let url = chat.loginURL { Link("열기", destination: url) }
                 }.font(.system(size: 11)).padding(12)
             }
-            ReaderHairline()
             VStack(alignment: .leading, spacing: 10) {
                 HStack {
                     Text("PDF \(model.page)쪽").monospacedDigit()
+                    Menu {
+                        Button("쉽게 설명") { chat.skill = "explain" }
+                        Button("비교표") { chat.skill = "compare" }
+                        Button("시각 자료로 설명") { chat.skill = "visualize" }
+                    } label: { Text(chat.skill == "visualize" ? "시각 자료" : chat.skill == "compare" ? "비교표" : "쉽게 설명") }
+                        .menuStyle(.borderlessButton).fixedSize().accessibilityLabel("설명 방식").disabled(chat.busy)
                     Spacer()
-                    Toggle("책 노트 포함", isOn: $includeNotes).toggleStyle(.checkbox)
+                    Toggle("노트 포함", isOn: $includeNotes).toggleStyle(.checkbox)
                 }.font(.system(size: 11)).foregroundStyle(.secondary)
-                Picker("설명 방식", selection: $chat.skill) {
-                    Text("쉽게 설명").tag("explain"); Text("비교표").tag("compare"); Text("흐름으로 설명").tag("visualize")
-                }.labelsHidden().controlSize(.small).disabled(chat.busy)
-                TextEditor(text: $chat.draft).font(.system(size: 13)).scrollContentBackground(.hidden)
-                    .frame(minHeight: 56, maxHeight: 100).padding(6)
-                    .background(ReaderStyle.panel, in: RoundedRectangle(cornerRadius: ReaderTokens.radiusMedium))
-                    .modifier(ReaderSurfaceBorder(radius: ReaderTokens.radiusMedium))
+                TextEditor(text: $chat.draft).font(.system(size: 14)).scrollContentBackground(.hidden)
+                    .focused($composerFocused)
+                    .frame(minHeight: 56, maxHeight: 100).padding(.vertical, 4)
+                    .overlay(alignment: .topLeading) {
+                        if chat.draft.isEmpty { Text("이 페이지에서 궁금한 점을 물어보세요.").font(.system(size: 13)).foregroundStyle(.tertiary).padding(.leading, 5).padding(.top, 12).allowsHitTesting(false) }
+                    }
                     .accessibilityLabel("책에 질문").accessibilityIdentifier("book-chat-composer")
                 HStack {
-                    Toggle("Pi", isOn: Binding(get: { chat.usePi }, set: { chat.setPi($0) })).toggleStyle(.checkbox)
-                        .font(.system(size: 11)).disabled(chat.busy)
-                        .help("Pi 대화 계층을 켜거나 공식 실행기에 직접 연결해 비교합니다. 같은 학습 지침을 사용합니다.")
-                    Button { showingProfile = true } label: { Image(systemName: "info.circle") }.buttonStyle(.plain)
-                        .accessibilityLabel("학습 전용 지침 보기")
-                        .popover(isPresented: $showingProfile) { LearningProfileView() }
+                    ReaderIconButton(symbol: "paperclip", label: "시각 및 음성 자료 열기", action: chooseAssets)
+                        .help("파일을 이 책에 보관하고 재생합니다. 자료 내용은 AI에 전송하지 않습니다.")
+                        .disabled(chat.importingAssets || chat.busy)
+                    if chat.importingAssets { ProgressView().controlSize(.mini) }
+                    ChatModelMenu(chat: chat, openSettings: openConnectionSettings)
                     Spacer()
-                    if chat.busy { Button("중단") { chat.stop() }.controlSize(.small) }
+                    ReaderIconButton(symbol: "info.circle", label: "학습 전용 지침 보기") { showingProfile = true }
+                        .popover(isPresented: $showingProfile) { LearningProfileView() }
+                    if chat.busy {
+                        Button { chat.stop() } label: { Image(systemName: "stop.fill").font(.system(size: 11)).frame(width: 28, height: 28) }
+                            .buttonStyle(.bordered).clipShape(Circle()).accessibilityLabel("답변 중단")
+                    }
                     else {
-                        Button("질문하기") { send() }.buttonStyle(.borderedProminent).controlSize(.small)
-                            .keyboardShortcut(.return, modifiers: [.command])
-                            .disabled(chat.draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || model.document == nil || !AgentRuntime.ready || chat.account?.connected != true)
+                        Button { send() } label: { Image(systemName: "arrow.up").font(.system(size: 13, weight: .semibold)).frame(width: 28, height: 28) }
+                            .buttonStyle(.borderedProminent).clipShape(Circle()).accessibilityLabel("질문하기").help("질문하기 (\(model.shortcuts[.sendMessage].label))")
+                            .keyboardShortcut(model.shortcuts[.sendMessage].value)
+                            .disabled(editingQuestion != nil || chat.draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || model.document == nil || !AgentRuntime.ready || chat.account?.connected != true)
                     }
                 }
-                Text("현재 페이지와 최근 대화를 선택한 실행기에 전달합니다.")
-                    .font(.system(size: 10)).foregroundStyle(.secondary)
             }.padding(14)
+                .background(ReaderStyle.panel, in: RoundedRectangle(cornerRadius: ReaderTokens.composerRadius, style: .continuous))
+                .modifier(ReaderSurfaceBorder(radius: ReaderTokens.composerRadius))
+                .overlay { RoundedRectangle(cornerRadius: ReaderTokens.composerRadius, style: .continuous).strokeBorder(composerFocused ? ReaderStyle.accent.opacity(0.45) : .clear, lineWidth: 1).allowsHitTesting(false) }
+                .shadow(color: .black.opacity(0.06), radius: 10, y: 3)
+                .animation(reduceMotion ? nil : ReaderMotion.ease(ReaderTokens.controlDuration), value: composerFocused)
+                .padding(12)
         }.background(ReaderStyle.canvas)
+            .confirmationDialog("이 책의 대화를 비울까요?", isPresented: $confirmingClear) {
+                Button("대화 비우기") { chat.clearConversation() }
+                Button("취소", role: .cancel) { }
+            } message: { Text("삭제 후에도 되돌리기로 복원할 수 있습니다. 책 메모와 발췌는 보존됩니다.") }
+            .sheet(item: $editingQuestion) { message in
+                ChatQuestionEditor(message: message, shortcut: model.shortcuts[.sendMessage].value) { text in
+                    guard model.activeBook?.id == book.id else { return }
+                    followTail = true; chat.reviseQuestion(message.id, text: text, context: context(page: message.page))
+                }
+            }
             .task(id: book.id) {
                 guard !Task.isCancelled, model.activeBook?.id == book.id else { return }
                 if chat.selectBook(book.id), chat.account == nil, AgentRuntime.ready { chat.checkConnection() }
             }
     }
     private func send() {
+        if NSApp.currentEvent?.type == .keyDown, let editor = NSApp.keyWindow?.firstResponder as? NSTextView, editor.hasMarkedText() { return }
         guard model.activeBook?.id == book.id, model.flushPendingSave() else { return }
+        followTail = true; composerFocused = true
         chat.send(context: AgentRequest.Context(id: book.id, title: book.title, page: model.page,
                   text: currentText, notes: includeNotes ? model.notebookText : "", selection: model.selection.map(\.quote).joined(separator: "\n")))
+    }
+    private func context(page: Int) -> AgentRequest.Context {
+        AgentRequest.Context(id: book.id, title: book.title, page: page, text: model.document?.page(at: page - 1)?.string ?? "",
+                             notes: includeNotes ? model.notebookText : "", selection: "")
+    }
+    private func retry() {
+        guard model.activeBook?.id == book.id, let question = chat.lastQuestion, !chat.busy else { return }
+        followTail = true; chat.reviseQuestion(question.id, text: question.text, context: context(page: question.page))
+    }
+    private func copy(_ text: String) { NSPasteboard.general.clearContents(); NSPasteboard.general.setString(text, forType: .string) }
+    private func openConnectionSettings() { model.settingsTab = "ai"; model.showSettings = true }
+    private func chooseAssets() {
+        let target = book.id, page = model.page
+        let panel = NSOpenPanel(); panel.title = "이 책에서 볼 자료 선택"
+        panel.message = "자료는 이 Mac에 보관됩니다. 파일 내용은 AI에 전송하지 않습니다."
+        panel.allowedContentTypes = ChatAssetStore.extensions.compactMap { UTType(filenameExtension: $0) }
+        panel.allowsMultipleSelection = true; panel.canChooseDirectories = false
+        panel.begin { response in
+            guard response == .OK, model.activeBook?.id == target else { return }
+            chat.addAttachments(panel.urls, bookID: target, page: page)
+        }
+    }
+}
+
+private struct ChatQuestionEditor: View {
+    let message: BookChatMessage
+    let shortcut: KeyboardShortcut
+    let submit: (String) -> Void
+    @Environment(\.dismiss) private var dismiss
+    @State private var text = ""
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            Text("질문 수정").font(.headline)
+            Text("수정한 질문부터 다시 답합니다. 이전 대화는 되돌리기로 복원할 수 있습니다.").font(.system(size: 12)).foregroundStyle(.secondary)
+            TextEditor(text: $text).font(.system(size: 14)).frame(minHeight: 140).accessibilityLabel("수정할 질문")
+            HStack { Spacer(); Button("취소") { dismiss() }.keyboardShortcut(.cancelAction)
+                Button("수정하고 다시 질문") { submit(text); dismiss() }.keyboardShortcut(shortcut).buttonStyle(.borderedProminent)
+                    .disabled(text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || text.utf16.count > 10000)
+            }
+        }.padding(22).frame(width: 520, height: 300).onAppear { text = message.text }
     }
 }
 
@@ -154,14 +256,14 @@ private struct LearningProfileView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("학습 전용 지침").font(.headline)
-            Text("공통 지침은 영어로 작성하며 답변은 사용자의 언어를 따릅니다. 설명, 비교표, 흐름 설명만 제공합니다.")
+            Text("공통 지침은 영어로 작성하며 답변은 사용자의 언어를 따릅니다. 설명, 비교표와 시각 자료를 제공합니다.")
                 .font(.system(size: 12)).foregroundStyle(.secondary)
             ScrollView { Text(text).font(.system(size: 12)).textSelection(.enabled).frame(maxWidth: .infinity, alignment: .leading) }
         }.padding(20).frame(width: 440, height: 420)
     }
 }
 
-private struct ChatResponseText: View {
+struct ChatMarkdownText: View {
     let text: String
     private struct Block: Identifiable { let id: Int; let text: String; let table: [[String]]? }
     private var blocks: [Block] {
@@ -200,7 +302,7 @@ private struct ChatResponseText: View {
                             }
                         }
                     }
-                } else { Text(inline(block.text)).font(.system(size: 13)).lineSpacing(5).frame(maxWidth: .infinity, alignment: .leading) }
+                } else { Text(inline(block.text)).font(.system(size: ReaderTokens.bodyFont)).lineSpacing(5).frame(maxWidth: .infinity, alignment: .leading) }
             }
         }
     }
