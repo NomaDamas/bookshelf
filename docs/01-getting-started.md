@@ -2,6 +2,47 @@
 
 [Documentation](README.md) / Getting started
 
+## Install with Homebrew
+
+With a current [Homebrew](https://brew.sh/) installation:
+
+```sh
+brew install --cask nomadamas/bookshelf/bookshelf
+```
+
+The [NomaDamas tap](https://github.com/NomaDamas/homebrew-bookshelf) selects the
+Apple Silicon or Intel release, checks its SHA-256, and installs `Bookshelf.app`
+in `/Applications` by default. It also links the app's `bookshelf-cli` into the
+Homebrew `bin` directory. The fully qualified command adds the tap automatically;
+on newer Homebrew versions, it establishes trust for this cask specifically.
+
+This installs the same **ad-hoc signed, unnotarized developer preview** as the DMG
+below. Homebrew keeps quarantine protections; follow the first-launch guidance
+below if macOS blocks opening it. OCR remains an optional, separate installation.
+
+Quit Bookshelf before updating:
+
+```sh
+brew update
+brew upgrade --cask nomadamas/bookshelf/bookshelf
+```
+
+To remove the app and the CLI link, run:
+
+```sh
+brew uninstall --cask nomadamas/bookshelf/bookshelf
+```
+
+This leaves PDFs, notes, and reading history intact. The cask does not define a
+`zap` operation that removes library data.
+
+If you installed Bookshelf manually, check `/Applications` and `~/Applications`
+before switching. Homebrew refuses to overwrite a different existing app; keep
+the old copy until you have verified the new installation. If both locations
+contain an app, open the intended one explicitly. For existing MCP registrations,
+check that their executable paths still point to the intended app; see
+[CLI/MCP setup](03-cli-and-mcp.md).
+
 ## Install the developer preview
 
 The [v0.1.0 release](https://github.com/NomaDamas/bookshelf/releases/tag/v0.1.0)

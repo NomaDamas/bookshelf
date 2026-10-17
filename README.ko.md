@@ -45,6 +45,19 @@ OCR 사본 검토:
 
 ## 시작하기
 
+### Homebrew로 설치하기
+
+```sh
+brew install --cask nomadamas/bookshelf/bookshelf
+```
+
+[NomaDamas tap](https://github.com/NomaDamas/homebrew-bookshelf)이 Mac에 맞는 DMG를
+선택하고 SHA-256을 확인한 뒤 앱을 설치합니다. `bookshelf-cli`도 Homebrew의 `bin`
+디렉터리에 연결합니다. 아래에서 설명하는 것과 같은 개발자 프리뷰입니다.
+[Homebrew 설치와 업데이트](docs/01-getting-started.md#install-with-homebrew)를 참고하세요.
+
+### DMG로 설치하기
+
 [v0.1.0 개발자 프리뷰](https://github.com/NomaDamas/bookshelf/releases/tag/v0.1.0)를
 내려받을 수 있습니다. macOS 14 이상을 대상으로 합니다.
 
