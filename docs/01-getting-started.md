@@ -2,7 +2,77 @@
 
 [Documentation](README.md) / Getting started
 
-## Requirements
+## Install with Homebrew
+
+With a current [Homebrew](https://brew.sh/) installation:
+
+```sh
+brew install --cask nomadamas/bookshelf/bookshelf
+```
+
+The [NomaDamas tap](https://github.com/NomaDamas/homebrew-bookshelf) selects the
+Apple Silicon or Intel release, checks its SHA-256, and installs `Bookshelf.app`
+in `/Applications` by default. It also links the app's `bookshelf-cli` into the
+Homebrew `bin` directory. The fully qualified command adds the tap automatically;
+on newer Homebrew versions, it establishes trust for this cask specifically.
+
+This installs the same **ad-hoc signed, unnotarized developer preview** as the DMG
+below. Homebrew keeps quarantine protections; follow the first-launch guidance
+below if macOS blocks opening it. OCR remains an optional, separate installation.
+
+Quit Bookshelf before updating:
+
+```sh
+brew update
+brew upgrade --cask nomadamas/bookshelf/bookshelf
+```
+
+To remove the app and the CLI link, run:
+
+```sh
+brew uninstall --cask nomadamas/bookshelf/bookshelf
+```
+
+This leaves PDFs, notes, and reading history intact. The cask does not define a
+`zap` operation that removes library data.
+
+If you installed Bookshelf manually, check `/Applications` and `~/Applications`
+before switching. Homebrew refuses to overwrite a different existing app; keep
+the old copy until you have verified the new installation. If both locations
+contain an app, open the intended one explicitly. For existing MCP registrations,
+check that their executable paths still point to the intended app; see
+[CLI/MCP setup](03-cli-and-mcp.md).
+
+## Install the developer preview
+
+The [v0.1.0 release](https://github.com/NomaDamas/bookshelf/releases/tag/v0.1.0)
+provides separate DMGs for Apple Silicon (`arm64`) and Intel (`x86_64`). The deployment
+target is macOS 14. Downloaded apps do not require Xcode or Python; optional OCR
+has [separate dependencies](04-ocr.md#install-the-optional-engine).
+
+1. Download the DMG for your Mac and its matching `.dmg.sha256` file from the release.
+2. In that download folder, verify the checksum. For Apple Silicon:
+
+    ```sh
+    shasum -a 256 -c Bookshelf-0.1.0-macos-arm64.dmg.sha256
+    ```
+
+    Use the `x86_64` filename for Intel. Continue only if the result is `OK`.
+3. Quit any existing Bookshelf, open the DMG, and drag `Bookshelf.app` to Applications.
+4. Open Bookshelf from Applications. Replacing the app preserves the library data
+   stored outside it; see [backup and restore](07-data-and-privacy.md#backup-and-restore).
+
+These developer previews are **ad-hoc signed, not Developer ID signed or notarized
+by Apple**. A checksum verifies the downloaded bytes, not Apple approval. Gatekeeper
+may block the first launch. If you trust this release, follow Apple's
+[instructions for opening an unnotarized app](https://support.apple.com/en-us/102445).
+You can also build from source below.
+
+Both architectures are built and checked by executing the copied CLI in CI. Native
+UI verification has used Apple Silicon and macOS 26; older macOS and Intel UI
+compatibility have not been verified end to end.
+
+## Source build requirements
 
 | Requirement | Details |
 | --- | --- |
@@ -35,9 +105,6 @@ developer directory is used. Check `xcode-select -p`, `xcodebuild -version`, and
 `swift --version` if the build reports SDK or compiler errors. Set `DEVELOPER_DIR`
 to your actual Xcode developer directory to override it without changing the
 system-wide selection. Use the same toolchain for build and tests.
-
-The repository has no published binary release or notarized installer. Build the
-source locally; there is no release download step to follow.
 
 ## Read your first PDF
 

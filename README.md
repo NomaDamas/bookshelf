@@ -53,10 +53,38 @@ Screenshots use authored fixtures. See [capture provenance and verification](doc
 
 ## Quick start
 
-Bookshelf currently ships as source. There is no notarized download or published
-binary release. You need macOS, a compatible Xcode/Swift toolchain, and Python 3
-for the build helpers. The deployment target is macOS 14; verification has been
-performed on macOS 26.6.2 with Xcode 27 / Swift 6.4 on Apple Silicon.
+### Install with Homebrew
+
+```sh
+brew install --cask nomadamas/bookshelf/bookshelf
+```
+
+The [NomaDamas tap](https://github.com/NomaDamas/homebrew-bookshelf) selects the DMG
+for your Mac, checks its SHA-256, installs `Bookshelf.app`, and adds `bookshelf-cli`
+to your Homebrew `bin` directory. This installs the same developer preview described
+below. See [Homebrew installation and updates](docs/01-getting-started.md#install-with-homebrew).
+
+### Download a DMG
+
+Download the [v0.1.0 developer preview](https://github.com/NomaDamas/bookshelf/releases/tag/v0.1.0)
+for macOS 14 or later:
+
+| Mac | Download |
+| --- | --- |
+| Apple Silicon (M series) | [Apple Silicon DMG](https://github.com/NomaDamas/bookshelf/releases/download/v0.1.0/Bookshelf-0.1.0-macos-arm64.dmg) |
+| Intel | [Intel DMG](https://github.com/NomaDamas/bookshelf/releases/download/v0.1.0/Bookshelf-0.1.0-macos-x86_64.dmg) |
+
+Verify the matching SHA-256 file on the release page, open the DMG, and drag
+`Bookshelf.app` to Applications. Quit the old app before replacing it; your library
+data stays outside the app. These previews are **ad-hoc signed and not notarized by
+Apple**, so macOS may block the first launch. See [installation and Gatekeeper](docs/01-getting-started.md#install-the-developer-preview).
+
+### Build from source
+
+You need a compatible Xcode/Swift toolchain and Python 3 for the build helpers.
+Native UI verification has used macOS 26.6.2 with Xcode 27 / Swift 6.4 on Apple
+Silicon. Both architectures pass build and copied-CLI checks in CI; this does not
+establish native UI compatibility with every supported Mac.
 
 ```sh
 git clone https://github.com/NomaDamas/bookshelf.git
@@ -106,7 +134,7 @@ from live Codex sign-in, which still requires the user's official login.
 
 ## Optional: connect an AI client
 
-After installing the app, run:
+After installing the app, run this helper from a cloned repository:
 
 ```sh
 ./scripts/register-mcp.command

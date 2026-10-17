@@ -48,6 +48,9 @@ python3 scripts/release.py package
 The command builds release configuration, checks the app's version/identity and
 signature, packages it, mounts the DMG read-only, copies its app to a temporary
 installation, and executes the copied CLI with an isolated data directory.
+Packaging first completes an uncompressed filesystem image, then converts it to
+UDZO with one compression worker. Direct folder-to-UDZO creation produced invalid
+block offsets on Apple Silicon CI; the final image must still pass `hdiutil verify`.
 It also checks the `/Applications` drag-and-drop shortcut and required notices.
 A negative probe temporarily withholds the copied app's resource bundle and requires
 CLI failure, then restores it and verifies the signature again. This prevents a
@@ -119,6 +122,9 @@ manual dispatch. Apple Silicon (`macos-26`) and Intel (`macos-26-intel`) jobs ru
 metadata/token checks, XCTest, release builds, DMG creation, and copied-CLI verification.
 They upload short-lived workflow artifacts. OCR integration and native GUI interaction
 are separate local checks; passing these jobs does not prove either one.
+If packaging fails after creating a DMG, CI retains it for one day as a
+`Failed-DMG-diagnostic-*` artifact. These files are for diagnosis, not distribution;
+retaining them does not change the failed check to a pass.
 
 [`release.yml`](../.github/workflows/release.yml) runs only for pushed `v*` tags:
 
@@ -148,6 +154,22 @@ review assets/checksums, record the actual signing status and known issues, then
 publish when approved. Never move a published tag or replace its assets; release
 a new version instead. A failed workflow can leave a draft that must be inspected
 before retrying publication.
+
+## Homebrew distribution
+
+The [Bookshelf tap](https://github.com/NomaDamas/homebrew-bookshelf) owns
+`Casks/bookshelf.rb`. It downloads the published DMGs with architecture-specific
+SHA-256 checksums; it does not rebuild the app or change its signing status.
+Do not duplicate the cask in this repository.
+
+After publishing and checking a new GitHub Release, open a version update PR in
+the tap. Its README documents the version/checksum changes and macOS installation
+checks. Review the version, both checksums, the version-specific preview exception,
+and the signing caveat against the release's manifests before merging the update.
+
+Tap livecheck includes published numeric preview tags. It detects available
+versions; it does not publish a cask update automatically. Users receive a merged
+cask update through `brew update` and `brew upgrade --cask nomadamas/bookshelf/bookshelf`.
 
 ## Install, update, and compatibility
 

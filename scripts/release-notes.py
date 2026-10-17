@@ -15,7 +15,7 @@ match = re.search(r"^## \[" + re.escape(metadata["version"]) + r"\][^\n]*\n(.*?)
 if not match:
     raise SystemExit("Write the version's CHANGELOG section before tagging")
 print(match.group(1).strip())
-print("""
+print(f"""
 
 ### Downloads and installation
 
@@ -23,6 +23,8 @@ print("""
 - Verify the matching `.dmg.sha256` file, open the DMG, and drag Bookshelf.app to Applications.
 - Quit an existing Bookshelf before replacing it. PDFs, notes, and progress remain in their existing locations.
 - OCR tools are external installations; see the OCR guide in the repository.
+- See the [installation guide](https://github.com/NomaDamas/bookshelf/blob/{tag}/docs/01-getting-started.md#install-the-developer-preview)
+  for checksum verification and first-launch guidance.
 
 ### Distribution status
 
@@ -32,7 +34,6 @@ checksum as Apple approval. Build from source if you do not want to run a previe
 The JSON file records version, bundle identity, source revision, architecture,
 signature mode, notarization status, and the DMG hash.
 
-This release is intentionally a draft prerelease. Review the assets and known
-limitations before publishing. Never replace artifacts in a published version;
-ship a new version instead.
+This is a developer-preview prerelease. Known limitations are listed above.
+Published tags and assets are kept unchanged; fixes ship in a new version.
 """)
