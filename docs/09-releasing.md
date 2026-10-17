@@ -48,6 +48,9 @@ python3 scripts/release.py package
 The command builds release configuration, checks the app's version/identity and
 signature, packages it, mounts the DMG read-only, copies its app to a temporary
 installation, and executes the copied CLI with an isolated data directory.
+Packaging first completes an uncompressed filesystem image, then converts it to
+UDZO with one compression worker. Direct folder-to-UDZO creation produced invalid
+block offsets on Apple Silicon CI; the final image must still pass `hdiutil verify`.
 It also checks the `/Applications` drag-and-drop shortcut and required notices.
 A negative probe temporarily withholds the copied app's resource bundle and requires
 CLI failure, then restores it and verifies the signature again. This prevents a
@@ -119,6 +122,9 @@ manual dispatch. Apple Silicon (`macos-26`) and Intel (`macos-26-intel`) jobs ru
 metadata/token checks, XCTest, release builds, DMG creation, and copied-CLI verification.
 They upload short-lived workflow artifacts. OCR integration and native GUI interaction
 are separate local checks; passing these jobs does not prove either one.
+If packaging fails after creating a DMG, CI retains it for one day as a
+`Failed-DMG-diagnostic-*` artifact. These files are for diagnosis, not distribution;
+retaining them does not change the failed check to a pass.
 
 [`release.yml`](../.github/workflows/release.yml) runs only for pushed `v*` tags:
 

@@ -188,8 +188,12 @@ def package(output, skip_build=False, notarize=False):
             "Quit the old app before replacing it. Your library and notes remain in Application Support/Bookshelf.\n\n"
             + warning + "\nOCR dependencies are installed separately.\n"
             + data["repository"] + "/blob/main/docs/01-getting-started.md\n", encoding="utf-8")
+        # Direct srcfolder -> UDZO creation produced out-of-range BLKX offsets on
+        # macOS arm64 CI. Finish the filesystem image before serial compression.
+        uncompressed = Path(temporary) / "uncompressed.dmg"
         run("hdiutil", "create", "-volname", f"Bookshelf {data['version']}", "-srcfolder", stage,
-            "-format", "UDZO", "-fs", "HFS+", dmg)
+            "-format", "UDRW", "-fs", "HFS+", uncompressed)
+        run("hdiutil", "convert", uncompressed, "-format", "UDZO", "-tasks", "1", "-o", dmg)
     if signed:
         run("codesign", "--sign", signing, "--timestamp", dmg)
     if notarize:

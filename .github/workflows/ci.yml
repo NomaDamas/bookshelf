@@ -44,6 +44,14 @@ jobs:
         run: swift test
       - name: Build, create DMG, and verify copied app
         run: python3 scripts/release.py package
+      - name: Retain failed DMGs for diagnosis
+        if: failure()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: Failed-DMG-diagnostic-${{ matrix.arch }}
+          path: dist/release/*.dmg
+          if-no-files-found: ignore
+          retention-days: 1
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: Bookshelf-preview-${{ matrix.arch }}

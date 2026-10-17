@@ -2,7 +2,36 @@
 
 [Documentation](README.md) / Getting started
 
-## Requirements
+## Install the developer preview
+
+The [v0.1.0 release](https://github.com/NomaDamas/bookshelf/releases/tag/v0.1.0)
+provides separate DMGs for Apple Silicon (`arm64`) and Intel (`x86_64`). The deployment
+target is macOS 14. Downloaded apps do not require Xcode or Python; optional OCR
+has [separate dependencies](04-ocr.md#install-the-optional-engine).
+
+1. Download the DMG for your Mac and its matching `.dmg.sha256` file from the release.
+2. In that download folder, verify the checksum. For Apple Silicon:
+
+    ```sh
+    shasum -a 256 -c Bookshelf-0.1.0-macos-arm64.dmg.sha256
+    ```
+
+    Use the `x86_64` filename for Intel. Continue only if the result is `OK`.
+3. Quit any existing Bookshelf, open the DMG, and drag `Bookshelf.app` to Applications.
+4. Open Bookshelf from Applications. Replacing the app preserves the library data
+   stored outside it; see [backup and restore](07-data-and-privacy.md#backup-and-restore).
+
+These developer previews are **ad-hoc signed, not Developer ID signed or notarized
+by Apple**. A checksum verifies the downloaded bytes, not Apple approval. Gatekeeper
+may block the first launch. If you trust this release, follow Apple's
+[instructions for opening an unnotarized app](https://support.apple.com/en-us/102445).
+You can also build from source below.
+
+Both architectures are built and checked by executing the copied CLI in CI. Native
+UI verification has used Apple Silicon and macOS 26; older macOS and Intel UI
+compatibility have not been verified end to end.
+
+## Source build requirements
 
 | Requirement | Details |
 | --- | --- |
@@ -35,9 +64,6 @@ developer directory is used. Check `xcode-select -p`, `xcodebuild -version`, and
 `swift --version` if the build reports SDK or compiler errors. Set `DEVELOPER_DIR`
 to your actual Xcode developer directory to override it without changing the
 system-wide selection. Use the same toolchain for build and tests.
-
-The repository has no published binary release or notarized installer. Build the
-source locally; there is no release download step to follow.
 
 ## Read your first PDF
 
