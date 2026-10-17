@@ -27,6 +27,8 @@ that its Git tag or GitHub Release has been published.
 - Locate app metadata and OCR helpers inside the distributed app across Swift
   resource-bundle layouts, without depending on the build machine's checkout.
 - Reject DMGs whose copied app still starts when its packaged resources are absent.
+- Create the filesystem image before compressing it, avoiding corrupt DMG block
+  offsets observed during direct folder-to-compressed-image creation on arm64 CI.
 
 ### Known limitations
 
