@@ -155,6 +155,22 @@ publish when approved. Never move a published tag or replace its assets; release
 a new version instead. A failed workflow can leave a draft that must be inspected
 before retrying publication.
 
+## Homebrew distribution
+
+The [Bookshelf tap](https://github.com/NomaDamas/homebrew-bookshelf) owns
+`Casks/bookshelf.rb`. It downloads the published DMGs with architecture-specific
+SHA-256 checksums; it does not rebuild the app or change its signing status.
+Do not duplicate the cask in this repository.
+
+After publishing and checking a new GitHub Release, open a version update PR in
+the tap. Its README documents the version/checksum changes and macOS installation
+checks. Review the version, both checksums, the version-specific preview exception,
+and the signing caveat against the release's manifests before merging the update.
+
+Tap livecheck includes published numeric preview tags. It detects available
+versions; it does not publish a cask update automatically. Users receive a merged
+cask update through `brew update` and `brew upgrade --cask nomadamas/bookshelf/bookshelf`.
+
 ## Install, update, and compatibility
 
 Open the DMG and drag `Bookshelf.app` to Applications, or use the local installer

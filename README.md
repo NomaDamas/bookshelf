@@ -53,6 +53,19 @@ Screenshots use authored fixtures. See [capture provenance and verification](doc
 
 ## Quick start
 
+### Install with Homebrew
+
+```sh
+brew install --cask nomadamas/bookshelf/bookshelf
+```
+
+The [NomaDamas tap](https://github.com/NomaDamas/homebrew-bookshelf) selects the DMG
+for your Mac, checks its SHA-256, installs `Bookshelf.app`, and adds `bookshelf-cli`
+to your Homebrew `bin` directory. This installs the same developer preview described
+below. See [Homebrew installation and updates](docs/01-getting-started.md#install-with-homebrew).
+
+### Download a DMG
+
 Download the [v0.1.0 developer preview](https://github.com/NomaDamas/bookshelf/releases/tag/v0.1.0)
 for macOS 14 or later:
 
