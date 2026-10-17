@@ -45,8 +45,23 @@ OCR 사본 검토:
 
 ## 시작하기
 
-현재는 소스를 받아 빌드하는 방식입니다. 공증된 설치 파일이나 공개 바이너리 릴리스는 없습니다.
-macOS, 호환되는 Xcode/Swift 도구 체인, 빌드 보조 스크립트용 Python 3가 필요합니다.
+[v0.1.0 개발자 프리뷰](https://github.com/NomaDamas/bookshelf/releases/tag/v0.1.0)를
+내려받을 수 있습니다. macOS 14 이상을 대상으로 합니다.
+
+| Mac | 다운로드 |
+| --- | --- |
+| Apple Silicon (M 시리즈) | [Apple Silicon DMG](https://github.com/NomaDamas/bookshelf/releases/download/v0.1.0/Bookshelf-0.1.0-macos-arm64.dmg) |
+| Intel | [Intel DMG](https://github.com/NomaDamas/bookshelf/releases/download/v0.1.0/Bookshelf-0.1.0-macos-x86_64.dmg) |
+
+릴리스 페이지의 SHA-256 파일로 무결성을 확인한 뒤 DMG를 열고 `Bookshelf.app`을
+Applications로 옮기면 됩니다. 업데이트할 때는 기존 앱을 먼저 종료하세요.
+서재 데이터는 앱 밖에 보관하므로 앱을 교체해도 유지됩니다.
+이 프리뷰는 **임시 서명(ad-hoc signing)을 사용하며 Apple 공증을 받지 않았습니다.**
+macOS가 첫 실행을 차단할 수 있습니다. [설치와 Gatekeeper 안내](docs/01-getting-started.md#install-the-developer-preview)를 참고하세요.
+
+### 소스로 빌드하기
+
+호환되는 Xcode/Swift 도구 체인과 빌드 보조 스크립트용 Python 3가 필요합니다.
 
 ```sh
 git clone https://github.com/NomaDamas/bookshelf.git
@@ -80,7 +95,7 @@ OCR은 [설치 및 검토 안내](docs/04-ocr.md)를 따라 별도로 준비할 
 원본을 보존한 새 사본을 만들며, 앱에서 결과를 확인한 뒤 기존 책에 연결할 수 있습니다.
 품질 보고서만으로 모든 글자의 정확성을 보장하지는 않습니다.
 
-앱을 설치한 뒤 MCP 등록 도우미를 실행할 수 있습니다.
+앱을 설치한 뒤 복제한 저장소에서 MCP 등록 도우미를 실행할 수 있습니다.
 
 ```sh
 ./scripts/register-mcp.command
