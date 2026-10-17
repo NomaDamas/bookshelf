@@ -163,9 +163,9 @@ SHA-256 checksums; it does not rebuild the app or change its signing status.
 Do not duplicate the cask in this repository.
 
 After publishing and checking a new GitHub Release, open a version update PR in
-the tap using `brew bump-cask-pr`. The tap's README documents the command and its
-macOS installation checks. Review the version, both checksums, and signing caveat
-against the release's manifests before merging the cask update.
+the tap. Its README documents the version/checksum changes and macOS installation
+checks. Review the version, both checksums, the version-specific preview exception,
+and the signing caveat against the release's manifests before merging the update.
 
 Tap livecheck includes published numeric preview tags. It detects available
 versions; it does not publish a cask update automatically. Users receive a merged
