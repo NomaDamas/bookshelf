@@ -73,7 +73,7 @@ public struct AgentRequest: Encodable, Sendable {
     public init(action: String, backend: ChatBackend, directory: URL, usePi: Bool = true, skill: String = "auto",
                 question: String? = nil, messages: [Message] = [], book: Context? = nil, model: String? = nil) {
         self.action = action; self.clientVersion = AppMetadata.current.version; self.backend = backend; self.usePi = usePi; self.skill = skill
-        let agentBase = ProcessInfo.processInfo.environment["BOOKSHELF_AGENT_DATA_DIR"].map { URL(fileURLWithPath: $0, isDirectory: true) } ?? directory
+        let agentBase = ProductEnvironment.value("AGENT_DATA_DIR").map { URL(fileURLWithPath: $0, isDirectory: true) } ?? directory
         workspace = agentBase.appendingPathComponent("Agent/Workspace", isDirectory: true).path
         codexHome = agentBase.appendingPathComponent("Agent/Codex", isDirectory: true).path
         assetDirectory = directory.appendingPathComponent("ChatAssets", isDirectory: true).path
@@ -98,7 +98,7 @@ public enum AgentRuntime {
     }
     public static var ready: Bool { findExecutable("node") != nil && bridgeURL != nil }
     public static var readingCLI: URL? {
-        let url = Bundle.main.executableURL?.deletingLastPathComponent().appendingPathComponent("bookshelf-cli")
+        let url = Bundle.main.executableURL?.deletingLastPathComponent().appendingPathComponent("bookside-cli")
         return url.flatMap { FileManager.default.isExecutableFile(atPath: $0.path) ? $0 : nil }
     }
 }

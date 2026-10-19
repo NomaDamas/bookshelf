@@ -4,8 +4,8 @@ import Foundation
 
 final class PreferenceMigrationTests: XCTestCase {
     func testCopiesOnlyAppearanceAndPreservesNewChoice() throws {
-        let current = "bookshelf-migration-current-" + UUID().uuidString
-        let legacy = "bookshelf-migration-legacy-" + UUID().uuidString
+        let current = "bookside-migration-current-" + UUID().uuidString
+        let legacy = "bookside-migration-legacy-" + UUID().uuidString
         let defaults = try XCTUnwrap(UserDefaults(suiteName: current))
         defer { defaults.removePersistentDomain(forName: current); defaults.removePersistentDomain(forName: legacy) }
         defaults.setPersistentDomain(["readerAppearance": "dark", "unrelated": "keep private"], forName: legacy)
@@ -19,8 +19,8 @@ final class PreferenceMigrationTests: XCTestCase {
     }
 
     func testInvalidLegacyValueDoesNotCreateANewPreference() throws {
-        let current = "bookshelf-migration-current-" + UUID().uuidString
-        let legacy = "bookshelf-migration-legacy-" + UUID().uuidString
+        let current = "bookside-migration-current-" + UUID().uuidString
+        let legacy = "bookside-migration-legacy-" + UUID().uuidString
         let defaults = try XCTUnwrap(UserDefaults(suiteName: current))
         defer { defaults.removePersistentDomain(forName: current); defaults.removePersistentDomain(forName: legacy) }
         defaults.setPersistentDomain(["readerAppearance": "unknown-mode"], forName: legacy)

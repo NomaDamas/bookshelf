@@ -5,7 +5,7 @@ import Foundation
 final class LibraryStoreTests: XCTestCase {
     var directory: URL!
     override func setUpWithError() throws {
-        directory = FileManager.default.temporaryDirectory.appendingPathComponent("bookshelf-tests-" + UUID().uuidString)
+        directory = FileManager.default.temporaryDirectory.appendingPathComponent("bookside-tests-" + UUID().uuidString)
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
     }
     override func tearDownWithError() throws { try FileManager.default.removeItem(at: directory) }

@@ -13,7 +13,7 @@ binary = str(Path(sys.argv[1]).resolve()) if len(sys.argv) > 1 else state['binar
 process = subprocess.Popen(
     [binary, 'reading-mcp', state['book_id'], 'range', '1', '1'],
     stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL,
-    text=True, bufsize=1, env={**os.environ, 'BOOKSHELF_DATA_DIR': state['data_dir']},
+    text=True, bufsize=1, env={**os.environ, 'BOOKSIDE_DATA_DIR': state['data_dir']},
 )
 selector = selectors.DefaultSelector()
 selector.register(process.stdout, selectors.EVENT_READ)
@@ -51,7 +51,7 @@ try:
     request('initialize', {
         'protocolVersion': '2025-06-18',
         'capabilities': {'experimental': {'codex/auth-change': {}}},
-        'clientInfo': {'name': 'bookshelf-reading-check', 'version': '1'},
+        'clientInfo': {'name': 'bookside-reading-check', 'version': '1'},
     })
     request('notifications/initialized', notification=True)
     tools = request('tools/list')['tools']

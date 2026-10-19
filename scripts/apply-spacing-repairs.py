@@ -66,7 +66,7 @@ def main():
             if digest(backup) != row["original_sha256"]:
                 raise SystemExit("Backup verification failed: " + str(source))
             temporary = source.parent / (
-                ".bookshelf-layer-" + uuid.uuid4().hex + ".pdf"
+                ".bookside-layer-" + uuid.uuid4().hex + ".pdf"
             )
             try:
                 shutil.copyfile(row["candidate"], temporary)

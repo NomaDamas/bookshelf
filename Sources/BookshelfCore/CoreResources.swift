@@ -17,7 +17,7 @@ enum CoreResources {
                      containing.bundleURL.deletingLastPathComponent()].compactMap { $0 }
         }
         for root in roots {
-            let bundle = root.appendingPathComponent("Bookshelf_BookshelfCore.bundle")
+            let bundle = root.appendingPathComponent("Bookside_BookshelfCore.bundle")
             // Swift toolchains emit both flat and conventional macOS resource bundles.
             for directory in [bundle.appendingPathComponent("Contents/Resources"), bundle] {
                 let candidate = directory.appendingPathComponent(name).appendingPathExtension(fileExtension)

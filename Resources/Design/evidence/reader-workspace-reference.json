@@ -102,7 +102,7 @@
   ],
   "adaptations": [
     "Preview-style left document tools and center PDF",
-    "Bookshelf adds a dedicated right AI panel",
+    "Bookside adds a dedicated right AI panel",
     "Native AppKit split animation uses 240ms; it is not a measured Aside duration",
     "macOS system fonts and materials replace web fonts and background assets"
   ]

@@ -1,10 +1,10 @@
-# Bookshelf native workspace
+# Bookside native workspace
 
-Bookshelf reuses the visual grammar of [Aside / Glass workspace](https://github.com/seungwonme/ui-references/tree/main/references/aside-glass), a source study of Aside 1.0.928.1. This is a SwiftUI/AppKit implementation in the existing reader. The web prototype remains a separate worktree.
+Bookside reuses the visual grammar of [Aside / Glass workspace](https://github.com/seungwonme/ui-references/tree/main/references/aside-glass), a source study of Aside 1.0.928.1. This is a SwiftUI/AppKit implementation in the existing reader. The web prototype remains a separate worktree.
 
 ## Source and adaptation
 
-The reference's `tokens.json`, `DESIGN.md`, preview and extraction evidence were inspected before implementation. Source facts and Bookshelf choices are different:
+The reference's `tokens.json`, `DESIGN.md`, preview and extraction evidence were inspected before implementation. Source facts and Bookside choices are different:
 
 | Rule | Source evidence | Native implementation |
 | --- | --- | --- |
@@ -16,7 +16,7 @@ The reference's `tokens.json`, `DESIGN.md`, preview and extraction evidence were
 | Foreground and font | Geist and theme-specific source colors | macOS system font and semantic text/background colors, including Korean fallback |
 | Content surface | Source conversation surface and composer card | Opaque PDF/text and notebook surfaces for sustained reading |
 
-The forest wallpaper, experimental Liquid Glass shader layers, Aside logo and bundled typefaces are not included. Their native pixel equality was never established by the source study. Bookshelf uses [NSVisualEffectView](https://developer.apple.com/documentation/appkit/nsvisualeffectview) for native material behavior. The resulting interface follows the reference's hierarchy, not a screenshot reproduction.
+The forest wallpaper, experimental Liquid Glass shader layers, Aside logo and bundled typefaces are not included. Their native pixel equality was never established by the source study. Bookside uses [NSVisualEffectView](https://developer.apple.com/documentation/appkit/nsvisualeffectview) for native material behavior. The resulting interface follows the reference's hierarchy, not a screenshot reproduction.
 
 ## Tokens and ownership
 
@@ -43,7 +43,7 @@ The native minimum window is 1000 by 650 points. Panels can be resized or hidden
 Preview 11.0's compiled `PVDocument.nib` identifies `LeftSplitRootView`, `SidebarView`,
 `MainSplitRootView` and `PVSplitViewController`. Its menu archive contains thumbnail and
 sidebar-toggle actions. This supports the document/sidebar layout; it does not establish
-runtime pixel measurements or a copied Preview appearance. The AI inspector is a Bookshelf
+runtime pixel measurements or a copied Preview appearance. The AI inspector is a Bookside
 addition.
 
 The bounded REA archive result and the verified Aside source facts are recorded in
@@ -51,7 +51,7 @@ The bounded REA archive result and the verified Aside source facts are recorded 
 
 Aside's matching source CSS declares a 150ms default transition with `cubic-bezier(.4,0,.2,1)`.
 The composer source uses a radius-2xl card, a fine ring, and grouped editor/attachment/send
-controls. The token source preserves these origins. Bookshelf's 240ms native split animation
+controls. The token source preserves these origins. Bookside's 240ms native split animation
 and 200ms message treatment are adaptations, not measured Aside interaction durations.
 Reduced Motion removes optional animations. Streaming text is batched at short intervals;
 scrolling back through a conversation leaves a control to return to the newest reply.

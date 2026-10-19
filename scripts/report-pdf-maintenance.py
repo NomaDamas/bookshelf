@@ -1,4 +1,4 @@
-"""Write a readable live/final report for a Bookshelf maintenance job; never changes PDFs or the catalog."""
+"""Write a readable live/final report for a Bookside maintenance job; never changes PDFs or the catalog."""
 
 import argparse
 import json

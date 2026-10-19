@@ -27,7 +27,7 @@ def metadata():
 
 def plist_bytes(data):
     result = {
-        "CFBundleExecutable": "Bookshelf",
+        "CFBundleExecutable": "Bookside",
         "CFBundleIdentifier": data["bundleIdentifier"],
         "CFBundleName": data["name"],
         "CFBundleDisplayName": data["name"],
@@ -38,10 +38,11 @@ def plist_bytes(data):
         "LSMinimumSystemVersion": data["minimumMacOS"],
         "NSHighResolutionCapable": True,
         "NSPrincipalClass": "NSApplication",
-        "NSHumanReadableCopyright": "Bookshelf contributors. MIT License.",
+        "NSHumanReadableCopyright": "Bookside contributors. MIT License.",
         "CFBundleURLTypes": [{
             "CFBundleURLName": data["bundleIdentifier"] + ".book",
-            "CFBundleURLSchemes": ["bookshelf"],
+            # bookshelf:// links written before the rename keep opening books.
+            "CFBundleURLSchemes": ["bookside", "bookshelf"],
         }],
     }
     return plistlib.dumps(result, sort_keys=False)

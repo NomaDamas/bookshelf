@@ -100,8 +100,15 @@ public enum FileAccess {
         guard let a = try? FileManager.default.attributesOfItem(atPath: url.path), let inode = a[.systemFileNumber] as? NSNumber, let device = a[.systemNumber] as? NSNumber else { return canonicalPath(url) }
         return "\(device):\(inode)"
     }
-    public static func defaultDataDirectory() -> URL {
-        if let custom = ProcessInfo.processInfo.environment["BOOKSHELF_DATA_DIR"], !custom.isEmpty { return URL(fileURLWithPath: custom, isDirectory: true) }
-        return FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0].appendingPathComponent("Bookshelf", isDirectory: true)
+    public static func defaultDataDirectory(environment: [String: String] = ProcessInfo.processInfo.environment,
+                                            applicationSupport: URL = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]) -> URL {
+        if let custom = ProductEnvironment.value("DATA_DIR", in: environment) { return URL(fileURLWithPath: custom, isDirectory: true) }
+        let current = applicationSupport.appendingPathComponent("Bookside", isDirectory: true)
+        // A library created before the rename is used in place; moving it could split
+        // the database from WAL sidecars while another Bookshelf process still runs.
+        let legacy = applicationSupport.appendingPathComponent("Bookshelf", isDirectory: true)
+        let fm = FileManager.default
+        if !fm.fileExists(atPath: current.path), fm.fileExists(atPath: legacy.appendingPathComponent("library.sqlite3").path) { return legacy }
+        return current
     }
 }

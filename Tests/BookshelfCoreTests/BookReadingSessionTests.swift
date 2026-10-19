@@ -87,9 +87,9 @@ final class BookReadingSessionTests: XCTestCase {
         let context = AgentRequest.Context(id: "book", title: "Test", page: 1, text: "outside", notes: "note", selection: "outside selection", scope: .init(mode: "range", startPage: 3, endPage: 5))
         XCTAssertEqual(context.text, ""); XCTAssertEqual(context.selection, ""); XCTAssertEqual(context.providedCharacters, 0)
         let linked = ChatCitations.linkedMarkdown("한글 [p. 4] and [p. 99]", pages: [4])
-        XCTAssertTrue(linked.contains("bookshelf-citation://page/4")); XCTAssertTrue(linked.hasSuffix("[p. 99]"))
-        XCTAssertEqual(ChatCitations.page(in: URL(string: "bookshelf-citation://page/4")!, allowed: [4]), 4)
-        XCTAssertNil(ChatCitations.page(in: URL(string: "bookshelf-citation://page/99")!, allowed: [4]))
-        XCTAssertNil(ChatCitations.page(in: URL(string: "bookshelf-citation://other/4")!, allowed: [4]))
+        XCTAssertTrue(linked.contains("bookside-citation://page/4")); XCTAssertTrue(linked.hasSuffix("[p. 99]"))
+        XCTAssertEqual(ChatCitations.page(in: URL(string: "bookside-citation://page/4")!, allowed: [4]), 4)
+        XCTAssertNil(ChatCitations.page(in: URL(string: "bookside-citation://page/99")!, allowed: [4]))
+        XCTAssertNil(ChatCitations.page(in: URL(string: "bookside-citation://other/4")!, allowed: [4]))
     }
 }

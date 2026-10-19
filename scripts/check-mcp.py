@@ -11,7 +11,7 @@ root = Path(__file__).resolve().parents[1]
 state = json.loads((root / '.runtime/ocr-check-result.json').read_text())
 if len(sys.argv) > 1:
     state['binary'] = str(Path(sys.argv[1]).resolve())
-env = {**os.environ, 'BOOKSHELF_DATA_DIR': state['data_dir']}
+env = {**os.environ, 'BOOKSIDE_DATA_DIR': state['data_dir']}
 stderr = (root / '.runtime/mcp-stderr.log').open('w')
 process = subprocess.Popen([state['binary'], 'mcp'], stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=stderr, text=True, bufsize=1, env=env)
 selector = selectors.DefaultSelector(); selector.register(process.stdout, selectors.EVENT_READ)
@@ -41,7 +41,7 @@ def send(method, params=None, notification=False):
     raise TimeoutError(method)
 
 try:
-    init = send('initialize', {'protocolVersion': '2025-11-25', 'capabilities': {'experimental': {'codex/auth-change': {}}, 'elicitation': {'form': {}, 'url': {}}}, 'clientInfo': {'name': 'bookshelf-integration-check', 'version': '1'}})
+    init = send('initialize', {'protocolVersion': '2025-11-25', 'capabilities': {'experimental': {'codex/auth-change': {}}, 'elicitation': {'form': {}, 'url': {}}}, 'clientInfo': {'name': 'bookside-integration-check', 'version': '1'}})
     send('notifications/initialized', notification=True)
     tools = send('tools/list')['tools']
     assert len(tools) == 5

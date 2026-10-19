@@ -1,4 +1,4 @@
-"""Build, package, and verify Bookshelf macOS distribution artifacts."""
+"""Build, package, and verify Bookside macOS distribution artifacts."""
 
 import argparse
 import hashlib
@@ -13,7 +13,7 @@ import tempfile
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-APP = ROOT / "dist/Bookshelf.app"
+APP = ROOT / "dist/Bookside.app"
 METADATA = ROOT / "Sources/BookshelfCore/Resources/AppMetadata.json"
 
 
@@ -34,8 +34,13 @@ def product():
     return json.loads(METADATA.read_text(encoding="utf-8"))
 
 
+def setting(name, default=None):
+    # BOOKSHELF_* is the pre-rename prefix; it applies only when BOOKSIDE_* is unset.
+    return os.environ.get("BOOKSIDE_" + name) or os.environ.get("BOOKSHELF_" + name) or default
+
+
 def identity():
-    value = os.environ.get("BOOKSHELF_SIGNING_IDENTITY", "-")
+    value = setting("SIGNING_IDENTITY", "-")
     if value != "-" and not value.startswith("Developer ID Application:"):
         raise ValueError("Use a Developer ID Application identity, or '-' for an ad-hoc local build")
     return value
@@ -46,7 +51,7 @@ def sign_app(bundle):
     flags = ["--force", "--sign", signing]
     if signing != "-":
         flags += ["--options", "runtime", "--timestamp"]
-    for binary in ("bookshelf-cli", "Bookshelf"):
+    for binary in ("bookside-cli", "Bookside"):
         run("codesign", *flags, bundle / "Contents/MacOS" / binary)
     run("codesign", *flags, bundle)
     run("codesign", "--verify", "--deep", "--strict", bundle)
@@ -72,13 +77,13 @@ def verify_bundle(bundle, expected_arch=None):
     info = plistlib.loads((bundle / "Contents/Info.plist").read_bytes())
     run("codesign", "--verify", "--deep", "--strict", bundle)
     architectures = {}
-    for binary in ("Bookshelf", "bookshelf-cli"):
+    for binary in ("Bookside", "bookside-cli"):
         architectures[binary] = run("lipo", "-archs", bundle / "Contents/MacOS" / binary, capture=True).decode().split()
         if expected_arch and expected_arch not in architectures[binary]:
             raise ValueError(f"{binary} does not contain expected architecture {expected_arch}")
-    with tempfile.TemporaryDirectory(prefix="bookshelf-verify-") as temporary:
-        env = {**os.environ, "BOOKSHELF_DATA_DIR": str(Path(temporary) / "data")}
-        cli = bundle / "Contents/MacOS/bookshelf-cli"
+    with tempfile.TemporaryDirectory(prefix="bookside-verify-") as temporary:
+        env = {**os.environ, "BOOKSIDE_DATA_DIR": str(Path(temporary) / "data")}
+        cli = bundle / "Contents/MacOS/bookside-cli"
         version = run(cli, "--version", capture=True, env=env).decode().strip()
         expected = f"{info['CFBundleName']} {info['CFBundleShortVersionString']} (build {info['CFBundleVersion']})"
         if version != expected:
@@ -90,7 +95,7 @@ def verify_bundle(bundle, expected_arch=None):
             raise ValueError("Runtime metadata does not match the packaged app")
     if not (bundle / "Contents/Resources/ThirdParty").is_dir():
         raise ValueError("Dependency notices are missing")
-    resources = bundle / "Contents/Resources/Bookshelf_BookshelfCore.bundle"
+    resources = bundle / "Contents/Resources/Bookside_BookshelfCore.bundle"
     for filename in ("AppMetadata.json", "prepare-ocr-replacement.py"):
         if not any((directory / filename).is_file() for directory in (resources, resources / "Contents/Resources")):
             raise ValueError(f"Required packaged resource is missing: {filename}")
@@ -100,19 +105,19 @@ def verify_bundle(bundle, expected_arch=None):
 
 def verify_resource_isolation(bundle):
     """A copied app must fail without its own resources, even on its build machine."""
-    resources = bundle / "Contents/Resources/Bookshelf_BookshelfCore.bundle"
-    with tempfile.TemporaryDirectory(prefix="bookshelf-resource-check-", dir=bundle.parent) as temporary:
+    resources = bundle / "Contents/Resources/Bookside_BookshelfCore.bundle"
+    with tempfile.TemporaryDirectory(prefix="bookside-resource-check-", dir=bundle.parent) as temporary:
         withheld = Path(temporary) / resources.name
         resources.rename(withheld)
         try:
             result = subprocess.run(
-                [str(bundle / "Contents/MacOS/bookshelf-cli"), "--version"],
+                [str(bundle / "Contents/MacOS/bookside-cli"), "--version"],
                 capture_output=True, text=True,
-                env={**os.environ, "BOOKSHELF_DATA_DIR": str(Path(temporary) / "data")},
+                env={**os.environ, "BOOKSIDE_DATA_DIR": str(Path(temporary) / "data")},
             )
             if result.returncode == 0:
                 raise ValueError("App loaded resources outside its bundle; a build-directory fallback masked missing packaged files")
-            if "Bookshelf product metadata is missing" not in result.stderr:
+            if "Bookside product metadata is missing" not in result.stderr:
                 raise ValueError("Missing-resource probe failed for an unexpected reason: " + result.stderr[-2000:])
         finally:
             withheld.rename(resources)
@@ -121,7 +126,7 @@ def verify_resource_isolation(bundle):
 
 def verify_dmg(dmg, expected_arch=None):
     run("hdiutil", "verify", dmg)
-    with tempfile.TemporaryDirectory(prefix="bookshelf-dmg-check-") as temporary:
+    with tempfile.TemporaryDirectory(prefix="bookside-dmg-check-") as temporary:
         mount = Path(temporary) / "volume"
         mount.mkdir()
         attached = False
@@ -131,9 +136,9 @@ def verify_dmg(dmg, expected_arch=None):
             if not (mount / "Applications").is_symlink() or os.readlink(mount / "Applications") != "/Applications":
                 raise ValueError("DMG must contain the Applications shortcut")
             # Exercise the same bundle a user copies off the mounted disk image.
-            installed = Path(temporary) / "Installed/Bookshelf.app"
+            installed = Path(temporary) / "Installed/Bookside.app"
             installed.parent.mkdir()
-            run("ditto", mount / "Bookshelf.app", installed)
+            run("ditto", mount / "Bookside.app", installed)
             result = verify_bundle(installed, expected_arch)
             verify_resource_isolation(installed)
             print(json.dumps({"dmg": dmg.name, "copied_app_verified": True,
@@ -147,11 +152,11 @@ def verify_dmg(dmg, expected_arch=None):
 def package(output, skip_build=False, notarize=False):
     run("python3", ROOT / "scripts/app-metadata.py", "check")
     signing = identity()
-    profile = os.environ.get("BOOKSHELF_NOTARY_PROFILE")
+    profile = setting("NOTARY_PROFILE")
     if notarize and (signing == "-" or not profile):
-        raise ValueError("Notarization requires Developer ID signing and BOOKSHELF_NOTARY_PROFILE")
+        raise ValueError("Notarization requires Developer ID signing and BOOKSIDE_NOTARY_PROFILE")
     if not skip_build:
-        run(ROOT / "scripts/build-app.sh", env={**os.environ, "BOOKSHELF_BUILD_CONFIGURATION": "release"})
+        run(ROOT / "scripts/build-app.sh", env={**os.environ, "BOOKSIDE_BUILD_CONFIGURATION": "release"})
     data = product()
     arch = platform.machine()
     if arch not in ("arm64", "x86_64"):
@@ -160,38 +165,39 @@ def package(output, skip_build=False, notarize=False):
     info = plistlib.loads((APP / "Contents/Info.plist").read_bytes())
     if checked["version"] != data["version"] or checked["bundleIdentifier"] != data["bundleIdentifier"]:
         raise ValueError("The app is stale; rebuild it before packaging")
-    if info.get("BookshelfBuildConfiguration") != "release":
+    if info.get("BooksideBuildConfiguration") != "release":
         raise ValueError("Distribution requires a release build")
     revision = run("git", "rev-parse", "HEAD", capture=True).decode().strip()
-    if info.get("BookshelfSourceRevision") != revision:
+    if info.get("BooksideSourceRevision") != revision:
         raise ValueError("The app was built from another commit; rebuild it")
     signature = subprocess.run(["codesign", "-d", "--verbose=4", str(APP)], capture_output=True, check=True).stderr.decode()
     signed = "Authority=Developer ID Application:" in signature
     if signed != (signing != "-"):
         raise ValueError("Bundle signature differs from the requested signing mode; rebuild it")
-    stem = f"Bookshelf-{data['version']}-macos-{arch}"
+    stem = f"Bookside-{data['version']}-macos-{arch}"
     output.mkdir(parents=True, exist_ok=True)
     dmg = output / (stem + ".dmg")
     record = output / (stem + ".json")
     checksum = output / (stem + ".dmg.sha256")
     if any(p.exists() for p in (dmg, record, checksum)):
         raise ValueError("Release outputs already exist; choose a fresh --output directory")
-    with tempfile.TemporaryDirectory(prefix="bookshelf-package-") as temporary:
+    with tempfile.TemporaryDirectory(prefix="bookside-package-") as temporary:
         stage = Path(temporary) / "image"
         stage.mkdir()
-        run("ditto", APP, stage / "Bookshelf.app")
+        run("ditto", APP, stage / "Bookside.app")
         (stage / "Applications").symlink_to("/Applications")
         shutil.copy2(ROOT / "LICENSE", stage / "LICENSE.txt")
         warning = "Developer ID signed; see release notes for notarization status." if signed else "Ad-hoc signed developer preview. Not notarized by Apple."
         (stage / "READ ME.txt").write_text(
-            f"Bookshelf {data['version']}\n\nDrag Bookshelf.app to Applications.\n"
-            "Quit the old app before replacing it. Your library and notes remain in Application Support/Bookshelf.\n\n"
+            f"Bookside {data['version']}\n\nDrag Bookside.app to Applications.\n"
+            "Quit the old app first. Your library and notes stay in Application Support; a library\n"
+            "from Bookshelf is used in place, and Bookshelf.app can then be moved to the Trash.\n\n"
             + warning + "\nOCR dependencies are installed separately.\n"
             + data["repository"] + "/blob/main/docs/01-getting-started.md\n", encoding="utf-8")
         # Direct srcfolder -> UDZO creation produced out-of-range BLKX offsets on
         # macOS arm64 CI. Finish the filesystem image before serial compression.
         uncompressed = Path(temporary) / "uncompressed.dmg"
-        run("hdiutil", "create", "-volname", f"Bookshelf {data['version']}", "-srcfolder", stage,
+        run("hdiutil", "create", "-volname", f"Bookside {data['version']}", "-srcfolder", stage,
             "-format", "UDRW", "-fs", "HFS+", uncompressed)
         run("hdiutil", "convert", uncompressed, "-format", "UDZO", "-tasks", "1", "-o", dmg)
     if signed:
@@ -204,7 +210,7 @@ def package(output, skip_build=False, notarize=False):
     checksum.write_text(hashlib.sha256(dmg.read_bytes()).hexdigest() + "  " + dmg.name + "\n", encoding="utf-8")
     record.write_text(json.dumps({
         **data, "architecture": arch, "sourceRevision": revision,
-        "sourceDirty": info.get("BookshelfSourceDirty", True),
+        "sourceDirty": info.get("BooksideSourceDirty", True),
         "signing": "developer-id" if signed else "ad-hoc", "notarized": notarize,
         "artifact": dmg.name, "sha256": hashlib.sha256(dmg.read_bytes()).hexdigest(),
     }, indent=2) + "\n", encoding="utf-8")

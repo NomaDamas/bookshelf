@@ -38,7 +38,7 @@ review-needed error. Poppler is required by the integration test sequence.
 
 The app always opens review before attaching output. Unaccepted candidates stay
 excluded from rescans and can be reopened with **생성한 OCR 사본 검토…**.
-A known [temporary-path alias issue](https://github.com/NomaDamas/bookshelf/issues/2)
+A known [temporary-path alias issue](https://github.com/NomaDamas/bookside/issues/2)
 can bypass candidate withholding under `/var` / `/private/var`; use a regular
 library path while that issue is open.
 
@@ -47,11 +47,11 @@ that selection survives a rescan. Accepted versions continue to belong to one bo
 
 ## CLI review workflow
 
-Set `BOOKSHELF_CLI` and `BOOK_ID` using the [CLI guide](03-cli-and-mcp.md).
+Set `BOOKSIDE_CLI` and `BOOK_ID` using the [CLI guide](03-cli-and-mcp.md).
 Use a new report destination for each run:
 
 ```sh
-"$BOOKSHELF_CLI" ocr "$BOOK_ID" --redo --review-only > ocr-result.json
+"$BOOKSIDE_CLI" ocr "$BOOK_ID" --redo --review-only > ocr-result.json
 ```
 
 Progress goes to stderr. Successful JSON includes the output path, source/output
@@ -59,13 +59,13 @@ hashes, inspection, quality findings, and a report location. Inspect the report
 and PDFs before accepting:
 
 ```sh
-"$BOOKSHELF_CLI" ocr-accept ocr-result.json
+"$BOOKSIDE_CLI" ocr-accept ocr-result.json
 ```
 
 To restore the source selection:
 
 ```sh
-"$BOOKSHELF_CLI" ocr-original "$BOOK_ID"
+"$BOOKSIDE_CLI" ocr-original "$BOOK_ID"
 ```
 
 The accept command is the user's explicit review decision. It rechecks source and
@@ -85,7 +85,7 @@ nested OCR text from being retained alongside new text.
 Output defaults to the first free `title_ocr.pdf`, then `title_2_ocr.pdf`, and so on.
 Cancellation interrupts the worker and removes private partial/prepared output.
 A completed but unaccepted candidate is kept for review. Logs and result reports
-live in `Logs/` under the selected Bookshelf data directory.
+live in `Logs/` under the selected Bookside data directory.
 
 ## Quality checks and limitations
 
@@ -99,7 +99,7 @@ with at most 8/255 difference per channel. Larger changes require review.
 These checks identify risks; they do not certify every recognized word.
 
 Text detection counts pages with any extractable text. A scanned page with a small
-existing text header may be skipped by missing-text mode. Bookshelf does not
+existing text header may be skipped by missing-text mode. Bookside does not
 implicitly force-rasterize such pages. Search whitespace normalization can improve
 matching without altering a PDF; it does not repair recognition errors.
 
@@ -108,13 +108,13 @@ Those tools have a different mutation boundary from the app's new-copy workflow.
 
 ## Engine discovery and troubleshooting
 
-Discovery checks executable `BOOKSHELF_OCRMYPDF`, then `PATH`, `~/.local/bin`,
+Discovery checks executable `BOOKSIDE_OCRMYPDF`, then `PATH`, `~/.local/bin`,
 `/opt/homebrew/bin`, and `/usr/local/bin`. CLI `doctor` reports the selected path.
-Set overrides in the process that launches Bookshelf; terminal variables may not
+Set overrides in the process that launches Bookside; terminal variables may not
 reach an app opened from Finder.
 
 The replacement helper normally uses the Python interpreter in the OCRmyPDF
-launcher's shebang. If using a custom launcher, set `BOOKSHELF_OCR_PYTHON` to the
+launcher's shebang. If using a custom launcher, set `BOOKSIDE_OCR_PYTHON` to the
 matching environment's Python with `pikepdf` installed. Keep the virtual environment
 executable path; resolving its symlink to a base interpreter loses its packages.
 
@@ -123,7 +123,7 @@ executable path; resolving its symlink to a base interpreter loses its packages.
 | Engine not found | Run `command -v ocrmypdf` and CLI `doctor`; check discovery paths. |
 | AppleOCR option/plugin error | Check the AppleOCR plugin is installed in the same environment as OCRmyPDF. |
 | Ghostscript error | Check `command -v gs` and the OCR log. |
-| Replacement helper fails | Check launcher interpreter, `pikepdf`, and `BOOKSHELF_OCR_PYTHON`. |
+| Replacement helper fails | Check launcher interpreter, `pikepdf`, and `BOOKSIDE_OCR_PYTHON`. |
 | Cloud-only source | Download that PDF in Finder, then retry. |
 | Candidate needs review | Inspect quality flags and compare source/result; keep the original if uncertain. |
 | Source or candidate changed | Acceptance refuses stale hashes. Generate and review a fresh candidate. |

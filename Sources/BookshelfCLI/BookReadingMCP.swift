@@ -5,7 +5,7 @@ import MCP
 /// This server has no book-id or filesystem arguments that a model can redirect.
 func runBookReadingMCP(store: LibraryStore, bookID: String, scope: BookReadingScope, providedPage: Int?, providedCharacters: Int) async throws {
     let session = try BookReadingSession(book: store.book(bookID), scope: scope, providedPage: providedPage, providedCharacters: providedCharacters)
-    let server = Server(name: "bookshelf", version: AppMetadata.current.version, capabilities: .init(tools: .init(listChanged: false)))
+    let server = Server(name: "bookside", version: AppMetadata.current.version, capabilities: .init(tools: .init(listChanged: false)))
     let integer: Value = .object(["type": .string("integer"), "minimum": .int(1)])
     func schema(_ properties: [String: Value], required: [String] = []) -> Value {
         .object(["type": .string("object"), "properties": .object(properties), "required": .array(required.map(Value.string)), "additionalProperties": .bool(false)])

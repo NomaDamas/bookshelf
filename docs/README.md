@@ -1,4 +1,4 @@
-# Bookshelf documentation
+# Bookside documentation
 
 [Project overview](../README.md) | [한국어 소개](../README.ko.md)
 
