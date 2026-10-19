@@ -35,6 +35,7 @@ flowchart LR
 | `Sources/BookshelfCLI/` | Command parsing and official Swift MCP SDK tool handlers. |
 | `Sources/CSQLite/` | System SQLite module bridge. |
 | `Resources/`, `scripts/` | Bundle metadata, design sources, build/install helpers, verification and maintenance. |
+| `skills/bookside/` | Installable agent skill for using the library through `bookside-cli`. |
 
 ## A book is not a PDF version
 

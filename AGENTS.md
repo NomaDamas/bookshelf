@@ -7,7 +7,9 @@ MCP tool surface. Follow [CONTRIBUTING.md](CONTRIBUTING.md) for changes and PR e
 
 - Build/setup or compatibility: [getting started](docs/01-getting-started.md).
 - Persistence, import, caching, or module boundaries: [architecture](docs/05-architecture.md).
-- CLI/MCP behavior or schemas: [CLI and MCP](docs/03-cli-and-mcp.md).
+- CLI/MCP behavior or schemas: [CLI and MCP](docs/03-cli-and-mcp.md). Update the agent
+  skill [`skills/bookside`](skills/bookside/SKILL.md) in the same change when CLI
+  commands, output, or error messages change.
 - OCR lifecycle/flags: [OCR guide](docs/04-ocr.md). In-place repairs: [maintenance](docs/08-pdf-maintenance.md).
 - Test selection or screenshots: [development](docs/06-development.md).
 - Data locations, backup, or external exposure: [data and privacy](docs/07-data-and-privacy.md).

@@ -154,6 +154,11 @@ provider, according to its configuration. The reader's **AI로 이어가기** bu
 copies a context prompt to the clipboard. See the [MCP reference](docs/03-cli-and-mcp.md)
 and [data and privacy guide](docs/07-data-and-privacy.md).
 
+Agents that run shell commands can use the CLI without MCP. Install the bundled
+[`bookside` skill](skills/bookside/SKILL.md) with `npx skills add NomaDamas/bookside --skill bookside`
+(or `bunx`). It covers finding books, searching and reading pages, and changing
+notes, bookmarks or OCR copies only when you ask.
+
 ## Documentation
 
 | I want to… | Read |
