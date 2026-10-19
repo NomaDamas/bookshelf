@@ -70,7 +70,8 @@ struct ReaderWindow: View {
                     Menu { Button("PDF 추가…") { model.chooseFiles() }; Button("폴더 추가…") { model.chooseFiles(folder: true) } } label: { Image(systemName: "plus") }
                         .help("서재에 추가").accessibilityLabel("서재에 추가")
                 }
-                if AgentRuntime.bridgeURL != nil {
+                // The library has no Pi panel, so its toggle appears only while reading.
+                if model.isReadingBook && AgentRuntime.bridgeURL != nil {
                     Button { withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.15)) { model.toggleAIPanel() } } label: { Image(systemName: "sidebar.right") }.help(model.shortcutHint(.aiPanel)).accessibilityLabel(ReaderAction.aiPanel.title)
                 }
             }

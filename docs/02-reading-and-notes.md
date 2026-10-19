@@ -52,7 +52,7 @@ Option-Up and Option-Down keep their editing meaning and move the cursor instead
 
 Enter a page number and press Return to jump and keep reading with the keyboard.
 The first and last pages are clamped. PDF layout selection is saved between launches.
-**Help > Bookside 키보드 단축키** lists every key with your current settings.
+**도움말 > Bookside 키보드 단축키** lists every key with your current settings.
 
 The window toolbar holds the reader's controls in one row, as in Preview. On the left are
 the sidebar button and **서재**. In the middle is the book title; click it for the book menu
@@ -68,15 +68,15 @@ Default app shortcuts follow Preview and other macOS apps. Change them in
 
 | Menu | Key | Action |
 | --- | --- | --- |
-| File | Command-O / Command-Shift-O | Add PDFs / add a folder (fixed) |
-| File | Command-S | Save pending notebook edits |
-| Edit > 찾기 | Command-F | Search within the current book |
-| Edit > 찾기 | Command-G / Command-Shift-G | Next / previous search result |
-| View | Control-Command-S | Show or hide the sidebar |
-| View | Option-Command-I | Show or hide the Pi panel |
-| View | Option-Command-1 / 2 / 3 | Open pages / notes / excerpts |
-| View | Command-Plus / Command-Minus | Zoom in / out (Command-= also zooms in) |
-| View | Command-0 / Command-9 | Actual size / fit the page |
+| 파일 | Command-O / Command-Shift-O | Add PDFs / add a folder (fixed) |
+| 파일 | Command-S | Save pending notebook edits |
+| 편집 > 찾기 | Command-F | Search within the current book |
+| 편집 > 찾기 | Command-G / Command-Shift-G | Next / previous search result |
+| 보기 | Control-Command-S | Show or hide the sidebar |
+| 보기 | Option-Command-I | Show or hide the Pi panel |
+| 보기 | Option-Command-1 / 2 / 3 | Open pages / notes / excerpts |
+| 보기 | Command-Plus / Command-Minus | Zoom in / out (Command-= also zooms in) |
+| 보기 | Command-0 / Command-9 | Actual size / fit the page |
 | 이동 | Command-Shift-L | Return to the library |
 | 이동 | Option-Up / Option-Down | Previous / next page |
 | 이동 | Option-Command-G | Go to a page number |
@@ -151,7 +151,7 @@ result to jump to its PDF page.
 
 ## Appearance and AI handoff
 
-Settings open from **Bookside > Settings…** (`Command-,`) in one window, which also opens
+Settings open from **Bookside > 설정…** (`Command-,`) in one window with 일반, AI 연결 and 단축키 tabs, which also opens
 when a panel needs a setting, such as Pi's sign-in. Settings offer system, light, and dark appearance. Native materials surround opaque
 reading/writing surfaces. Reduced transparency, increased contrast, and reduced
 motion have fallback paths; see [design and verification](../Resources/Design/DESIGN.md).

@@ -38,7 +38,11 @@ import BookshelfCore
     @StateObject private var model = AppModel()
     @AppStorage("readerAppearance") private var appearance = ReaderAppearance.system
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var delegate
-    init() { PreferenceMigration.migrateCurrentInstallation() }
+    init() {
+        PreferenceMigration.migrateCurrentInstallation()
+        // Every window shows the same library state, so window tabs would only duplicate it.
+        NSWindow.allowsAutomaticWindowTabbing = false
+    }
     var body: some Scene {
         WindowGroup("서재") {
             ReaderWindow(model: model)
@@ -99,10 +103,15 @@ import BookshelfCore
                 item(.bookmark) { model.toggleBookmark() }.disabled(model.document == nil)
                 item(.highlight) { model.saveSelection() }.disabled(model.selection.isEmpty)
                 Divider()
+                Button("책장에서 보기") { model.revealCurrentBook() }.disabled(model.activeBook == nil)
+                Button("Finder에서 보기") { model.revealSource() }.disabled(model.activeBook == nil)
+                Divider()
                 Button("텍스트 인식…") { model.startOCR() }.disabled(model.activeBook == nil || model.ocrRunning)
                 Button("기존 OCR 개선…") { model.startOCR(mode: .replaceText) }.disabled(model.activeBook == nil || model.ocrRunning)
                 Button("생성한 OCR 사본 검토…") { model.reviewLatestOCR() }.disabled(model.activeBook == nil || model.ocrRunning)
                 Button("원본 PDF 사용") { model.useOriginalPDF() }.disabled(model.activeBook?.ocrPath == nil || model.ocrRunning)
+                Divider()
+                Button("AI로 이어가기") { model.copyContext() }.disabled(model.activeBook == nil)
             }
             HelpCommands()
         }
@@ -110,6 +119,8 @@ import BookshelfCore
             KeyboardShortcutsList(model: model).preferredColorScheme(appearance.colorScheme)
         }
         .windowResizability(.contentSize)
+        // The Help menu opens this list; a Window menu entry would repeat it.
+        .commandsRemoved()
         Settings { SettingsView(model: model).preferredColorScheme(appearance.colorScheme) }
     }
     /// Menu items for remappable actions read their keys from the user's shortcut settings.
