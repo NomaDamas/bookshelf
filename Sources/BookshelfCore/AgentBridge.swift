@@ -103,6 +103,16 @@ public enum AgentRuntime {
     }
 }
 
+/// Wait without pumping a worker run loop, which can deliver PDFKit UI timers off-main.
+final class AgentProcessExit {
+    private let exited = DispatchSemaphore(value: 0)
+    init(_ process: Process) {
+        let exited = exited
+        process.terminationHandler = { _ in exited.signal() }
+    }
+    func wait() { exited.wait() }
+}
+
 /// One request per process. The app owns history; provider credentials never cross this protocol.
 public final class AgentBridge: @unchecked Sendable {
     private let lock = NSLock()
@@ -127,6 +137,7 @@ public final class AgentBridge: @unchecked Sendable {
                     task.standardInput = input; task.standardOutput = output; task.standardError = FileHandle.nullDevice
                     let keys = Set(["HOME", "USER", "LOGNAME", "PATH", "TMPDIR", "LANG", "LC_ALL", "LC_CTYPE", "SHELL", "CLAUDE_CONFIG_DIR"])
                     task.environment = ProcessInfo.processInfo.environment.filter { keys.contains($0.key) }
+                    let exited = AgentProcessExit(task)
                     lock.lock(); process = task; let shouldCancel = cancelled; lock.unlock()
                     if shouldCancel { throw CancellationError() }
                     try task.run()
@@ -154,7 +165,7 @@ public final class AgentBridge: @unchecked Sendable {
                             continuation.yield(event)
                         }
                     }
-                    task.waitUntilExit()
+                    exited.wait()
                     if task.terminationStatus != 0 && !reportedError { throw ShelfError.message("AI 실행기가 종료됐습니다. 연결 상태를 다시 확인해 주세요.") }
                     continuation.finish()
                 } catch { continuation.finish(throwing: error) }
