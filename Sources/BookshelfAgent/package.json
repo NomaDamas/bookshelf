@@ -3,7 +3,7 @@
 	"private": true,
 	"type": "module",
 	"scripts": {
-		"build": "bun build index.ts --target=node --format=esm --outfile=../../dist/agent/bridge.mjs --metafile=../../dist/agent/metafile.json && bun build renderer.ts --target=browser --format=iife --minify --outfile=../../dist/agent/renderer.js --metafile=../../dist/agent/renderer-metafile.json && bun profile.ts",
+		"build": "bun build index.ts --target=node --format=esm --minify --keep-names --outfile=../../dist/agent/bridge.mjs --metafile=../../dist/agent/metafile.json && bun build renderer.ts --target=browser --format=iife --minify --outfile=../../dist/agent/renderer.js --metafile=../../dist/agent/renderer-metafile.json && bun profile.ts",
 		"test": "bun test",
 		"typecheck": "tsc --noEmit"
 	},

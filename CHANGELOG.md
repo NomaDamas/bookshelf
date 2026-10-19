@@ -66,6 +66,10 @@ that its Git tag or GitHub Release has been published.
 - Replies show source page chips; copy, regenerate and save-to-notes sit on the summary line
   with tooltips. Questions are edited in place, removal from a message onward moves to its
   context menu with a confirmation, and three starting prompts fill the question field.
+- The app is about half its former size (17.9 MB to 9.4 MB) and the DMG shrinks from 5.2 MB
+  to 2.5 MB. Release executables are stripped, the bundled Pi bridge is minified, and the
+  DMG uses LZMA compression. Each release also lists a `.dSYMs.zip` with debug symbols for
+  crash reports; installing does not need it.
 
 ### Added
 

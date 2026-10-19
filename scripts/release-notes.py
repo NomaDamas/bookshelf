@@ -21,6 +21,7 @@ print(f"""
 
 - `macos-arm64.dmg`: Apple Silicon. `macos-x86_64.dmg`: Intel.
 - Verify the matching `.dmg.sha256` file, open the DMG, and drag Bookside.app to Applications.
+- `.dSYMs.zip` files hold debug symbols for crash reports; installing does not need them.
 - Quit an existing Bookside before replacing it. PDFs, notes, and progress remain in their existing locations.
 - OCR tools are external installations; see the OCR guide in the repository.
 - See the [installation guide](https://github.com/NomaDamas/bookside/blob/{tag}/docs/01-getting-started.md#install-the-developer-preview)
