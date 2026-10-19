@@ -260,7 +260,7 @@ struct BookChatView: View {
 
 private struct ChatQuestionEditor: View {
     let message: BookChatMessage
-    let shortcut: KeyboardShortcut
+    let shortcut: KeyboardShortcut?
     let submit: (String) -> Void
     @Environment(\.dismiss) private var dismiss
     @State private var text = ""

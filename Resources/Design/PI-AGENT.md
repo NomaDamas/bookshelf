@@ -28,8 +28,9 @@ when the left sidebar is hidden.
 The layout follows the Preview document/sidebar structure. Surfaces, composer density and
 motion easing reuse the existing Aside source study; see [design](DESIGN.md). Settings are
 split into General, AI connections and Shortcuts. The AI section owns Pi, official account
-login/status and model selection. The shortcut recorder detects conflicts, saves choices
-to the local database and supports resetting defaults.
+login/status and model selection. The shortcut recorder rejects duplicates and keys that
+macOS or fixed menus use, saves choices to the local database, and can clear a shortcut or
+restore one or all defaults.
 
 The context indicator shows the latest request's input plus output tokens, not a lifetime
 total or a guessed remaining balance. Claude input includes cache reads and cache creation;

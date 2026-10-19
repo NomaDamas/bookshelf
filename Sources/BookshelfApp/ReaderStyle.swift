@@ -108,6 +108,8 @@ struct ReaderSearchField: View {
     let label: String
     @Binding var text: String
     var submit: () -> Void = {}
+    /// Set by a menu command such as Find; the field takes focus once and clears the request.
+    var focusRequest: Binding<Bool>?
     @FocusState private var focused: Bool
 
     var body: some View {
@@ -116,6 +118,11 @@ struct ReaderSearchField: View {
             TextField(prompt, text: $text)
                 .textFieldStyle(.plain).focused($focused).onSubmit(submit)
                 .accessibilityLabel(label)
+                .task(id: focusRequest?.wrappedValue) {
+                    guard focusRequest?.wrappedValue == true else { return }
+                    await Task.yield()
+                    focused = true; focusRequest?.wrappedValue = false
+                }
             if !text.isEmpty {
                 Button { text = ""; focused = true } label: {
                     Image(systemName: "xmark.circle.fill").foregroundStyle(.secondary)
@@ -168,31 +175,36 @@ struct ReaderPicker<Value: Hashable>: NSViewRepresentable {
     }
 }
 
-struct KeyboardHelp: View {
+/// The Help window lists every key the reader answers to, read from the user's current shortcut settings.
+struct KeyboardShortcutsList: View {
+    static let windowID = "keyboard-shortcuts"
+    static let windowTitle = "키보드 단축키"
     @ObservedObject var model: AppModel
+    private static let readingKeys = [("이전 / 다음 페이지", "←  →"), ("다음 페이지", "Space / Fn ↓"), ("이전 페이지", "⇧Space / Fn ↑"),
+                                      ("첫 / 마지막 페이지", "Fn ← / Fn →"), ("페이지 안에서 스크롤", "↑  ↓")]
     var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            Label("키보드로 읽기", systemImage: "keyboard").font(.system(size: 16, weight: .semibold))
-            Grid(alignment: .leading, horizontalSpacing: 28, verticalSpacing: 12) {
-                shortcut("이전 / 다음 페이지", "←  →")
-                shortcut("다음 페이지", "Space / Fn ↓")
-                shortcut("이전 페이지", "Shift Space / Fn ↑")
-                shortcut("첫 / 마지막 페이지", "Fn ← / Fn →")
-                shortcut("페이지 안에서 스크롤", "↑  ↓")
-                shortcut("읽기 화면으로", model.shortcuts[.focusReader].label)
-                shortcut("서재로 돌아가기", model.shortcuts[.library].label)
-                shortcut("왼쪽 사이드바", model.shortcuts[.leftSidebar].label)
-                shortcut("AI 패널", model.shortcuts[.aiPanel].label)
-            }
-            Divider()
-            Text("원문과 텍스트 보기에서 사용할 수 있습니다.\n메모와 검색어를 입력할 때는 글 편집에 쓰입니다.")
-                .font(.system(size: 12)).foregroundStyle(.secondary).lineSpacing(4)
-        }.padding(24).fixedSize()
+        ScrollView {
+            VStack(alignment: .leading, spacing: 20) {
+                section("읽는 화면에서") { ForEach(Self.readingKeys, id: \.0) { row($0.0, $0.1) } }
+                ForEach(ShortcutGroup.allCases) { group in
+                    section(group.title) { ForEach(group.actions) { row($0.title, model.shortcuts[$0].label) } }
+                }
+                Text("읽는 화면의 키는 원문과 텍스트 보기에서 쓸 수 있습니다. 메모나 검색어를 입력하는 동안에는 글 편집 키로 쓰입니다. 단축키는 설정의 단축키 항목에서 바꿀 수 있습니다.")
+                    .font(.system(size: 12)).foregroundStyle(.secondary).lineSpacing(4).fixedSize(horizontal: false, vertical: true)
+            }.padding(24).frame(maxWidth: .infinity, alignment: .leading)
+        }.frame(width: 420, height: 620)
     }
-    private func shortcut(_ title: String, _ keys: String) -> some View {
-        GridRow {
-            Text(title).font(.system(size: 12))
-            Text(keys).font(.system(size: 11, weight: .medium, design: .monospaced)).foregroundStyle(.secondary)
+    private func section(_ title: String, @ViewBuilder rows: () -> some View) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(title).font(.system(size: 13, weight: .semibold))
+            Grid(alignment: .leading, horizontalSpacing: 24, verticalSpacing: 8) { rows() }
         }
+    }
+    private func row(_ title: String, _ keys: String) -> some View {
+        GridRow {
+            Text(title).font(.system(size: 12)).frame(maxWidth: .infinity, alignment: .leading)
+            Text(keys).font(.system(size: 12, weight: .medium, design: .monospaced)).foregroundStyle(.secondary)
+                .gridColumnAlignment(.trailing)
+        }.accessibilityElement(children: .combine)
     }
 }

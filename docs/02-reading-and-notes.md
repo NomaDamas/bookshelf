@@ -19,7 +19,7 @@ All page numbers are 1-based PDF indices, not printed book-page labels.
 ## Notes, quotations, and bookmarks
 
 - Write your interpretation in **메모**. Changes autosave; the panel shows save status.
-- Select source text, then use **선택 문장 메모** (`Command-Shift-H`) to save a
+- Select source text, then use **책 > 선택 문장 발췌** (`Control-Command-H`) to save a
   quotation. Add your own comment in **발췌**. PDF selections can retain page coordinates.
 - Use `Command-D` to toggle the current page's bookmark.
 - Use **메모 내보내기…** or the share button to export notebook text and quoted
@@ -43,36 +43,55 @@ field keep their normal editing keys.
 | Page Down / Page Up (Fn-Down / Fn-Up) | Next / previous PDF page |
 | Home / End (Fn-Left / Fn-Right) | First / last PDF page |
 | Up / Down | Scroll within the reading area |
+| Option-Up / Option-Down | Previous / next page from anywhere in the reader |
+| Option-Command-G | Move to the page-number field |
 | Command-Shift-R | Return keyboard focus to the current reading view |
-| Command-Shift-L | Return to the library |
-| Command-Option-Left / Right | Previous / next page from anywhere in the reader |
+
+While you type in notes, a search field, the page-number field or the Pi composer,
+Option-Up and Option-Down keep their editing meaning and move the cursor instead of the page.
 
 Enter a page number and press Return to jump and keep reading with the keyboard.
 The first and last pages are clamped. PDF layout selection is saved between launches.
-The keyboard button beside the page controls opens an in-app reference.
+**Help > Bookside 키보드 단축키** lists every key with your current settings; the keyboard
+button beside the page controls opens the same list.
 
 The reading area keeps the current book title visible above the controls. Opening a book
 preserves the sidebar's visibility. The library marks the current row with its live page;
 “책장에서 보기” clears a library filter and scrolls to that book.
 
-Default app shortcuts (change them in **Settings > 단축키**):
+Default app shortcuts follow Preview and other macOS apps. Change them in
+**Settings > 단축키**.
 
-| Key | Action |
-| --- | --- |
-| Command-O / Command-Shift-O | Add PDFs / add a folder |
-| Command-F | Search within the current book |
-| Command-D | Toggle a bookmark |
-| Command-Shift-H | Save selected text as a quotation |
-| Command-S | Save pending notebook edits |
-| Command-0 | Toggle the left sidebar |
-| Command-1 / 2 / 3 | Open pages / notes / excerpts |
-| Command-Shift-A | Toggle the AI panel |
-| Command-Return | Send a question in the AI panel |
+| Menu | Key | Action |
+| --- | --- | --- |
+| File | Command-O / Command-Shift-O | Add PDFs / add a folder (fixed) |
+| File | Command-S | Save pending notebook edits |
+| Edit > 찾기 | Command-F | Search within the current book |
+| Edit > 찾기 | Command-G / Command-Shift-G | Next / previous search result |
+| View | Control-Command-S | Show or hide the sidebar |
+| View | Option-Command-I | Show or hide the Pi panel |
+| View | Option-Command-1 / 2 / 3 | Open pages / notes / excerpts |
+| View | Command-Plus / Command-Minus | Zoom in / out (Command-= also zooms in) |
+| View | Command-0 / Command-9 | Actual size / fit the page |
+| 이동 | Command-Shift-L | Return to the library |
+| 이동 | Option-Up / Option-Down | Previous / next page |
+| 이동 | Option-Command-G | Go to a page number |
+| 이동 | Command-Shift-R | Return focus to the reading view |
+| 책 | Command-D | Toggle a bookmark |
+| 책 | Control-Command-H | Save selected text as an excerpt |
+| Pi panel | Command-Return | Send a question |
 
-Click a shortcut recorder and press the new combination. Escape cancels recording.
-Duplicate app shortcuts and reserved editing/window commands are rejected. **기본값 복원**
-restores the defaults. The selected bindings persist in the local library database.
-Plain arrow keys and text editing remain native to the focused reading/editing view.
+Click a shortcut recorder and press the new combination. Escape cancels recording and
+Delete leaves the action without a shortcut. Each row's **⋯** menu restores that row's
+default or clears it; **모두 기본값으로** restores every default. A shortcut needs Command
+(Control-Command also works). Option alone is accepted only for the page arrow commands,
+because Option with a letter types a character. Duplicates and keys that macOS or fixed
+menus already use (for example Command-W, Command-H, Command-Q and Control-Command-Q)
+are rejected. Shortcuts are recorded from the key position, so a Korean input source
+records the same keys as an English one. The selected bindings persist in the local
+library database. If a saved shortcut matches a newer default, the saved one is kept and
+that default is left empty. Plain arrow keys and text editing remain native to the focused
+reading/editing view.
 
 ## Reading shelves, history and sorting
 

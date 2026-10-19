@@ -45,15 +45,16 @@ struct ReaderWindow: View {
             }
         }
         .frame(minWidth: 1000, minHeight: 650)
+        .background(TextInputObserver(model: model).frame(width: 0, height: 0))
         .background(ReaderMaterial(material: .underWindowBackground))
         .tint(ReaderStyle.accent)
         .toolbar {
             ToolbarItemGroup(placement: .navigation) {
                 if model.isReadingBook {
                     Button { model.showLibrary() } label: { Label("서재", systemImage: "chevron.left") }
-                        .help("서재로 돌아가기 (\(model.shortcuts[.library].label))").accessibilityLabel("서재로 돌아가기")
+                        .help(model.shortcutHint(.library)).accessibilityLabel("서재로 돌아가기")
                 }
-                Button { withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.15)) { model.sidebarVisible.toggle() } } label: { Image(systemName: "sidebar.left") }.help("왼쪽 사이드바 표시 (\(model.shortcuts[.leftSidebar].label))").accessibilityLabel("왼쪽 사이드바 표시")
+                Button { withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.15)) { model.sidebarVisible.toggle() } } label: { Image(systemName: "sidebar.left") }.help(model.shortcutHint(.leftSidebar)).accessibilityLabel(ReaderAction.leftSidebar.title)
                 Button { model.showReadingShelf() } label: { Image(systemName: "books.vertical") }
                     .help("독서 현황").accessibilityLabel("독서 현황")
                 Menu { Button("PDF 추가…") { model.chooseFiles() }; Button("폴더 추가…") { model.chooseFiles(folder: true) } } label: { Image(systemName: "plus") }.help("서재에 추가")
@@ -64,7 +65,7 @@ struct ReaderWindow: View {
             ToolbarItemGroup(placement: .primaryAction) {
                 Button { model.showSettings = true } label: { Image(systemName: "slider.horizontal.3") }.help("OCR와 AI 연결 설정").accessibilityLabel("설정")
                 if AgentRuntime.bridgeURL != nil {
-                    Button { withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.15)) { model.toggleAIPanel() } } label: { Image(systemName: "sidebar.right") }.help("AI 패널 표시 (\(model.shortcuts[.aiPanel].label))").accessibilityLabel("AI 패널 표시")
+                    Button { withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.15)) { model.toggleAIPanel() } } label: { Image(systemName: "sidebar.right") }.help(model.shortcutHint(.aiPanel)).accessibilityLabel(ReaderAction.aiPanel.title)
                 }
             }
         }
@@ -80,8 +81,9 @@ struct ReaderSurface: View {
     @ObservedObject var model: AppModel
     let book: Book
     @State private var pageEntry = "1"
-    @State private var showKeyboardHelp = false
+    @Environment(\.openWindow) private var openWindow
     @FocusState private var textReaderFocused: Bool
+    @FocusState private var pageEntryFocused: Bool
     @State private var textScrollTarget = TextScrollTarget()
     private var pageCount: Int { model.document?.pageCount ?? book.pageCount }
     private var progress: Double { pageCount > 0 ? min(Double(model.page) / Double(pageCount), 1) : 0 }
@@ -105,6 +107,7 @@ struct ReaderSurface: View {
         .clipShape(RoundedRectangle(cornerRadius: ReaderTokens.radiusPanel, style: .continuous))
         .modifier(ReaderSurfaceBorder(radius: ReaderTokens.radiusPanel))
         .onChange(of: model.page) { _, number in pageEntry = String(number) }
+        .onChange(of: model.pageEntryRequest) { _, _ in pageEntryFocused = true }
         .onAppear { pageEntry = String(model.page) }
     }
 
@@ -144,9 +147,9 @@ struct ReaderSurface: View {
                 }.menuStyle(.borderlessButton).fixedSize().help("페이지 표시 방식")
                 Divider().frame(height: 18)
                 HStack(spacing: 2) {
-                    ReaderIconButton(symbol: "minus.magnifyingglass", label: "축소") { model.pdfView?.zoomOut(nil) }
-                    ReaderIconButton(symbol: "arrow.up.left.and.arrow.down.right", label: "페이지에 맞추기") { model.pdfView?.autoScales = true }
-                    ReaderIconButton(symbol: "plus.magnifyingglass", label: "확대") { model.pdfView?.zoomIn(nil) }
+                    ReaderIconButton(symbol: "minus.magnifyingglass", label: ReaderAction.zoomOut.title) { model.zoom(.zoomOut) }.help(model.shortcutHint(.zoomOut))
+                    ReaderIconButton(symbol: "arrow.up.left.and.arrow.down.right", label: ReaderAction.zoomToFit.title) { model.zoom(.fit) }.help(model.shortcutHint(.zoomToFit))
+                    ReaderIconButton(symbol: "plus.magnifyingglass", label: ReaderAction.zoomIn.title) { model.zoom(.zoomIn) }.help(model.shortcutHint(.zoomIn))
                 }
             }
             Menu {
@@ -161,7 +164,7 @@ struct ReaderSurface: View {
                 Button("원본 PDF 사용", systemImage: "arrow.uturn.backward") { model.useOriginalPDF() }.disabled(model.ocrRunning || book.ocrPath == nil)
                 Divider()
                 Button("Finder에서 보기", systemImage: "folder") { model.revealSource() }
-                Button("키보드 조작 안내", systemImage: "keyboard") { showKeyboardHelp = true }
+                Button("키보드 단축키", systemImage: "keyboard") { openWindow(id: KeyboardShortcutsList.windowID) }
             } label: { Image(systemName: "ellipsis.circle").font(.system(size: 16)) }
                 .menuStyle(.borderlessButton).fixedSize().accessibilityLabel("책 옵션")
         }.padding(.horizontal, 18).frame(height: ReaderStyle.toolbarHeight)
@@ -265,6 +268,7 @@ struct ReaderSurface: View {
                         pageButton(forward: false)
                         HStack(spacing: 6) {
                             TextField("페이지", text: $pageEntry)
+                                .focused($pageEntryFocused)
                                 .textFieldStyle(.plain).font(.system(size: 14, weight: .semibold)).monospacedDigit()
                                 .multilineTextAlignment(.center).frame(width: 48, height: 28)
                                 .background(ReaderStyle.muted, in: RoundedRectangle(cornerRadius: ReaderTokens.radiusMedium))
@@ -277,8 +281,7 @@ struct ReaderSurface: View {
                     Text("좌우 방향키로 페이지 이동").font(.system(size: 10)).foregroundStyle(.secondary)
                 }
                 Spacer(minLength: 0)
-                ReaderIconButton(symbol: "keyboard", label: "키보드 조작 안내") { showKeyboardHelp.toggle() }
-                    .popover(isPresented: $showKeyboardHelp, arrowEdge: .top) { KeyboardHelp(model: model) }
+                ReaderIconButton(symbol: "keyboard", label: "키보드 단축키") { openWindow(id: KeyboardShortcutsList.windowID) }
             }.padding(.horizontal, 18).frame(height: ReaderStyle.footerHeight)
         }
     }
@@ -304,6 +307,27 @@ struct EmptyLibraryView: View {
             HStack(spacing: 12) { Button("PDF 추가…") { model.chooseFiles() }.buttonStyle(.borderedProminent); Button("폴더 연결…") { model.chooseFiles(folder: true) } }.padding(.top, 10)
             if !model.books.isEmpty { Text("왼쪽 책장에서 읽을 책을 선택할 수 있습니다.").font(.system(size: 12)).foregroundStyle(.secondary) }
             Text("원본은 제자리에. 메모는 이 Mac에.").font(.system(size: 11)).foregroundStyle(.tertiary).padding(.top, 35)
+        }
+    }
+}
+
+/// Menu key equivalents reach the menu before a text view sees the key, so the model needs to know
+/// when an editor has focus. Option-arrow page commands are disabled then and keep moving the caret.
+struct TextInputObserver: NSViewRepresentable {
+    let model: AppModel
+    func makeNSView(context: Context) -> ObserverView { ObserverView() }
+    func updateNSView(_ view: ObserverView, context: Context) {
+        view.onChange = { [weak model] editing in if model?.textInputActive != editing { model?.textInputActive = editing } }
+    }
+    final class ObserverView: NSView {
+        var onChange: ((Bool) -> Void)?
+        private var observation: NSKeyValueObservation?
+        override func viewDidMoveToWindow() {
+            super.viewDidMoveToWindow()
+            observation = window?.observe(\.firstResponder, options: [.initial, .new]) { [weak self] window, _ in
+                let editing = (window.firstResponder as? NSTextView)?.isEditable == true
+                DispatchQueue.main.async { self?.onChange?(editing) }
+            }
         }
     }
 }

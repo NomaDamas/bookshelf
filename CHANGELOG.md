@@ -15,6 +15,26 @@ that its Git tag or GitHub Release has been published.
 - Conversations and the Codex sign-in from `Bookside Pi.app` are stored in the library folder,
   so they appear in Bookside. `scripts/install-local.command` reports a remaining preview app.
 - Building from source needs Node.js 22.19 or later, pnpm and Bun.
+- Reader shortcuts follow Preview and other macOS apps. The sidebar moves from
+  Command-0 to Control-Command-S, the Pi panel from Command-Shift-A to Option-Command-I,
+  the sidebar tabs from Command-1/2/3 to Option-Command-1/2/3, previous/next page from
+  Option-Command-Left/Right to Option-Up/Down, and saving an excerpt from Command-Shift-H
+  to Control-Command-H. Shortcuts you changed yourself are kept.
+- Reader commands are grouped into **이동** and **책** menus. Sidebar, Pi panel, tab and
+  zoom commands are in **View**; search is in **Edit > 찾기**; saving and exporting notes
+  are in **File**. Menu titles say whether a panel will be shown or hidden.
+
+### Added
+
+- Zoom shortcuts (Command-Plus, Command-Minus, Command-0 for actual size and Command-9 to
+  fit the page), Option-Command-G to type a page number, and Command-G /
+  Command-Shift-G to step through search results.
+- **Help > Bookside 키보드 단축키** lists every key with the current settings.
+- **Settings > 단축키** groups shortcuts by menu, and each one can be cleared or reset on
+  its own. Keys used by macOS or fixed menus are refused, and shortcuts are recorded the
+  same way under a Korean input source.
+- Option-Up/Down page commands step aside while you type, so the keys still move the cursor
+  in notes, search and the Pi composer.
 
 ### Removed
 

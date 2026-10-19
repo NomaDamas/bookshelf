@@ -24,6 +24,10 @@ import BookshelfCore
     @Published var panelTab = "pages"
     @Published var textMode = false
     @Published var readerFocusRequest = 0
+    @Published var pageEntryRequest = 0
+    @Published var searchFieldFocusPending = false
+    /// True while an editable text view has focus, so Option-arrow page commands give way to text editing.
+    @Published var textInputActive = false
     @Published var libraryRevealRequest = 0
     @Published var readingShelfVisible = false
     @Published var shelfStatus: ReadingStatus = .reading
@@ -69,7 +73,7 @@ import BookshelfCore
         do { store = try suppliedStore ?? LibraryStore() }
         catch { fatalError("Bookside could not open its local store: \(error.localizedDescription)") }
         chat = BookChatModel(store: store)
-        if let saved = try? store.setting("keyboard.shortcuts"), let value = try? JSONDecoder().decode(AppShortcuts.self, from: Data(saved.utf8)) { shortcuts = value }
+        if let saved = try? store.setting("keyboard.shortcuts"), let value = try? JSONDecoder().decode(AppShortcuts.self, from: Data(saved.utf8)) { shortcuts = value.validated() }
         reloadLibrary()
         if let language = try? store.setting("ocrLanguage") { ocrLanguage = language }
         continuousReading = (try? store.setting("continuousReading")) == "true"
@@ -185,19 +189,45 @@ import BookshelfCore
         guard activeBook != nil else { return }
         readingShelfVisible = false; sidebarVisible = true; panelTab = tab
     }
-    func setShortcut(_ value: AppKeyBinding, for action: ReaderAction) {
+    func setShortcut(_ value: AppKeyBinding, for action: ReaderAction) { updateShortcuts { try $0.set(value, for: action) } }
+    func restoreShortcut(_ action: ReaderAction) { updateShortcuts { try $0.restoreDefault(action) } }
+    func resetShortcuts() { updateShortcuts { $0 = AppShortcuts() } }
+    private func updateShortcuts(_ change: (inout AppShortcuts) throws -> Void) {
         do {
-            var next = shortcuts; try next.set(value, for: action)
+            var next = shortcuts; try change(&next)
             try store.setSetting("keyboard.shortcuts", value: String(decoding: JSONEncoder().encode(next), as: UTF8.self))
             shortcuts = next; shortcutError = nil
         } catch { shortcutError = error.localizedDescription }
     }
-    func resetShortcuts() {
-        do {
-            let defaults = AppShortcuts()
-            try store.setSetting("keyboard.shortcuts", value: String(decoding: JSONEncoder().encode(defaults), as: UTF8.self))
-            shortcuts = defaults; shortcutError = nil
-        } catch { shortcutError = error.localizedDescription }
+    /// Tooltip text such as "확대 (⌘+)"; a cleared shortcut shows the title alone.
+    func shortcutHint(_ action: ReaderAction) -> String {
+        let binding = shortcuts[action]
+        return binding.isUnassigned ? action.title : "\(action.title) (\(binding.label))"
+    }
+    var canZoom: Bool { isReadingBook && document != nil && !textMode }
+    func zoom(_ step: ReaderZoom) {
+        guard canZoom, let pdfView else { return }
+        switch step {
+        case .zoomIn: pdfView.zoomIn(nil)
+        case .zoomOut: pdfView.zoomOut(nil)
+        case .actualSize: pdfView.autoScales = false; pdfView.scaleFactor = 1
+        case .fit: pdfView.autoScales = true
+        }
+    }
+    func findInBook() {
+        guard activeBook != nil else { return }
+        openBookTool("search"); searchFieldFocusPending = true
+    }
+    /// Steps through search hits from the current page and wraps at either end. Without hits it opens the search field.
+    func findNext(forward: Bool = true) {
+        guard !searchResults.isEmpty else { findInBook(); return }
+        let pages = searchResults.map(\.page)
+        let target = forward ? (pages.first { $0 > page } ?? pages[0]) : (pages.last { $0 < page } ?? pages[pages.count - 1])
+        goToPage(target, focusReader: true)
+    }
+    func requestPageEntry() {
+        guard isReadingBook, document != nil else { return }
+        pageEntryRequest += 1
     }
     func showLibrary() {
         guard flushPendingSave() else { return }
@@ -507,3 +537,5 @@ import BookshelfCore
         information = "CLI에 붙여넣을 책과 페이지 정보를 복사했습니다."
     }
 }
+
+enum ReaderZoom { case zoomIn, zoomOut, actualSize, fit }
