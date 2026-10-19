@@ -99,6 +99,9 @@ def verify_bundle(bundle, expected_arch=None):
     for filename in ("AppMetadata.json", "prepare-ocr-replacement.py"):
         if not any((directory / filename).is_file() for directory in (resources, resources / "Contents/Resources")):
             raise ValueError(f"Required packaged resource is missing: {filename}")
+    for filename in ("bridge.mjs", "profile.json", "renderer.html", "renderer.js"):
+        if not (bundle / "Contents/Resources/Agent" / filename).is_file():
+            raise ValueError(f"Learning chat bridge file is missing: {filename}")
     return {"version": info["CFBundleShortVersionString"], "buildNumber": info["CFBundleVersion"],
             "bundleIdentifier": info["CFBundleIdentifier"], "architectures": architectures}
 

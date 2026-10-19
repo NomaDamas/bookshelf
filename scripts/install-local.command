@@ -34,17 +34,24 @@ except BaseException:
     raise
 PYREPLACE
 print "Installed: $target"
-# The pre-rename app lives at a different path, so installing Bookside never replaces it.
-python3 - "$HOME/Applications/Bookshelf.app" <<'PYLEGACY'
+# Older apps live at other paths, so installing Bookside never replaces them.
+python3 - "$HOME/Applications" <<'PYLEGACY'
 import json, plistlib, sys
 from pathlib import Path
 product = json.loads(Path("Sources/BookshelfCore/Resources/AppMetadata.json").read_text())
-legacy = Path(sys.argv[1])
-try:
-    identity = plistlib.loads((legacy / "Contents/Info.plist").read_bytes()).get("CFBundleIdentifier")
-except (OSError, plistlib.InvalidFileException):
-    sys.exit()
-if identity in product["legacyBundleIdentifiers"]:
-    print(f"The pre-rename app is still at {legacy}. Quit it, confirm Bookside shows your library,\n"
-          "then move the old app to the Trash and run scripts/register-mcp.command.")
+legacy = product["legacyBundleIdentifiers"]
+# The learning chat used to ship as a separate preview app with a ".pi" bundle ID.
+previews = [identity + ".pi" for identity in (product["bundleIdentifier"], *legacy)]
+candidates = {"Bookshelf.app": legacy, "Bookside Pi.app": previews, "Bookshelf Pi.app": previews}
+for name, identities in candidates.items():
+    app = Path(sys.argv[1]) / name
+    try:
+        identity = plistlib.loads((app / "Contents/Info.plist").read_bytes()).get("CFBundleIdentifier")
+    except (OSError, plistlib.InvalidFileException):
+        continue
+    if identity in identities:
+        print(f"An older app is still at {app}; Bookside now includes the learning chat.\n"
+              "Quit it, confirm Bookside shows your library, then move the old app to the Trash.")
+        if name == "Bookshelf.app":
+            print("If you use MCP, also run scripts/register-mcp.command.")
 PYLEGACY

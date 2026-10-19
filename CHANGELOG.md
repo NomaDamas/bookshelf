@@ -6,6 +6,20 @@ that its Git tag or GitHub Release has been published.
 
 ## [Unreleased]
 
+### Changed
+
+- The learning chat is part of Bookside. Every build, including the DMGs and the Homebrew
+  cask, bundles it, and the separate `Bookside Pi.app` is gone. Using the chat needs
+  Node.js 22.19 or later and the official Claude Code or Codex executable; without them the
+  rest of the app works and the panel says what is missing.
+- Conversations and the Codex sign-in from `Bookside Pi.app` are stored in the library folder,
+  so they appear in Bookside. `scripts/install-local.command` reports a remaining preview app.
+- Building from source needs Node.js 22.19 or later, pnpm and Bun.
+
+### Removed
+
+- `scripts/install-pi-preview.command` and the `BOOKSIDE_INCLUDE_AGENT` build variable.
+
 ## [0.2.0] - 2026-10-20
 
 ### Added

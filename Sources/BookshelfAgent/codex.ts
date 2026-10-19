@@ -163,8 +163,8 @@ class CodexConnection {
 	async initialize() {
 		await this.call("initialize", {
 			clientInfo: {
-				name: "bookside_pi_preview",
-				title: "Bookside Pi Preview",
+				name: "bookside",
+				title: "Bookside",
 				version: this.request.clientVersion ?? "dev",
 			},
 		});

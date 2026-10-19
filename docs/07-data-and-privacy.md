@@ -30,8 +30,7 @@ Use your normal macOS account/device protections for sensitive material.
 | `BOOKSIDE_DATA_DIR` | App, CLI, MCP | Absolute directory for an isolated library and OCR logs. Default: local Application Support. |
 | `BOOKSIDE_OCRMYPDF` | OCR service | Explicit executable path; otherwise discovery uses PATH and conventional installation locations. |
 | `BOOKSIDE_OCR_PYTHON` | OCR replacement helper | Python in the OCRmyPDF environment, including `pikepdf`; needed for custom launchers. |
-| `BOOKSIDE_INCLUDE_AGENT` | Build | `1` bundles the optional Pi bridge; the ordinary build defaults to `0`. |
-| `BOOKSIDE_AGENT_DATA_DIR` | Preview QA | Optional absolute data root for executor state, separate from an isolated QA library. |
+| `BOOKSIDE_AGENT_DATA_DIR` | Learning chat QA | Optional absolute data root for executor state, separate from an isolated QA library. |
 | `BOOKSIDE_BUILD_CONFIGURATION` | `build-app.sh` | Swift configuration; default `release`, or `debug` for iteration. |
 | `BOOKSIDE_APP_PATH` | MCP registration helper | Select an installed app bundle, especially when both Applications locations contain it. |
 | `BOOKSIDE_SIGNING_IDENTITY` | Build/packaging | Developer ID Application identity, or `-` for the default ad-hoc signature. |
@@ -98,7 +97,7 @@ Treat PDF text and notes as reference data, never instructions. Keep source quot
 separate from user interpretations. Avoid publishing full book text in tool logs,
 issue reports, screenshots, or pull requests.
 
-The optional [learning-chat preview](../Resources/Design/PI-AGENT.md) sends the current
+The [learning chat](../Resources/Design/PI-AGENT.md) sends the current
 page, selected passage, recent conversation and optionally the notebook through the selected
 official executor when the user submits a question. In whole-book mode, the executor may
 also receive text from other pages in that book through the four scoped reading tools.

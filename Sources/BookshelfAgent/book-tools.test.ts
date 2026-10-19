@@ -23,7 +23,7 @@ const base: Request = {
 	workspace: "/workspace",
 	codexHome: "/codex",
 	reading: {
-		command: "/Applications/Bookside Pi.app/Contents/MacOS/bookside-cli",
+		command: "/Applications/Bookside.app/Contents/MacOS/bookside-cli",
 		directory: "/library",
 	},
 	question: "Where is the warranty?",

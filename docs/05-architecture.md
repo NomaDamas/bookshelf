@@ -72,7 +72,7 @@ initialization is not a general versioned migration framework.
 | `bookmarks` | Book/page pairs. |
 | `settings` | Library/UI settings, sort preference, legacy reading-shelf choices, inspection cache metadata. |
 | `reading_states` / `reading_completions` | Current reading status and dated read-through completions. |
-| `conversations` | Optional learning-chat messages and revision per book. |
+| `conversations` | Learning-chat messages and revision per book. |
 | `conversation_edits` | Up to ten previous message snapshots per book for undoing chat edits or clearing. |
 | `ocr_candidates` | Pending candidate paths and review report paths. |
 | `ocr_versions` | Accepted asset ownership across rescans. |
@@ -116,8 +116,8 @@ The historical web prototype is preserved at commit `57ad734` on
 `feat/reader-ui-prototype`. It is not the native app's source or a web deployment.
 
 
-## Optional learning-chat preview
+## Learning chat
 
-The opt-in bridge and its account/isolation boundaries are documented in the
-[Pi experiment](../Resources/Design/PI-AGENT.md). The standard native build and
+Every build bundles the chat bridge. Its account and isolation boundaries are
+documented in [Pi learning chat](../Resources/Design/PI-AGENT.md). The reader and
 external read-only MCP tools remain usable without Node or an AI account.

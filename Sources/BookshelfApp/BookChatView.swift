@@ -35,7 +35,7 @@ struct BookChatView: View {
                 }.font(.system(size: 11)).foregroundStyle(.secondary)
                 ContextUsageView(usage: chat.contextUsage)
                 if !AgentRuntime.ready {
-                    Text("Node.js와 AI 연결 모듈이 필요합니다. 실험용 앱으로 실행해 주세요.")
+                    Text("대화를 시작하려면 Node.js 22.19 이상이 필요합니다.")
                         .font(.system(size: 12)).foregroundStyle(.orange)
                 }
             }.padding(16)
