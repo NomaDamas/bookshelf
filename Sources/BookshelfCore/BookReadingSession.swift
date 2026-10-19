@@ -35,6 +35,8 @@ public actor BookReadingSession {
     private let pdf: PDFDocument
     private let scope: BookReadingScope
     private var textCache: [Int: String] = [:]
+    private var textSource: PDFDocument?
+    private var textReads = 0
     private var readPrefix: [Int: Int] = [:]
     private var complete = Set<Int>()
     private var sources = Set<Int>()
@@ -128,7 +130,13 @@ public actor BookReadingSession {
     }
     private func text(_ page: Int) -> String {
         if let cached = textCache[page] { return cached }
-        let value = pdf.page(at: page - 1)?.string ?? ""; textCache[page] = value; return value
+        // Whole-book searches read through a short-lived copy replaced every few pages (see PDFService.pagesPerDocument).
+        if textReads % PDFService.pagesPerDocument == 0 {
+            textSource = PDFDocument(url: book.url).flatMap { $0.pageCount == pdf.pageCount && !$0.isLocked ? $0 : nil }
+        }
+        textReads += 1
+        let value = autoreleasepool { (textSource ?? pdf).page(at: page - 1)?.string ?? "" }
+        textCache[page] = value; return value
     }
     private func outline() -> [[String: Any]] {
         var entries: [(title: String, page: Int, depth: Int)] = []

@@ -84,6 +84,9 @@ that its Git tag or GitHub Release has been published.
 - Opening a book no longer disables the Pi panel while the account status is checked.
 - Connecting an account in **Settings > Pi** no longer switches the conversation to that engine.
 - Pi panel errors can be dismissed.
+- Reading a whole book's text no longer holds every page in memory. On a 328-page scanned
+  book, the first open peaks at about 360 MB instead of 900 MB, and `bookside-cli search`,
+  `inspect`, a Pi reading turn and the OCR comparison stay under about 250 MB.
 
 ### Removed
 

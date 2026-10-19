@@ -57,6 +57,18 @@ final class BookReadingSessionTests: XCTestCase {
         let covered = try json(await session.call("get_reading_coverage"))
         XCTAssertEqual((covered["reading"] as? [String: Any])?["readPages"] as? [Int], [1,2,3,4])
     }
+    func testWholeBookScansCrossDocumentReopenBoundaries() async throws {
+        let root = try root(); defer { try? FileManager.default.removeItem(at: root) }
+        // Pages 17 and 33 start the second and third reopened document copies.
+        let book = try fixture(lines: (1...40).map { $0 == 17 || $0 == 33 ? [] : ["Marker \($0) end"] }, root: root)
+        let inspection = try PDFService.inspect(book.url)
+        XCTAssertEqual(inspection.pageCount, 40); XCTAssertEqual(inspection.emptyPages, [17, 33])
+        XCTAssertEqual(try PDFService.search(book, query: "Marker 34 end", limit: 20, ignoreWhitespace: false).map(\.page), [34])
+        XCTAssertEqual(try PDFService.search(book, query: "Marker", limit: 20, ignoreWhitespace: false).map(\.page).last, 21)
+        let session = try BookReadingSession(book: book, scope: .init(mode: "book", startPage: 1, endPage: 40))
+        let search = try json(await session.call("search_book", query: "Marker 39 end"))
+        XCTAssertEqual((search["matches"] as? [[String: Any]])?.compactMap { $0["page"] as? Int }, [39])
+    }
     func testRestrictedRangeCannotSearchOrReadOutsideIt() async throws {
         let root = try root(); defer { try? FileManager.default.removeItem(at: root) }
         let book = try fixture(lines: [["Start"], ["Inventory"], ["Outside secret phrase"]], root: root)

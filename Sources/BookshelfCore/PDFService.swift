@@ -17,14 +17,43 @@ public enum PDFService {
     public static func inspect(_ url: URL, isCancelled: () -> Bool = { false }) throws -> PDFInspection {
         try autoreleasepool {
             if isCancelled() { throw CancellationError() }
-            let pdf = try document(at: url)
             var empty: [Int] = []
-            for index in 0..<pdf.pageCount {
+            let pageCount = try scanPageText(url) { index, text in
                 if isCancelled() { throw CancellationError() }
-                if (pdf.page(at: index)?.string ?? "").trimmingCharacters(in: .whitespacesAndNewlines).isEmpty { empty.append(index + 1) }
+                if text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty { empty.append(index + 1) }
+                return true
             }
-            return PDFInspection(pageCount: pdf.pageCount, textPages: pdf.pageCount - empty.count, emptyPages: empty)
+            return PDFInspection(pageCount: pageCount, textPages: pageCount - empty.count, emptyPages: empty)
         }
+    }
+    /// A PDFDocument keeps every page's extracted text layout until the document is released,
+    /// about 2 MB per scanned page. Whole-book scans reopen the file every few pages so their
+    /// peak memory does not grow with the book.
+    static let pagesPerDocument = 16
+    /// Returns the page count; `visit` returns false to stop.
+    static func scanPageText(_ url: URL, _ visit: (Int, String) throws -> Bool) throws -> Int {
+        var opened: PDFDocument? = try document(at: url)
+        let pageCount = opened?.pageCount ?? 0
+        var index = 0
+        while index < pageCount {
+            let more = try autoreleasepool { () throws -> Bool in
+                let pdf = try opened ?? reopen(url, pageCount: pageCount)
+                opened = nil
+                for page in index..<min(index + pagesPerDocument, pageCount) {
+                    if try !visit(page, pdf.page(at: page)?.string ?? "") { return false }
+                }
+                return true
+            }
+            guard more else { break }
+            index += pagesPerDocument
+        }
+        return pageCount
+    }
+    static func reopen(_ url: URL, pageCount: Int) throws -> PDFDocument {
+        guard let pdf = PDFDocument(url: url), !pdf.isLocked, pdf.pageCount == pageCount else {
+            throw ShelfError.message("PDF가 변경되었습니다. 다시 열어 주세요.")
+        }
+        return pdf
     }
     public static func readPage(_ book: Book, page: Int) throws -> String {
         try autoreleasepool {
@@ -37,16 +66,15 @@ public enum PDFService {
         let term = TextSearchQuery(query, ignoreWhitespace: ignoreWhitespace)
         guard !term.isEmpty else { return [] }
         return try autoreleasepool {
-            let pdf = try document(at: book.url)
             var results: [SearchHit] = []
-            for i in 0..<pdf.pageCount {
-                let text = pdf.page(at: i)?.string ?? ""
+            _ = try scanPageText(book.url) { i, text in
                 if let range = term.range(in: text) {
                     let start = text.index(range.lowerBound, offsetBy: -120, limitedBy: text.startIndex) ?? text.startIndex
                     let end = text.index(range.upperBound, offsetBy: 400, limitedBy: text.endIndex) ?? text.endIndex
                     results.append(SearchHit(page: i + 1, text: String(text[start..<end])))
-                    if results.count >= min(max(limit, 1), 100) { break }
+                    if results.count >= min(max(limit, 1), 100) { return false }
                 }
+                return true
             }
             return results
         }
