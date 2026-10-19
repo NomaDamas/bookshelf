@@ -27,6 +27,9 @@ def metadata():
 
 def plist_bytes(data):
     result = {
+        # The interface is Korean, so AppKit's own menu items (파일, 편집, 실행 취소) must be Korean too.
+        "CFBundleDevelopmentRegion": "ko",
+        "CFBundleLocalizations": ["ko"],
         "CFBundleExecutable": "Bookside",
         "CFBundleIdentifier": data["bundleIdentifier"],
         "CFBundleName": data["name"],

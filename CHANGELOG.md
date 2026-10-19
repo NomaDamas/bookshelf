@@ -21,8 +21,8 @@ that its Git tag or GitHub Release has been published.
   Option-Command-Left/Right to Option-Up/Down, and saving an excerpt from Command-Shift-H
   to Control-Command-H. Shortcuts you changed yourself are kept.
 - Reader commands are grouped into **이동** and **책** menus. Sidebar, Pi panel, tab and
-  zoom commands are in **View**; search is in **Edit > 찾기**; saving and exporting notes
-  are in **File**. Menu titles say whether a panel will be shown or hidden.
+  zoom commands are in **보기**; search is in **편집 > 찾기**; saving and exporting notes
+  are in **파일**. Menu titles say whether a panel will be shown or hidden.
 
 - The reader keeps one row of controls above the page: the window toolbar. The sidebar
   button stays first, followed by **서재**. Clicking the book title opens a menu with reading
@@ -35,6 +35,17 @@ that its Git tag or GitHub Release has been published.
   Help menu.
 - Settings open only as the app's Settings window (`Command-,`); the separate sheet and the
   toolbar button are gone. The settings icon is the standard gear.
+- The app declares Korean as its language, so macOS's own menus and items read 파일, 편집,
+  보기, 윈도우, 도움말 and 실행 취소 instead of mixing English and Korean.
+- Window tabs are off (the 탭 막대 and 탭 commands are gone), because every window shows the
+  same library. The keyboard shortcut window is reached from the 도움말 menu only.
+- The 책 menu also has **책장에서 보기**, **Finder에서 보기** and **AI로 이어가기**, so every
+  command in the title menu is in the menu bar too.
+- Settings use the standard Settings tabs (일반, AI 연결, 단축키) with the tab name as the window
+  title; the extra "서재 설정" header and version line are gone (the version is in About).
+- The library toolbar no longer shows the Pi panel button, which only applies to an open book,
+  and the sidebar footer with a second add-folder button is gone; adding uses the toolbar `+`
+  or the 파일 menu.
 - Icons have one meaning each: in-book page jumps use a page-number chip instead of an
   outward arrow, and the undo arrow is no longer used for reading-status changes,
   "펼친 책으로" or "원본 PDF 사용".
@@ -44,7 +55,7 @@ that its Git tag or GitHub Release has been published.
 - Zoom shortcuts (Command-Plus, Command-Minus, Command-0 for actual size and Command-9 to
   fit the page), Option-Command-G to type a page number, and Command-G /
   Command-Shift-G to step through search results.
-- **Help > Bookside 키보드 단축키** lists every key with the current settings.
+- **도움말 > Bookside 키보드 단축키** lists every key with the current settings.
 - **Settings > 단축키** groups shortcuts by menu, and each one can be cleared or reset on
   its own. Keys used by macOS or fixed menus are refused, and shortcuts are recorded the
   same way under a Korean input source.

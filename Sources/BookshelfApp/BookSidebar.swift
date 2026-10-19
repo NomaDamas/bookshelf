@@ -75,14 +75,6 @@ struct BookSidebar: View {
                         }
                     }
             }
-            ReaderHairline().padding(.horizontal, 16)
-            HStack(spacing: 8) {
-                Image(systemName: "internaldrive")
-                Text("이 Mac의 서재")
-                Spacer()
-                ReaderIconButton(symbol: "folder.badge.plus", label: "폴더 추가") { model.chooseFiles(folder: true) }
-            }.font(.system(size: 11)).foregroundStyle(.secondary)
-                .padding(.leading, 20).padding(.trailing, 12).frame(height: ReaderStyle.footerHeight)
         }.background(ReaderMaterial())
     }
 }
