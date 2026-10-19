@@ -242,10 +242,6 @@ import BookshelfCore
         guard flushPendingSave() else { return }
         savePositionNow(); readingShelfVisible = true; sidebarVisible = true; libraryQuery = ""
     }
-    func toggleNotesPanel() {
-        if readingShelfVisible { readingShelfVisible = false; sidebarVisible = true }
-        else { sidebarVisible.toggle() }
-    }
     func toggleAIPanel() {
         guard activeBook != nil else { return }
         if readingShelfVisible { readingShelfVisible = false; aiPanelVisible = true }

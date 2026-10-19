@@ -30,7 +30,6 @@ public struct BookReadingCoverage: Codable, Equatable, Sendable {
 
 /// One book and an immutable page boundary per request. PDF bytes are never modified.
 public actor BookReadingSession {
-    public static let toolNames = ["get_book_overview", "search_book", "read_pages", "get_reading_coverage"]
     private let book: Book
     private let pdf: PDFDocument
     private let scope: BookReadingScope
