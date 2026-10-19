@@ -59,32 +59,70 @@ import BookshelfCore
                 Button("PDF 추가…") { model.chooseFiles() }.keyboardShortcut("o")
                 Button("폴더 추가…") { model.chooseFiles(folder: true) }.keyboardShortcut("o", modifiers: [.command, .shift])
             }
-            CommandMenu("읽기") {
-                Button("서재로 돌아가기") { model.showLibrary() }.keyboardShortcut(model.shortcuts[.library].value)
-                Divider()
-                Button("이전 페이지") { model.goToPage(model.page - 1, focusReader: true) }.keyboardShortcut(model.shortcuts[.previousPage].value)
-                Button("다음 페이지") { model.goToPage(model.page + 1, focusReader: true) }.keyboardShortcut(model.shortcuts[.nextPage].value)
-                Button("읽기 화면으로") { model.focusReader() }.keyboardShortcut(model.shortcuts[.focusReader].value).disabled(model.document == nil)
-                Button("책갈피") { model.toggleBookmark() }.keyboardShortcut(model.shortcuts[.bookmark].value)
-                Divider()
-                Button("페이지 목록") { model.openBookTool("pages") }.keyboardShortcut(model.shortcuts[.pages].value)
-                Button("책 메모") { model.openBookTool("notes") }.keyboardShortcut(model.shortcuts[.notes].value)
-                Button("발췌") { model.openBookTool("quotes") }.keyboardShortcut(model.shortcuts[.excerpts].value)
-                Button("이 책에서 찾기") { model.openBookTool("search") }.keyboardShortcut(model.shortcuts[.search].value)
-                Button("선택 문장 메모") { model.saveSelection() }.keyboardShortcut("h", modifiers: [.command, .shift]).disabled(model.selection.isEmpty)
-                Button("메모 저장") { model.flushPendingSave() }.keyboardShortcut(model.shortcuts[.saveNote].value)
+            // Close lives in the save group, so the note commands follow it instead of replacing it.
+            CommandGroup(after: .saveItem) {
+                item(.saveNote) { model.flushPendingSave() }
                 Button("메모 내보내기…") { model.exportNotes() }.disabled(model.activeBook == nil)
+            }
+            CommandGroup(after: .textEditing) {
+                Menu("찾기") {
+                    item(.search) { model.findInBook() }.disabled(model.activeBook == nil)
+                    item(.findNext) { model.findNext() }.disabled(model.activeBook == nil)
+                    item(.findPrevious) { model.findNext(forward: false) }.disabled(model.activeBook == nil)
+                }
+            }
+            CommandGroup(after: .sidebar) {
+                item(.leftSidebar, title: model.sidebarVisible ? "사이드바 숨기기" : "사이드바 보기") { model.sidebarVisible.toggle() }
+                item(.aiPanel, title: model.isReadingBook && model.aiPanelVisible ? "Pi 패널 숨기기" : "Pi 패널 보기") { model.toggleAIPanel() }
+                    .disabled(AgentRuntime.bridgeURL == nil || model.activeBook == nil)
+                Divider()
+                item(.pages) { model.openBookTool("pages") }.disabled(model.activeBook == nil)
+                item(.notes) { model.openBookTool("notes") }.disabled(model.activeBook == nil)
+                item(.excerpts) { model.openBookTool("quotes") }.disabled(model.activeBook == nil)
+                Divider()
+                item(.zoomIn) { model.zoom(.zoomIn) }.disabled(!model.canZoom)
+                item(.zoomOut) { model.zoom(.zoomOut) }.disabled(!model.canZoom)
+                item(.actualSize) { model.zoom(.actualSize) }.disabled(!model.canZoom)
+                item(.zoomToFit) { model.zoom(.fit) }.disabled(!model.canZoom)
+                Divider()
+            }
+            CommandMenu("이동") {
+                item(.library) { model.showLibrary() }
+                Divider()
+                item(.previousPage) { model.goToPage(model.page - 1, focusReader: true) }.disabled(model.document == nil || model.textInputActive)
+                item(.nextPage) { model.goToPage(model.page + 1, focusReader: true) }.disabled(model.document == nil || model.textInputActive)
+                item(.goToPage, title: "페이지로 이동…") { model.requestPageEntry() }.disabled(!model.isReadingBook || model.document == nil)
+                Divider()
+                item(.focusReader) { model.focusReader() }.disabled(model.document == nil)
+            }
+            CommandMenu("책") {
+                item(.bookmark) { model.toggleBookmark() }.disabled(model.document == nil)
+                item(.highlight) { model.saveSelection() }.disabled(model.selection.isEmpty)
                 Divider()
                 Button("텍스트 인식…") { model.startOCR() }.disabled(model.activeBook == nil || model.ocrRunning)
                 Button("기존 OCR 개선…") { model.startOCR(mode: .replaceText) }.disabled(model.activeBook == nil || model.ocrRunning)
                 Button("생성한 OCR 사본 검토…") { model.reviewLatestOCR() }.disabled(model.activeBook == nil || model.ocrRunning)
                 Button("원본 PDF 사용") { model.useOriginalPDF() }.disabled(model.activeBook?.ocrPath == nil || model.ocrRunning)
             }
-            CommandGroup(after: .sidebar) {
-                Button("왼쪽 사이드바 표시") { model.sidebarVisible.toggle() }.keyboardShortcut(model.shortcuts[.leftSidebar].value)
-                Button("AI 패널 표시") { model.toggleAIPanel() }.keyboardShortcut(model.shortcuts[.aiPanel].value).disabled(AgentRuntime.bridgeURL == nil)
-            }
+            HelpCommands()
         }
+        Window(KeyboardShortcutsList.windowTitle, id: KeyboardShortcutsList.windowID) {
+            KeyboardShortcutsList(model: model).preferredColorScheme(appearance.colorScheme)
+        }
+        .windowResizability(.contentSize)
         Settings { SettingsView(model: model).preferredColorScheme(appearance.colorScheme) }
+    }
+    /// Menu items for remappable actions read their keys from the user's shortcut settings.
+    private func item(_ action: ReaderAction, title: String? = nil, perform: @escaping () -> Void) -> some View {
+        Button(title ?? action.title, action: perform).keyboardShortcut(model.shortcuts[action].value)
+    }
+}
+
+struct HelpCommands: Commands {
+    @Environment(\.openWindow) private var openWindow
+    var body: some Commands {
+        CommandGroup(replacing: .help) {
+            Button("Bookside 키보드 단축키") { openWindow(id: KeyboardShortcutsList.windowID) }
+        }
     }
 }

@@ -112,7 +112,8 @@ struct NotesPanel: View {
     private var search: some View {
         VStack(alignment: .leading, spacing: 14) {
             HStack(spacing: 6) {
-                ReaderSearchField(prompt: "이 책의 본문에서 찾기", label: "본문 검색어", text: $model.searchQuery) { model.searchBook() }
+                ReaderSearchField(prompt: "이 책의 본문에서 찾기", label: "본문 검색어", text: $model.searchQuery, submit: { model.searchBook() },
+                                  focusRequest: $model.searchFieldFocusPending)
                 ReaderIconButton(symbol: "arrow.turn.down.left", label: "본문 검색") { model.searchBook() }
                     .disabled(model.searchQuery.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
             }

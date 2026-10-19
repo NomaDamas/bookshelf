@@ -86,19 +86,14 @@ struct SettingsView: View {
                     }
                     if model.settingsTab == "shortcuts" {
                         HStack {
-                            Text("버튼을 클릭한 뒤 사용할 키를 누르세요. Escape로 취소할 수 있습니다.").font(.system(size: 12)).foregroundStyle(.secondary)
+                            Text("버튼을 클릭한 뒤 사용할 키를 누르세요. Escape로 취소하고 Delete로 비울 수 있습니다.").font(.system(size: 12)).foregroundStyle(.secondary)
                             Spacer()
-                            Button("기본값 복원") { model.resetShortcuts() }.controlSize(.small)
+                            Button("모두 기본값으로") { model.resetShortcuts() }.controlSize(.small)
                         }
                         if let error = model.shortcutError { Text(error).font(.caption).foregroundStyle(.orange) }
-                        settingsSection("앱 단축키", symbol: "keyboard") {
-                            ForEach(ReaderAction.allCases) { action in
-                                HStack {
-                                    Text(action.title).font(.system(size: 13))
-                                    Spacer()
-                                    ShortcutRecorder(label: model.shortcuts[action].label, action: action.title) { model.setShortcut($0, for: action) }
-                                        .frame(width: 140, height: 28)
-                                }
+                        ForEach(ShortcutGroup.allCases) { group in
+                            settingsSection(group.title, symbol: group.symbol) {
+                                ForEach(group.actions) { action in shortcutRow(action) }
                             }
                         }
                     }
@@ -120,6 +115,22 @@ struct SettingsView: View {
             .preferredColorScheme(appearance.colorScheme)
     }
 
+    private func shortcutRow(_ action: ReaderAction) -> some View {
+        HStack(spacing: 6) {
+            Text(action.title).font(.system(size: 13))
+            Spacer()
+            ShortcutRecorder(label: model.shortcuts[action].label, action: action.title) { model.setShortcut($0, for: action) }
+                .frame(width: 140, height: 28)
+            Menu {
+                Button("기본값으로 되돌리기 (\(action.defaultBinding.label))") { model.restoreShortcut(action) }
+                    .disabled(model.shortcuts[action] == action.defaultBinding)
+                Button("단축키 없음") { model.setShortcut(AppKeyBinding.unassigned, for: action) }
+                    .disabled(model.shortcuts[action].isUnassigned)
+            } label: { Image(systemName: "ellipsis") }
+                .menuStyle(.borderlessButton).menuIndicator(.hidden).fixedSize()
+                .accessibilityLabel("\(action.title) 단축키 옵션")
+        }
+    }
     private func settingsSection<Content: View>(_ title: String, symbol: String, @ViewBuilder content: () -> Content) -> some View {
         VStack(alignment: .leading, spacing: 16) {
             Label(title, systemImage: symbol).font(.system(size: 14, weight: .semibold))
