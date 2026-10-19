@@ -2,6 +2,50 @@ import XCTest
 @testable import BookshelfCore
 
 final class AgentBridgeTests: XCTestCase {
+    func testProcessExitDoesNotRunTimersOnTheWaitingWorker() async throws {
+        let result: (Bool, Int32) = try await withCheckedThrowingContinuation { continuation in
+            DispatchQueue.global().async {
+                let probe = TimerProbe()
+                let timer = Timer(timeInterval: 0.02, repeats: false) { _ in probe.fire() }
+                RunLoop.current.add(timer, forMode: .default)
+                defer { timer.invalidate() }
+                let process = Process()
+                process.executableURL = URL(fileURLWithPath: "/bin/sh")
+                process.arguments = ["-c", "sleep 0.2; exit 7"]
+                let exited = AgentProcessExit(process)
+                do {
+                    try process.run()
+                    exited.wait()
+                    continuation.resume(returning: (probe.fired, process.terminationStatus))
+                } catch { continuation.resume(throwing: error) }
+            }
+        }
+        XCTAssertFalse(result.0, "Waiting for an executor must not run worker-thread timers that can update PDFKit views")
+        XCTAssertEqual(result.1, 7)
+    }
+    func testBridgeWaitsForFailureAfterTheExecutorClosesStdout() async throws {
+        guard let node = AgentRuntime.findExecutable("node") else { throw XCTSkip("Node.js not installed") }
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let script = root.appendingPathComponent("failed-exit.mjs")
+        try """
+        process.stdin.resume(); process.stdin.on('end',()=>{
+          console.log(JSON.stringify({type:'done'}));
+          process.stdout.end();
+          setTimeout(()=>process.exit(7),200);
+        });
+        """.write(to: script, atomically: true, encoding: .utf8)
+        let bridge = AgentBridge(executable: node, script: script)
+        var events: [String] = []
+        do {
+            for try await event in bridge.events(for: AgentRequest(action: "status", backend: .claude, directory: root)) { events.append(event.type) }
+            XCTFail("A nonzero exit after stdout EOF must still report an executor failure")
+        } catch {
+            XCTAssertTrue(error.localizedDescription.contains("AI 실행기가 종료됐습니다."))
+        }
+        XCTAssertEqual(events, ["done"])
+    }
     func testSmallStreamingEventsArriveBeforeTheExecutorExits() async throws {
         guard let node = AgentRuntime.findExecutable("node") else { throw XCTSkip("Node.js not installed") }
         let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
@@ -49,4 +93,11 @@ final class AgentBridgeTests: XCTestCase {
         XCTAssertEqual(events.map(\.type), ["answer", "done"])
         XCTAssertEqual(events.first?.text, "테스트 책 설명")
     }
+}
+
+private final class TimerProbe: @unchecked Sendable {
+    private let lock = NSLock()
+    private var value = false
+    func fire() { lock.lock(); value = true; lock.unlock() }
+    var fired: Bool { lock.lock(); defer { lock.unlock() }; return value }
 }
