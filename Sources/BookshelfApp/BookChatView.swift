@@ -54,7 +54,7 @@ struct BookChatView: View {
                         ForEach(chat.messages) { message in
                             VStack(alignment: .leading, spacing: 9) {
                                 HStack {
-                                    Text(message.attachments?.isEmpty == false ? "이 책의 자료" : message.role == "user" ? "나" : (message.harness == "pi" ? "Pi + " : "") + (ChatBackend(rawValue: message.backend)?.title ?? "도우미"))
+                                    Text(message.backend == "local" ? "이 책의 자료" : message.role == "user" ? "나" : (message.harness == "pi" ? "Pi + " : "") + (ChatBackend(rawValue: message.backend)?.title ?? "도우미"))
                                         .font(.system(size: 11, weight: .semibold)).foregroundStyle(.secondary)
                                     Spacer()
                                     if message.role == "user" && (message.attachments?.isEmpty ?? true) {
@@ -71,10 +71,10 @@ struct BookChatView: View {
                                 if let attachments = message.attachments {
                                     ForEach(attachments) { ChatAttachmentView(attachment: $0, directory: model.store.directory) }
                                 }
-                                if message.text.isEmpty && message.role == "assistant" && chat.busy && message.id == chat.messages.last?.id {
-                                    HStack(spacing: 8) { ProgressView().controlSize(.small); Text("답변을 준비하고 있습니다.").font(.system(size: 12)).foregroundStyle(.secondary) }
+                                if !message.text.isEmpty { ChatResponseView(text: message.text, streaming: chat.busy && message.id == chat.messages.last?.id) }
+                                if message.role == "assistant" && chat.busy && message.id == chat.messages.last?.id && (message.text.isEmpty || !chat.activityMessage.isEmpty) {
+                                    HStack(spacing: 8) { ProgressView().controlSize(.small); Text(chat.activityMessage.isEmpty ? "답변을 준비하고 있습니다." : chat.activityMessage).font(.system(size: 12)).foregroundStyle(.secondary) }
                                 }
-                                else if !message.text.isEmpty { ChatResponseView(text: message.text, streaming: chat.busy && message.id == chat.messages.last?.id) }
                                 if message.role == "assistant" && !message.text.isEmpty {
                                     HStack(spacing: 10) {
                                         Button("질문한 \(message.page)쪽") { model.goToPage(message.page) }
@@ -94,7 +94,7 @@ struct BookChatView: View {
                                         }
                                     }.font(.system(size: 11)).buttonStyle(.borderless)
                                 }
-                                if message.role == "assistant" && message.text.isEmpty && !chat.busy && message.id == chat.messages.last?.id {
+                                if message.role == "assistant" && message.text.isEmpty && (message.attachments?.isEmpty ?? true) && !chat.busy && message.id == chat.messages.last?.id {
                                     Button("다시 시도") { retry() }.buttonStyle(.bordered).controlSize(.small)
                                 }
                             }.padding(14)
@@ -108,6 +108,7 @@ struct BookChatView: View {
                             .background(ChatScrollObserver(nearBottom: { if $0 && !followTail { followTail = true } }, scrolledAway: { if followTail { followTail = false } }))
                     }.padding(14).animation(reduceMotion ? nil : ReaderMotion.ease(ReaderTokens.messageDuration), value: chat.messages.count)
                 }.onChange(of: chat.messages.last?.text) { _, _ in if followTail { proxy.scrollTo("conversation-end", anchor: .bottom) } }
+                    .onChange(of: chat.messages.last?.attachments?.count) { _, _ in if followTail { proxy.scrollTo("conversation-end", anchor: .bottom) } }
                     .onChange(of: chat.messages.count) { _, _ in
                         if chat.messages.last?.backend == "local" { followTail = true }
                         if followTail { withAnimation(reduceMotion ? nil : ReaderMotion.ease(ReaderTokens.messageDuration)) { proxy.scrollTo("conversation-end", anchor: .bottom) } }
@@ -139,11 +140,14 @@ struct BookChatView: View {
                 HStack {
                     Text("PDF \(model.page)쪽").monospacedDigit()
                     Menu {
+                        Button("알아서 설명 (자동)") { chat.skill = "auto" }
+                        Divider()
                         Button("쉽게 설명") { chat.skill = "explain" }
                         Button("비교표") { chat.skill = "compare" }
                         Button("시각 자료로 설명") { chat.skill = "visualize" }
-                    } label: { Text(chat.skill == "visualize" ? "시각 자료" : chat.skill == "compare" ? "비교표" : "쉽게 설명") }
+                    } label: { Text(chat.skill == "auto" ? "자동" : chat.skill == "visualize" ? "시각 자료" : chat.skill == "compare" ? "비교표" : "쉽게 설명") }
                         .menuStyle(.borderlessButton).fixedSize().accessibilityLabel("설명 방식").disabled(chat.busy)
+                        .help("자동 모드에서는 질문에 맞게 글, 표, 다이어그램을 고릅니다. Codex는 이미지도 생성할 수 있습니다.")
                     Spacer()
                     Toggle("노트 포함", isOn: $includeNotes).toggleStyle(.checkbox)
                 }.font(.system(size: 11)).foregroundStyle(.secondary)
@@ -256,7 +260,7 @@ private struct LearningProfileView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("학습 전용 지침").font(.headline)
-            Text("공통 지침은 영어로 작성하며 답변은 사용자의 언어를 따릅니다. 설명, 비교표와 시각 자료를 제공합니다.")
+            Text("공통 지침은 영어로 작성하며 답변은 사용자의 언어를 따릅니다. 기본 자동 모드가 글, 표와 시각 자료를 고릅니다. Codex는 이미지도 생성할 수 있습니다.")
                 .font(.system(size: 12)).foregroundStyle(.secondary)
             ScrollView { Text(text).font(.system(size: 12)).textSelection(.enabled).frame(maxWidth: .infinity, alignment: .leading) }
         }.padding(20).frame(width: 440, height: 420)

@@ -20,6 +20,7 @@ public struct AgentEvent: Decodable, Sendable {
     public var openAutomatically: Bool?
     public var usage: AgentContextUsage?
     public var models: [AgentModelChoice]?
+    public var attachment: ChatAttachment?
 }
 public struct AgentModelChoice: Codable, Identifiable, Equatable, Sendable {
     public let id: String
@@ -51,17 +52,19 @@ public struct AgentRequest: Encodable, Sendable {
     public var skill: String
     public var workspace: String
     public var codexHome: String
+    public var assetDirectory: String
     public var claudePath: String?
     public var codexPath: String?
     public var question: String?
     public var messages: [Message]
     public var book: Context?
-    public init(action: String, backend: ChatBackend, directory: URL, usePi: Bool = true, skill: String = "explain",
+    public init(action: String, backend: ChatBackend, directory: URL, usePi: Bool = true, skill: String = "auto",
                 question: String? = nil, messages: [Message] = [], book: Context? = nil, model: String? = nil) {
         self.action = action; self.clientVersion = AppMetadata.current.version; self.backend = backend; self.usePi = usePi; self.skill = skill
         let agentBase = ProcessInfo.processInfo.environment["BOOKSHELF_AGENT_DATA_DIR"].map { URL(fileURLWithPath: $0, isDirectory: true) } ?? directory
         workspace = agentBase.appendingPathComponent("Agent/Workspace", isDirectory: true).path
         codexHome = agentBase.appendingPathComponent("Agent/Codex", isDirectory: true).path
+        assetDirectory = directory.appendingPathComponent("ChatAssets", isDirectory: true).path
         claudePath = AgentRuntime.findExecutable("claude")?.path; codexPath = AgentRuntime.findExecutable("codex")?.path
         self.question = question; self.messages = messages; self.book = book
         self.model = model?.isEmpty == false ? model : nil

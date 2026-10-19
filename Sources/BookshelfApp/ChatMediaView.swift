@@ -80,10 +80,28 @@ private struct ChatMediaPlayer: View {
             Button { imageExpanded = true } label: { mediaImage.scaledToFit().frame(maxHeight: 300) }.buttonStyle(.plain)
                 .accessibilityLabel("이미지 크게 보기")
                 .sheet(isPresented: $imageExpanded) {
-                    VStack { HStack { Text(url.lastPathComponent).font(.headline); Spacer(); Button("닫기") { imageExpanded = false }.keyboardShortcut(.cancelAction) }; mediaImage.scaledToFit() }
+                    VStack { HStack {
+                        Text("이미지").font(.headline); Spacer()
+                        if url.isFileURL {
+                            Button("복사") { if let image = NSImage(contentsOf: url) { NSPasteboard.general.clearContents(); NSPasteboard.general.writeObjects([image]) } }
+                                .accessibilityLabel("이미지 복사")
+                            Button("저장…", action: saveImage).accessibilityLabel("이미지 저장")
+                        }
+                        Button("닫기") { imageExpanded = false }.keyboardShortcut(.cancelAction)
+                    }; mediaImage.scaledToFit() }
                         .padding(20).frame(minWidth: 660, idealWidth: 900, minHeight: 500, idealHeight: 700)
                 }
         } else { NativeMediaPlayback(url: url, video: kind == "video") }
+    }
+    private func saveImage() {
+        let panel = NSSavePanel(); panel.nameFieldStringValue = "생성 이미지." + url.pathExtension
+        let completion: (NSApplication.ModalResponse) -> Void = { response in
+            guard response == .OK, let destination = panel.url else { return }
+            do { try Data(contentsOf: url).write(to: destination, options: .atomic) }
+            catch { NSAlert(error: error).runModal() }
+        }
+        if let window = NSApp.keyWindow { panel.beginSheetModal(for: window, completionHandler: completion) }
+        else { panel.begin(completionHandler: completion) }
     }
     @ViewBuilder private var mediaImage: some View {
         if url.isFileURL, let image = NSImage(contentsOf: url) { Image(nsImage: image).resizable() }

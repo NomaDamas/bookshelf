@@ -1,0 +1,54 @@
+{
+  "date": "2026-10-19",
+  "scope": "Optional Pi preview; authored two-page PDF fixtures only",
+  "sourceHashes": {
+    "Sources/BookshelfAgent/instructions.ts": "1b079087b097a729db1b2773a07800e926642e90951c7e51704c47dad02a3c09",
+    "Sources/BookshelfAgent/codex.ts": "ba3a712e3b26a4ab96ee1fba8a45e78592e468734aab6a02b7e6e3031f86525c",
+    "Sources/BookshelfAgent/generated-image.ts": "ce2ecf891ea67289e69de26c6c6dfded21bb3cf80d4ea1a0e3ea447679ce1f29",
+    "Sources/BookshelfApp/BookChatModel.swift": "45d7f9bda3e881e82086f92b88e7089132273d4e6ee67bda1e7d200a93159f22",
+    "Sources/BookshelfApp/BookChatView.swift": "e2180e0822e83a073bf3d87db3de44e9b3400dc310fba19ad9ca27b730d1c103",
+    "Sources/BookshelfApp/ChatMediaView.swift": "a3bb7943b5804abfacf662e01150077fd32c0f384069ab40220f13464ec35c83",
+    "Sources/BookshelfCore/AgentBridge.swift": "6f9221afd8b8857035fdb8638f68c004bdefbb5eae1ae0860a32b7007b104599",
+    "Sources/BookshelfCore/ChatAssetStore.swift": "38d7968380d1cad3f95c305b967db9f992b21e8116cea8a3f8de0b6614764534"
+  },
+  "automated": {
+    "swiftTests": 53,
+    "bunTests": 15,
+    "typecheck": "passed",
+    "biome": "zero errors; existing warnings retained",
+    "nativeBundle": "debug, ad-hoc signed"
+  },
+  "native": {
+    "officialCodexLoginFreshProcess": true,
+    "defaultAutomaticProfile": true,
+    "codexGeneratedImage": {
+      "model": "gpt-6.1-sol",
+      "width": 1312,
+      "height": 1199,
+      "sha256": "f249d9c3f4fd675771e296829814fdb93396e92e2168895c1f99ab48b9d80ffb"
+    },
+    "imageGenerationProgressVisible": true,
+    "imageExpanded": true,
+    "imageCopiedAndClipboardRestored": true,
+    "exportMatchesPNGBytes": true,
+    "clearUndoRestoresImage": true,
+    "relaunchRestoresImage": true,
+    "sameBookCodexToClaudeContinuation": true,
+    "automaticComparisonTableAndMermaid": true,
+    "mermaidRenderedAndExpanded": true,
+    "priorImageRequestNotRefusedAgain": true
+  },
+  "captures": [
+    "learning-codex-image.png",
+    "learning-automatic-mermaid.png"
+  ],
+  "boundaries": [
+    "Official executors own credentials; no tokens copied or proxied.",
+    "Generated image bytes are saved locally; earlier image bytes are not resent in later turns.",
+    "Image generation is account-dependent and has no API-key fallback.",
+    "This is a locally verified experiment, not a notarized release."
+  ],
+  "verificationNotes": [
+    "Native actions were checked by accessible labels. A stale AX index caused a QA-only history deletion; undo restored the exact final message before the verified diagram capture."
+  ]
+}

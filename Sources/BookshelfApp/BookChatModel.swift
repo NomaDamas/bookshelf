@@ -8,7 +8,8 @@ import BookshelfCore
     @Published var draft = ""
     @Published private(set) var backend: ChatBackend = .claude
     @Published private(set) var usePi = true
-    @Published var skill = "explain"
+    @Published var skill = "auto"
+    @Published private(set) var activityMessage = ""
     @Published private(set) var busy = false
     @Published private(set) var operation = ""
     @Published private(set) var accounts: [ChatBackend: AgentAccountStatus] = [:]
@@ -90,7 +91,7 @@ import BookshelfCore
         let question = draft.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !question.isEmpty else { return }
         guard question.utf16.count <= 10000 else { errorMessage = "질문은 10000자 이내로 입력해 주세요."; return }
-        let history = messages.filter { $0.state == "complete" && ($0.attachments?.isEmpty ?? true) }.suffix(12).map { AgentRequest.Message(role: $0.role, text: String($0.text.prefix(6000))) }
+        let history = messages.filter { $0.state == "complete" && !$0.text.isEmpty && $0.backend != "local" }.suffix(12).map { AgentRequest.Message(role: $0.role, text: String($0.text.prefix(6000))) }
         messages.append(BookChatMessage(role: "user", text: question, backend: backend.rawValue, page: context.page, harness: usePi ? "pi" : "direct", skill: skill))
         hasUnsavedChanges = true
         guard persist() else { return }
@@ -108,7 +109,7 @@ import BookshelfCore
             messages[index].state = receivedAnswer ? "complete" : "interrupted"
             hasUnsavedChanges = true
         }
-        assistantID = nil; busy = false; operation = ""; _ = persist()
+        assistantID = nil; busy = false; operation = ""; activityMessage = ""; _ = persist()
     }
     private func flushDelta() {
         deltaTask?.cancel(); deltaTask = nil
@@ -178,7 +179,7 @@ import BookshelfCore
         } catch { errorMessage = "대화를 저장하지 못했습니다. " + error.localizedDescription; return false }
     }
     private func start(_ request: AgentRequest) {
-        let id = UUID(); runID = id; errorMessage = nil; busy = true; operation = request.action
+        let id = UUID(); runID = id; errorMessage = nil; busy = true; operation = request.action; activityMessage = ""
         let connection = bridgeFactory(); bridge = connection
         task = Task {
             do {
@@ -194,13 +195,24 @@ import BookshelfCore
             if let index = messages.firstIndex(where: { $0.id == assistantID }) {
                 messages[index].state = receivedAnswer ? "complete" : "failed"; hasUnsavedChanges = true
             }
-            assistantID = nil; busy = false; operation = ""; bridge = nil; _ = persist()
+            assistantID = nil; busy = false; operation = ""; activityMessage = ""; bridge = nil; _ = persist()
         }
     }
     private func receive(_ event: AgentEvent, backend: ChatBackend) {
         switch event.type {
         case "status": if let status = event.status { accounts[backend] = status }
         case "models": if let options = event.models { models[backend] = options }
+        case "activity": activityMessage = event.message ?? ""
+        case "attachment":
+            guard backend == .codex, let attachment = event.attachment, attachment.kind == "image",
+                  let index = messages.firstIndex(where: { $0.id == assistantID }),
+                  ChatAssetStore.generatedImageURL(for: attachment, directory: store.directory) != nil else {
+                errorMessage = "생성된 이미지를 보관하지 못했습니다."; return
+            }
+            if !(messages[index].attachments ?? []).contains(where: { $0.id == attachment.id }) {
+                messages[index].attachments = (messages[index].attachments ?? []) + [attachment]
+                hasUnsavedChanges = true; _ = persist()
+            }
         case "usage":
             if let usage = event.usage, let index = messages.firstIndex(where: { $0.id == assistantID }) {
                 messages[index].usage = usage; hasUnsavedChanges = true
@@ -220,7 +232,7 @@ import BookshelfCore
                 }
             }
             hasUnsavedChanges = true
-        case "error": errorMessage = event.message ?? "답변을 완료하지 못했습니다."
+        case "error", "warning": errorMessage = event.message ?? "답변을 완료하지 못했습니다."
         case "login_url":
             guard let value = event.url, let url = URL(string: value), url.scheme == "https",
                   let host = url.host, ["auth.openai.com", "auth0.openai.com", "chatgpt.com", "claude.ai", "platform.claude.com", "console.anthropic.com"].contains(host) else {

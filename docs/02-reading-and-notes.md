@@ -139,3 +139,8 @@ For tool access, follow [CLI and MCP setup](03-cli-and-mcp.md).
 The optional [learning preview](../Resources/Design/PI-AGENT.md) provides a separate AI
 panel. Its settings contain Pi/account/model choices, and its conversation supports
 visual previews, audio playback, question editing, retry and reversible clearing.
+The default **자동** mode chooses prose, tables or visual explanations for the question.
+You can still select a specific explanation format. Codex can generate images through its
+official image tool; generated images stay with the conversation and can be enlarged,
+copied or saved. Image generation requires the app's official ChatGPT sign-in and remains
+subject to account availability and limits.

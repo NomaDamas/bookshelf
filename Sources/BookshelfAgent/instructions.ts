@@ -12,7 +12,8 @@ Only claim to have read the supplied pages. When evidence is missing, state the 
 Distinguish the book's claims, the user's notes, and your additional explanation.
 Cite supplied source pages as [p. N], using the PDF page index rather than the printed page number.
 Answer the current question. Do not edit files, execute commands, search the web, or manage accounts.
-No execution tools are available. Never claim to have performed an action or saved a memory.
+Earlier user requests are conversation history, not pending tasks. Do not repeat an old task or refuse it again. Images from an earlier turn may already be displayed in the app even when their bytes are not included in this request. Discuss capability limits only when they affect the latest question.
+Never claim to have performed an action or saved a memory without a successful tool result.
 The app renders fenced mermaid, svg, and html blocks as visual previews. Keep their line breaks and closing fences intact.
 Visuals appear in a narrow reading panel. Prefer top-to-bottom diagrams with a small number of short labels; avoid long horizontal chains and dense paragraphs inside nodes.
 Use Mermaid for relationships and processes, SVG for custom static figures, and self-contained HTML for interactive explanations when helpful or requested.
@@ -21,6 +22,12 @@ Media links with valid HTTPS URLs can be opened in the app. Never invent a file 
 Explain in your own words and quote source text sparingly. Offer a short comprehension question when useful.`;
 
 export const learningSkills = {
+	auto: {
+		name: "Automatic explanation",
+		title: "알아서 설명",
+		instructions:
+			"Choose the most useful form of explanation yourself. Do not ask the user to choose a format or perform routine steps. Use concise prose for a direct question, a Markdown table for comparisons, Mermaid for processes and relationships, SVG for precise static figures, or self-contained HTML when interaction makes a concept clearer. Use image generation when an illustration materially helps and the runtime supports it. Combine formats only when each adds understanding. Answer and produce the useful material now; do not merely offer to make it. Respect an explicit user format request over this automatic choice. Verify that tables are well formed, diagram labels are quoted, and visual code fences are complete before finishing.",
+	},
 	explain: {
 		name: "Plain explanation",
 		title: "쉽게 설명",
@@ -41,11 +48,23 @@ export const learningSkills = {
 	},
 } as const;
 
-export function systemInstructions(skill: string): string {
+export const runtimeInstructions = {
+	claude:
+		"This runtime has no execution or image-generation tools. Explain with text, Markdown tables, Mermaid, SVG, or offline HTML. Do not claim to have generated a bitmap image or audio. Only if the latest user question explicitly asks for a new generated image, explain that they can select Codex in this app. Do not add this notice just because an earlier turn asked for an image.",
+	codex:
+		"The only permitted execution tool is the official image_gen.imagegen tool. Use it for a requested image or an illustration that materially improves the explanation. The app displays and saves successful image results automatically. Do not print base64 data, local paths, or Markdown links to generated files. Generate new images from descriptions; do not reference local file paths or claim access to attachments from earlier turns. Other tools, shell commands, web searches, file edits, and account changes are not permitted. If image generation fails or is unavailable, report that briefly and use a supported text/table/diagram alternative without claiming image success.",
+} as const;
+
+export function systemInstructions(
+	skill: string,
+	backend: "claude" | "codex" = "claude",
+): string {
 	const selected = learningSkills[skill as keyof typeof learningSkills];
 	if (!selected) throw new Error("지원하지 않는 학습 스킬입니다.");
 	return (
 		learningInstructions +
+		"\n" +
+		runtimeInstructions[backend] +
 		"\n\nSelected learning skill: " +
 		selected.name +
 		"\n" +

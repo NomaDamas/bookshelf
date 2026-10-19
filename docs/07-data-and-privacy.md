@@ -103,6 +103,12 @@ history remains local; no automatic long-term profile or cross-book memory is ge
 
 Imported image/audio/HTML files are for local display and playback; their contents are not
 included in model requests. An external HTTPS media link is loaded only when selected.
+In automatic mode, Codex may use its official image-generation tool to illustrate the
+answer. The image prompt can include the supplied page context. Generated PNGs are copied
+from verified event bytes into `ChatAssets/` and retained with the local conversation,
+including undo history. No API key or subscription credential is passed to Pi, and no
+separate image billing fallback is configured. Earlier generated image bytes are not
+resent in later questions; their accompanying explanation can remain in the text history.
 HTML visualizations run in an opaque WebKit iframe with network, forms, file access and
 top-level navigation disabled. SVG is sanitized and Mermaid runs in strict mode.
 

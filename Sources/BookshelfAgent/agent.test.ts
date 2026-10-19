@@ -13,7 +13,7 @@ const base = {
 	action: "chat",
 	backend: "claude",
 	usePi: true,
-	skill: "explain",
+	skill: "auto",
 	workspace: "/workspace",
 	codexHome: "/codex",
 	question: "Why?",
@@ -35,6 +35,11 @@ test("Every bundled system instruction is English while response language remain
 		expect(text).toContain("language of the latest question");
 	}
 	expect(() => systemInstructions("bash")).toThrow();
+	expect(validateRequest({ ...base, skill: undefined }).skill).toBe("auto");
+	expect(systemInstructions("auto", "codex")).toContain("image_gen.imagegen");
+	expect(systemInstructions("auto", "claude")).toContain(
+		"no execution or image-generation tools",
+	);
 });
 
 test("Execution profiles isolate development settings without disabling official account auth", () => {

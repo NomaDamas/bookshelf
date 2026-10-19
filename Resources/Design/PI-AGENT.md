@@ -6,13 +6,14 @@ This branch adds a native chat panel to Bookshelf. It uses Pi agent core for con
 
 - Ask about the current PDF page, selected text and optionally the book notebook.
 - Choose Claude or Codex, preserving the app's book-specific conversation.
-- Choose a model and one of three learning profiles: plain explanation, comparison table or visual explanation.
+- Choose a model. The default automatic profile selects prose, comparison tables, diagrams or interactive explanations for the question; plain explanation, comparison table and visual explanation remain optional overrides.
 - Use an English system prompt while answering in the user's requested language.
 - Stream replies, stop a request, save a completed reply to the notebook and return to the question's PDF page.
 - Store conversations in a separate SQLite table with revision checks. Chats do not count as notebook items unless explicitly copied to the notebook.
 - Edit a question and regenerate from that point, retry an answer, remove a conversation tail or clear the chat. Up to ten prior edits can be restored, including after reopening the app.
 - Read official per-request token usage and context-window size, when the executor provides them.
 - View Mermaid, SVG, images and offline HTML; open user-selected audio/video with native playback controls.
+- Generate illustrations through Codex's official image tool, see progress in chat, and reopen, enlarge, copy or save the resulting PNG. Claude can produce tables, Mermaid, SVG and HTML; it does not expose a bitmap-generation tool in this integration.
 
 The experiment does not add whole-library semantic retrieval, audio synthesis, arbitrary external skills or autonomous file-editing tools. HTML can run inline interaction code inside an isolated offline preview. The existing external MCP server stays read-only.
 
@@ -41,8 +42,18 @@ child frames are rejected. The large preview supports zoom and source viewing.
 
 The attachment button imports user-selected media into `ChatAssets/` and stores references
 with that book. Audio supports play/pause, seeking and playback speed through AVFoundation.
-External HTTPS media requires an explicit load action. Model-supplied local paths do not
-grant filesystem access. Imported files are display material and are not sent to the model.
+External HTTPS media requires an explicit load action. The native viewer never opens
+paths supplied in answer text. Imported files are display material and are not sent to the model.
+
+Codex generated images arrive as official `imageGeneration` events. The bridge validates
+PNG bytes (32 MiB and 40 million pixels maximum), gives each a new UUID filename in
+`ChatAssets/`, and emits only attachment metadata to the native app. It never reads an
+event's `savedPath` or a path from answer text. The native app validates the PNG again
+before attaching it to the active response. Image-only answers are valid. Duplicate events
+are ignored, cancellation discards late results, and clear/undo retains image references.
+Image failures show an explicit notice; there is no paid API-key fallback. Account limits
+and provider policies still apply. Image generation can take several minutes; the turn
+timeout is ten minutes and the stop control stays available.
 
 ## Execution boundary
 
@@ -63,7 +74,7 @@ The complete conversation is stored by Bookshelf. Each request includes at most 
 `Sources/BookshelfAgent/instructions.ts` is the instruction source. Build output contains a generated `profile.json`, which the app's information button reads. The bridge does not discover skills, plugins or instructions from user/project directories.
 
 - Claude uses `--safe-mode`, `--restricted`, `--disable-slash-commands`, `--tools ""`, `--disallowedTools "mcp__*"`, `--strict-mcp-config` and `--system-prompt`. `--bare` is deliberately excluded because it disables the subscription/keychain authentication path. The adapter rejects a run if its initialization event advertises any tools, MCP servers or skills.
-- Codex rejects unknown configuration keys with `--strict-config` and uses a dedicated `CODEX_HOME` under Bookshelf's data directory and a dedicated working directory. It overrides the base instructions, disables automatic skill instructions and bundled skills, sets `project_doc_max_bytes=0`, disables shell/plugins/apps/multi-agent/image/view-image/skill-search/tool-suggest/sleep/web-search features and uses read-only sandboxing with no approval escalation. The app rejects unexpected client-side tool or credential requests and cancels the executor if tool-execution items appear in its event stream. Some fixed Codex runtime behavior and vendor-managed policies remain; this is not a claim that every internal tool or policy is replaced.
+- Codex rejects unknown configuration keys with `--strict-config` and uses a dedicated `CODEX_HOME` under Bookshelf's data directory and a dedicated working directory. It overrides the base instructions, disables automatic skill instructions and bundled skills, sets `project_doc_max_bytes=0`, disables shell/plugins/apps/multi-agent/view-image/skill-search/tool-suggest/sleep/web-search features and uses read-only sandboxing with no approval escalation. The official image-generation feature is enabled for new images from descriptions. The app accepts image-generation events and rejects other unexpected tool-execution items and client-side tool or credential requests. Some fixed Codex runtime behavior and vendor-managed policies remain; this is not a claim that every internal tool or policy is replaced.
 - Vendor and administrator-managed policies still apply. The app does not attempt to bypass them.
 
 The learning guidelines borrow clarity principles from ASD-STE100, adapted to the user's response language. They are not a claim of certified STE compliance. Source material is explicitly treated as reference data. Answers must distinguish supplied text from added examples, and cite PDF indices using `[p. N]`.
@@ -76,6 +87,7 @@ Reviewed 2026-10-16. These links document the implemented route, not a blanket l
 - [Claude plan / Agent SDK guidance](https://support.claude.com/en/articles/15036540-use-the-claude-agent-sdk-with-your-claude-plan) describes subscription usage for the SDK, `claude -p` and third-party applications. This app chooses the official locally installed executable and its own account flow.
 - [Claude CLI reference](https://code.claude.com/docs/en/cli-reference) documents safe/restricted mode, tool restrictions and full system-prompt replacement. Authentication remains enabled in safe mode.
 - [Codex App Server authentication](https://learn.chatgpt.com/docs/app-server#auth-endpoints) permits the local/open-source integration route described there. Commercial or hosted services require the appropriate Sign in with ChatGPT path. This prototype is a local personal/open-source app, with no hosted service or credential relay.
+- The image event contract was checked on 2026-10-19 against the installed Codex 0.163.0 generated schema and the upstream [image-generation integration test](https://github.com/openai/codex/blob/rust-v0.163.0/codex-rs/app-server/tests/suite/v2/imagegen_extension.rs). Generation stays inside the official executable; Bookshelf does not call its internal image endpoint directly.
 
 Provider limits and any account-level extra-usage settings remain controlled by the provider. The prototype does not advertise unlimited usage or report the Pi adapter's placeholder token/cost fields as billing estimates.
 
@@ -104,11 +116,11 @@ The bridge is bundled, but the executors and Node runtime are not redistributed.
 
 ## Verification
 
-- All 52 Swift tests passed on macOS 26.6.2 / Apple Silicon with Swift 6.4. They cover persistence/undo conflicts, preserved unsent drafts, shortcuts, asset boundaries, Markdown fences, renderer URLs, Unicode and small pipe frames, and stale replies on book switches.
-- All nine Bun tests and the TypeScript check passed with Node 26.8.1 and Bun 1.4.0. They cover English instructions, isolation, explicit model forwarding, Pi/direct streaming, reported token usage, unexpected-tool rejection, subscription-mode billing guards and cancellation. Linux CI verifies these credential-free paths and bundled notices.
+- All 53 Swift tests passed on macOS 26.6.2 / Apple Silicon with Swift 6.4. They cover persistence/undo conflicts, preserved unsent drafts, shortcuts, asset boundaries, generated-image validation/reopen/undo, Markdown fences, renderer URLs, Unicode and small pipe frames, and stale replies on book switches.
+- All 15 Bun tests and the TypeScript check passed with Node 26.8.1 and Bun 1.4.0. They cover English instructions, automatic defaults, isolation, explicit model forwarding, Pi/direct streaming, image-only replies, image events over 2 MB, duplicate images, failure/cancellation, reported token usage, unexpected-tool rejection and subscription-mode billing guards. Linux CI verifies these credential-free paths and bundled notices.
 - Real Claude Max requests through Pi returned Korean and English source-grounded explanations with empty tools, MCP-server and skill lists.
-- Codex App Server startup and unauthenticated account status were checked with the final strict configuration. Live subscription inference requires completing the app-owned login.
-- Native checks with authored PDFs verified library return, all four book tools, search, clear/undo, custom shortcuts, account controls, selected Sonnet inference, question edit/regeneration/undo, interactive HTML and M4A playback. Media, model choice and shortcuts survived relaunch. Live Codex sign-in remains tracked in [issue #8](https://github.com/NomaDamas/bookshelf/issues/8).
+- On 2026-10-19, a fresh official Codex App Server process confirmed the app-owned ChatGPT subscription login. A native Pi/Codex request returned a 1312 by 1199 PNG plus a source-grounded explanation. The app displayed it, enlarged it, copied it, exported identical PNG bytes, and restored it after clear/undo and relaunch. The same book then continued through Claude Sonnet without losing the generated image. No credentials were copied.
+- Native checks with authored PDFs verified library return, all four book tools, search, clear/undo, custom shortcuts, account controls, selected Sonnet inference, question edit/regeneration/undo, interactive HTML and M4A playback. Media, model choice and shortcuts survived relaunch. Automatic mode selected both a Markdown table and Mermaid for a comparison/process question without either format being explicitly requested. [Account acceptance](https://github.com/NomaDamas/bookshelf/issues/8) and [automatic/image evidence](evidence/automatic-learning-checks.json) record the boundaries.
 - Native screenshots use authored synthetic PDF pages. Private source books, notes, account tokens and raw authentication URLs must not be committed as evidence.
 
 Private logs and fixtures live in `.runtime/reader-workspace-qa/`; earlier bridge checks

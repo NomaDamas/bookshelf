@@ -6,7 +6,8 @@ export type Request = {
 	backend: Backend;
 	model?: string;
 	usePi: boolean;
-	skill: "explain" | "compare" | "visualize";
+	skill: "auto" | "explain" | "compare" | "visualize";
+	assetDirectory?: string;
 	workspace: string;
 	codexHome: string;
 	claudePath?: string;

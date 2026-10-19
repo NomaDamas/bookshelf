@@ -3,6 +3,46 @@ import BookshelfCore
 @testable import BookshelfApp
 
 @MainActor final class BookChatModelTests: XCTestCase {
+    func testAutoModeReceivesGeneratedImageAndReopensItAfterUndo() async throws {
+        guard let node = AgentRuntime.findExecutable("node") else { throw XCTSkip("Node.js not installed") }
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let store = try LibraryStore(directory: root.appendingPathComponent("data"))
+        let file = root.appendingPathComponent("Book.pdf"); try Data("authored".utf8).write(to: file)
+        let book = try store.register(source: file, ocr: nil, root: root)
+        let script = root.appendingPathComponent("image.mjs")
+        try """
+        import fs from 'node:fs';import {join} from 'node:path';import {randomUUID} from 'node:crypto';
+        let input='';process.stdin.on('data',c=>input+=c);process.stdin.on('end',()=>{
+          const r=JSON.parse(input);if(r.skill!=='auto'||r.backend!=='codex')process.exit(3);
+          const id=randomUUID(),fileName=id+'.png';fs.mkdirSync(r.assetDirectory,{recursive:true});
+          fs.writeFileSync(join(r.assetDirectory,fileName),Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR4nGP4z8DwHwAFAAH/iZk9HQAAAABJRU5ErkJggg==','base64'));
+          const emit=e=>console.log(JSON.stringify(e));emit({type:'activity',message:'이미지 생성 중'});
+          emit({type:'attachment',attachment:{id,name:'Codex 생성 이미지',fileName,kind:'image'}});
+          emit({type:'answer',text:''});emit({type:'done'});
+        });
+        """.write(to: script, atomically: true, encoding: .utf8)
+        let chat = BookChatModel(store: store, bridgeFactory: { AgentBridge(executable: node, script: script) })
+        chat.chooseBackend(.codex, checkStatus: false); XCTAssertEqual(chat.skill, "auto")
+        XCTAssertTrue(chat.selectBook(book.id)); chat.draft = "이미지로 설명해줘"
+        chat.send(context: AgentRequest.Context(id: book.id, title: book.title, page: 1, text: "reference", notes: "", selection: ""))
+        for _ in 0..<200 where chat.busy { try await Task.sleep(for: .milliseconds(10)) }
+        XCTAssertFalse(chat.busy); XCTAssertNil(chat.errorMessage); XCTAssertEqual(chat.activityMessage, "")
+        XCTAssertEqual(chat.messages.last?.state, "complete")
+        let attachment = try XCTUnwrap(chat.messages.last?.attachments?.first)
+        XCTAssertNotNil(ChatAssetStore.generatedImageURL(for: attachment, directory: store.directory))
+        chat.clearConversation(); XCTAssertTrue(chat.messages.isEmpty); chat.undoEdit()
+        XCTAssertEqual(chat.messages.last?.attachments?.first, attachment)
+        let reopened = BookChatModel(store: try LibraryStore(directory: store.directory))
+        XCTAssertTrue(reopened.selectBook(book.id))
+        XCTAssertEqual(reopened.messages.last?.attachments?.first, attachment)
+        var escaping = attachment; escaping.fileName = "../" + attachment.fileName
+        XCTAssertNil(ChatAssetStore.generatedImageURL(for: escaping, directory: store.directory))
+        let validURL = try XCTUnwrap(ChatAssetStore.url(for: attachment, directory: store.directory))
+        try Data("not a PNG".utf8).write(to: validURL)
+        XCTAssertNil(ChatAssetStore.generatedImageURL(for: attachment, directory: store.directory))
+    }
     func testEditingUsesTheOriginalPageAndKeepsTheUnsentDraftAndUndo() async throws {
         guard let node = AgentRuntime.findExecutable("node") else { throw XCTSkip("Node.js not installed") }
         let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)

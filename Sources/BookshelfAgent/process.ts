@@ -68,12 +68,13 @@ export function jsonLines(
 	child: ChildProcessWithoutNullStreams,
 	consume: (value: any) => void,
 	fail: (error: Error) => void,
+	maxLineBytes = 2_000_000,
 ) {
 	const decoder = new StringDecoder("utf8");
 	let buffer = "";
 	child.stdout.on("data", (chunk: Buffer) => {
 		buffer += decoder.write(chunk);
-		if (buffer.length > 2_000_000) {
+		if (buffer.length > maxLineBytes) {
 			fail(new Error("실행기 응답이 너무 큽니다."));
 			stopChild(child);
 			return;

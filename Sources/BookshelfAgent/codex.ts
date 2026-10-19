@@ -1,4 +1,5 @@
 import { mkdir } from "node:fs/promises";
+import { maxCodexEventBytes, saveGeneratedImage } from "./generated-image.js";
 import {
 	jsonLines,
 	runtimeEnvironment,
@@ -21,7 +22,7 @@ export function codexArguments(): string[] {
 		"apps",
 		"--disable",
 		"multi_agent",
-		"--disable",
+		"--enable",
 		"image_generation",
 		"--disable",
 		"view_image",
@@ -93,6 +94,7 @@ class CodexConnection {
 					this.onEvent(record.method, record.params ?? {});
 			},
 			(error) => this.fail(error),
+			maxCodexEventBytes,
 		);
 		this.child.stderr.on("data", () => {});
 		this.child.on("error", (error) => this.fail(error));
@@ -278,7 +280,7 @@ export async function codexChat(
 			model: selected.model ?? selected.id,
 			baseInstructions: instructions,
 			developerInstructions:
-				"Use only the reference text supplied in the user message. Do not invoke tools.",
+				"Use the supplied reference text. Choose the explanation format yourself unless the user specifies one. Only the official image_gen.imagegen tool is permitted, for new images from descriptions. Do not read local files or reference local image paths. The app displays completed generated images automatically.",
 			cwd: request.workspace,
 			sandbox: "read-only",
 			approvalPolicy: "never",
@@ -286,12 +288,17 @@ export async function codexChat(
 		emit({
 			type: "isolation",
 			profile: "app-owned CODEX_HOME",
-			tools: "shell, plugins, apps, multi-agent and web search disabled",
+			tools:
+				"official image generation enabled; shell, plugins, apps, multi-agent and web search disabled",
 			model: selected.model ?? selected.id,
 		});
 		return await new Promise<string>((resolve, reject) => {
 			let text = "",
 				activeTurn: string | undefined;
+			let settled = false,
+				imageCount = 0;
+			let pendingImages = Promise.resolve();
+			const imageItems = new Set<string>();
 			const timer = setTimeout(() => {
 				client
 					.call(
@@ -300,18 +307,28 @@ export async function codexChat(
 						1000,
 					)
 					.catch(() => {});
-				reject(new Error("답변 시간이 초과됐습니다."));
-			}, 150000);
+				finish(new Error("답변 시간이 초과됐습니다. 다시 시도해 주세요."));
+			}, 600000);
 			const finish = (error?: Error) => {
-				clearTimeout(timer);
-				error
-					? reject(error)
-					: text.trim()
-						? resolve(text)
-						: reject(new Error("Codex가 빈 답변을 반환했습니다."));
+				if (settled) return;
+				if (error) {
+					settled = true;
+					clearTimeout(timer);
+					reject(error);
+					return;
+				}
+				// turn/completed can arrive before asynchronous image persistence finishes.
+				void pendingImages.then(() => {
+					if (settled) return;
+					settled = true;
+					clearTimeout(timer);
+					if (text.trim() || imageCount) resolve(text);
+					else reject(new Error("Codex가 빈 답변을 반환했습니다."));
+				}, finish);
 			};
 			client.onFailure = finish;
 			client.onEvent = (method, params) => {
+				if (settled) return;
 				if (params.threadId && params.threadId !== thread.thread.id) return;
 				if (method === "thread/tokenUsage/updated") {
 					const usage = codexUsage(
@@ -327,6 +344,7 @@ export async function codexChat(
 						"reasoning",
 						"userMessage",
 						"contextCompaction",
+						"imageGeneration",
 					].includes(params.item?.type)
 				) {
 					finish(
@@ -336,6 +354,43 @@ export async function codexChat(
 					);
 					client.close();
 					return;
+				}
+				if (
+					method === "item/started" &&
+					params.item?.type === "imageGeneration"
+				)
+					emit({
+						type: "activity",
+						message: "이미지를 만들고 있습니다. 잠시 기다려 주세요.",
+					});
+				if (
+					method === "item/completed" &&
+					params.item?.type === "imageGeneration"
+				) {
+					const item = params.item;
+					if (typeof item.id !== "string" || imageItems.has(item.id)) return;
+					imageItems.add(item.id);
+					if (item.status !== "completed") {
+						emit({ type: "activity", message: "" });
+						emit({
+							type: "warning",
+							message:
+								"이미지를 만들지 못했습니다. Codex의 계정 한도 또는 답변 안내를 확인해 주세요.",
+						});
+					} else {
+						pendingImages = pendingImages.then(async () => {
+							if (settled || signal.aborted) return;
+							const attachment = await saveGeneratedImage(
+								item.result,
+								request.assetDirectory,
+							);
+							if (settled || signal.aborted) return;
+							imageCount++;
+							emit({ type: "attachment", attachment });
+							emit({ type: "activity", message: "" });
+						});
+						void pendingImages.catch(finish);
+					}
 				}
 				if (method === "item/agentMessage/delta") {
 					text += params.delta;

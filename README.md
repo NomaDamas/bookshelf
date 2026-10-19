@@ -115,6 +115,8 @@ The experiment on this branch adds a dedicated AI panel beside a Preview-style r
 workspace. Page thumbnails, notes, excerpts and search live on the left. Pi manages the
 conversation through official Claude Code/Codex executors, with model selection and
 English learning instructions. Questions use the current page, selection and optional notes.
+The default automatic mode chooses text, tables or visual explanations for the question.
+Codex can also generate images through its official image tool and keep them in the chat.
 
 The panel renders Mermaid, SVG and isolated HTML, displays reported context usage, and
 plays user-selected audio/media. Questions can be edited and retried; conversation edits
@@ -130,7 +132,8 @@ Node.js 22.19 or later, pnpm and Bun, then run:
 
 Read [the experiment's scope, official account routes and verification](Resources/Design/PI-AGENT.md)
 before connecting. Verification evidence distinguishes local tests and native interactions
-from live Codex sign-in, which still requires the user's official login.
+from live Claude/Codex requests and image generation. Each user signs in through the
+official account flow; provider availability and limits still apply.
 
 ## Optional: connect an AI client
 

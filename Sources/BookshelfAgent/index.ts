@@ -34,6 +34,13 @@ export function validateRequest(input: any): Request {
 	)
 		throw new Error("앱 작업 폴더를 확인해 주세요.");
 	if (input.action === "chat") {
+		input.skill ??= "auto";
+		if (
+			input.assetDirectory !== undefined &&
+			(typeof input.assetDirectory !== "string" ||
+				!isAbsolute(input.assetDirectory))
+		)
+			throw new Error("이미지 보관 폴더를 확인해 주세요.");
 		if (
 			typeof input.question !== "string" ||
 			!input.question.trim() ||
@@ -48,7 +55,7 @@ export function validateRequest(input: any): Request {
 			input.book.page < 1
 		)
 			throw new Error("책 페이지 정보를 확인해 주세요.");
-		systemInstructions(input.skill);
+		systemInstructions(input.skill, input.backend);
 		if (
 			!Array.isArray(input.messages) ||
 			input.messages.length > 24 ||
@@ -94,7 +101,7 @@ export async function handle(input: unknown, signal: AbortSignal, emit: Emit) {
 		emit({ type: "status", status });
 		return;
 	}
-	const instructions = systemInstructions(request.skill);
+	const instructions = systemInstructions(request.skill, request.backend);
 	const run = request.backend === "claude" ? claudeChat : codexChat;
 	const history = request.messages ?? [];
 	emit({

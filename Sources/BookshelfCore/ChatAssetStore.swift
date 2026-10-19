@@ -1,6 +1,7 @@
 import Foundation
+import ImageIO
 
-/// User-selected media is copied into app-owned storage; model paths never grant file access.
+/// User-selected media and verified generated images live in app-owned storage.
 public enum ChatAssetStore {
     public static let extensions = ["png", "jpg", "jpeg", "gif", "webp", "heic", "tif", "tiff", "svg", "html", "htm", "mmd", "mermaid", "mp3", "m4a", "aac", "wav", "aiff", "aif", "flac", "mp4", "mov", "m4v"]
     public static func kind(forExtension ext: String) -> String? {
@@ -38,6 +39,19 @@ public enum ChatAssetStore {
         let url = root.appendingPathComponent(attachment.fileName).resolvingSymlinksInPath()
         guard url.deletingLastPathComponent().standardizedFileURL == root.standardizedFileURL,
               FileManager.default.fileExists(atPath: url.path) else { return nil }
+        return url
+    }
+    public static func generatedImageURL(for attachment: ChatAttachment, directory: URL) -> URL? {
+        guard attachment.kind == "image", attachment.fileName == attachment.id + ".png",
+              let url = url(for: attachment, directory: directory),
+              let values = try? url.resourceValues(forKeys: [.isRegularFileKey, .fileSizeKey]),
+              values.isRegularFile == true, let size = values.fileSize, size <= 32 * 1024 * 1024,
+              let source = CGImageSourceCreateWithURL(url as CFURL, nil),
+              CGImageSourceGetType(source) as String? == "public.png",
+              let properties = CGImageSourceCopyPropertiesAtIndex(source, 0, nil) as? [CFString: Any],
+              let width = properties[kCGImagePropertyPixelWidth] as? Int,
+              let height = properties[kCGImagePropertyPixelHeight] as? Int,
+              width > 0, height > 0, Double(width) * Double(height) <= 40_000_000 else { return nil }
         return url
     }
 }
