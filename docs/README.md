@@ -35,5 +35,5 @@ Evidence documents describe the runs recorded in them. They do not imply every
 platform or interaction has been retested for each subsequent commit.
 
 
-The [Pi learning-chat experiment](../Resources/Design/PI-AGENT.md) covers the optional
-native chat preview, account boundaries, dependencies and observed verification.
+[Pi learning chat](../Resources/Design/PI-AGENT.md) covers the native chat panel,
+account boundaries, dependencies and observed verification.

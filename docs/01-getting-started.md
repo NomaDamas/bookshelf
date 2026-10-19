@@ -65,7 +65,8 @@ check that their executable paths still point to the intended app; see
 The [v0.2.0 release](https://github.com/NomaDamas/bookside/releases/tag/v0.2.0)
 provides separate DMGs for Apple Silicon (`arm64`) and Intel (`x86_64`). The deployment
 target is macOS 14. Downloaded apps do not require Xcode or Python; optional OCR
-has [separate dependencies](04-ocr.md#install-the-optional-engine).
+has [separate dependencies](04-ocr.md#install-the-optional-engine). The learning chat needs
+Node.js 22.19 or later and the official Claude Code or Codex executable.
 
 1. Download the DMG for your Mac and its matching `.dmg.sha256` file from the release.
 2. In that download folder, verify the checksum. For Apple Silicon:
@@ -96,6 +97,7 @@ compatibility have not been verified end to end.
 | macOS | Deployment target: 14. Native frameworks make this a macOS application. |
 | Xcode / Swift | `Package.swift` declares Swift tools 6.0 and Swift language mode 5. Use a compatible full Xcode installation. |
 | Python 3 | Used by the token and dependency-notice build helpers. |
+| Node.js, pnpm, Bun | Node.js 22.19 or later, pnpm and Bun build the learning chat bridge that every build includes. |
 | Git and network access | Needed to clone and fetch Swift packages on the first build. |
 | OCR dependencies | Optional; see [OCR setup](04-ocr.md#install-the-optional-engine). |
 

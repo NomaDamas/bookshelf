@@ -1,6 +1,6 @@
-# Pi learning-agent experiment
+# Pi learning chat
 
-This branch adds a native chat panel to Bookside. It uses Pi agent core for conversation state and streaming, with adapters that invoke unmodified official executables. The same panel can bypass Pi to compare the extra layer. The default is Pi enabled. Each message records the selected harness and learning profile; Pi replies are labeled accordingly.
+Bookside includes a native chat panel. It uses Pi agent core for conversation state and streaming, with adapters that invoke unmodified official executables. The same panel can bypass Pi to compare the extra layer. The default is Pi enabled. Each message records the selected harness and learning profile; Pi replies are labeled accordingly.
 
 ## Scope
 
@@ -111,18 +111,18 @@ Reviewed 2026-10-16. These links document the implemented route, not a blanket l
 
 Provider limits and any account-level extra-usage settings remain controlled by the provider. The prototype does not advertise unlimited usage or report the Pi adapter's placeholder token/cost fields as billing estimates.
 
-## Build and local preview
+## Build and install
 
 Requirements in addition to the native build: Node.js 22.19 or later at runtime, pnpm and Bun for building the bridge, plus the official Claude Code and/or Codex executables. Tested local executors: Claude Code 2.1.303 and Codex 0.163.0. Older versions may lack the isolation flags.
 
+Every build bundles the bridge, including the release DMGs and the Homebrew cask:
+
 ```sh
-./scripts/install-pi-preview.command
-open "$HOME/Applications/Bookside Pi.app"
+./scripts/build-app.sh
+./scripts/install-local.command
 ```
 
-The ordinary build keeps the existing external-AI workflow and does not require Node, pnpm or Bun. The preview script opts into the bridge with `BOOKSIDE_INCLUDE_AGENT=1`.
-
-This installs a separate `Bookside Pi.app` with a bundle ID derived from the canonical identifier with a `.pi` suffix (`org.nomadamas.bookside.pi` currently); the existing Bookside app remains installed. It shares the normal library and notebook database, and adds the conversations table. The preview does not register the `bookside` URL scheme.
+Conversations live in the library database's conversations table, and executor state lives under the library directory's `Agent/` folder. Through 0.2.0 the chat shipped as a separate `Bookside Pi.app` (`org.nomadamas.bookside.pi`) that shared the same library, so its conversations and Codex sign-in appear in Bookside. `install-local.command` reports a remaining preview app; quit it and move it to the Trash.
 
 Open **Settings > AI 연결**, enable Pi and use the official connection buttons. Choose
 the executor/model there or in the chat composer. Claude uses the official `sonnet`, `opus`

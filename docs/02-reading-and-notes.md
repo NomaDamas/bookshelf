@@ -7,7 +7,7 @@
 The library sidebar lists PDFs by title/category. After opening a book, it becomes
 a book-specific sidebar with **페이지** (page thumbnails), **메모** (notebook),
 **발췌** (quotations), and **검색** (search). The original PDF or extracted text stays
-in the center. The optional learning preview places its AI conversation on the right.
+in the center. The learning chat places its AI conversation on the right.
 The **서재** toolbar button returns to the library even when the left sidebar is hidden.
 
 ![Native PDF reader with sample notes](../Resources/Design/evidence/readme-reader-light.jpg)
@@ -66,8 +66,8 @@ Default app shortcuts (change them in **Settings > 단축키**):
 | Command-S | Save pending notebook edits |
 | Command-0 | Toggle the left sidebar |
 | Command-1 / 2 / 3 | Open pages / notes / excerpts |
-| Command-Shift-A | Toggle the AI panel in the learning preview |
-| Command-Return | Send a question in the learning preview |
+| Command-Shift-A | Toggle the AI panel |
+| Command-Return | Send a question in the AI panel |
 
 Click a shortcut recorder and press the new combination. Escape cancels recording.
 Duplicate app shortcuts and reserved editing/window commands are rejected. **기본값 복원**
@@ -132,18 +132,15 @@ Settings offer system, light, and dark appearance. Native materials surround opa
 reading/writing surfaces. Reduced transparency, increased contrast, and reduced
 motion have fallback paths; see [design and verification](../Resources/Design/DESIGN.md).
 
-In the ordinary build, **AI로 이어가기** copies a prompt identifying the current book and PDF page to the
-clipboard. Paste it into a configured client. It does not run a model in Bookside.
-For tool access, follow [CLI and MCP setup](03-cli-and-mcp.md).
-
-The optional [learning preview](../Resources/Design/PI-AGENT.md) provides a separate AI
-panel. Its settings contain Pi/account/model choices, and its conversation supports
+The AI panel beside the page runs the [learning chat](../Resources/Design/PI-AGENT.md).
+Its settings contain Pi/account/model choices, and its conversation supports
 visual previews, audio playback, question editing, retry and reversible clearing.
 The default **자동** mode chooses prose, tables or visual explanations for the question.
 You can still select a specific explanation format. Codex can generate images through its
 official image tool; generated images stay with the conversation and can be enlarged,
 copied or saved. Image generation requires the app's official ChatGPT sign-in and remains
-subject to account availability and limits.
+subject to account availability and limits. To use the library from another AI client,
+follow [CLI and MCP setup](03-cli-and-mcp.md).
 
 The default question scope is **이 책 전체** (this book). The current page identifies what
 you are looking at; the agent can search the book and read other relevant pages. Use the

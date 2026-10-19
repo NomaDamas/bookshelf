@@ -81,7 +81,8 @@ Apple**, so macOS may block the first launch. See [installation and Gatekeeper](
 
 ### Build from source
 
-You need a compatible Xcode/Swift toolchain and Python 3 for the build helpers.
+You need a compatible Xcode/Swift toolchain, Python 3 for the build helpers, and
+Node.js 22.19 or later, pnpm and Bun for the learning chat bridge.
 Native UI verification has used macOS 26.6.2 with Xcode 27 / Swift 6.4 on Apple
 Silicon. Both architectures pass build and copied-CLI checks in CI; this does not
 establish native UI compatibility with every supported Mac.
@@ -109,9 +110,9 @@ signing, and draft GitHub Releases.
 The local app is ad-hoc signed by default. See [setup and troubleshooting](docs/01-getting-started.md)
 for toolchain selection, updates, and an isolated sample library.
 
-## Optional: in-app learning chat preview
+## Learning chat
 
-The experiment on this branch adds a dedicated AI panel beside a Preview-style reading
+Bookside has a dedicated AI panel beside a Preview-style reading
 workspace. Page thumbnails, notes, excerpts and search live on the left. Pi manages the
 conversation through official Claude Code/Codex executors, with model selection and
 English learning instructions. Questions can search and read the selected book, using the
@@ -125,14 +126,10 @@ plays user-selected audio/media. Questions can be edited and retried; conversati
 and clearing can be undone. **Settings > AI 연결** manages accounts and Pi;
 **Settings > 단축키** changes app shortcuts. Replies stay with each book.
 
-The ordinary build remains independent of Node. To build the separate preview, install
-Node.js 22.19 or later, pnpm and Bun, then run:
+The chat needs Node.js 22.19 or later and the official Claude Code or Codex executable.
+The rest of the app works without them, and the panel says what is missing.
 
-```sh
-./scripts/install-pi-preview.command
-```
-
-Read [the experiment's scope, official account routes and verification](Resources/Design/PI-AGENT.md)
+Read [the chat's scope, official account routes and verification](Resources/Design/PI-AGENT.md)
 before connecting. Verification evidence distinguishes local tests and native interactions
 from live Claude/Codex requests and image generation. Each user signs in through the
 official account flow; provider availability and limits still apply.

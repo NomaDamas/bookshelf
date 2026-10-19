@@ -158,7 +158,7 @@ or add semantic retrieval. See [search behavior](02-reading-and-notes.md#searchi
 
 ### In-app book reading tools
 
-The optional learning preview starts `reading-mcp` with the app's selected book/range.
+The learning chat starts `reading-mcp` with the app's selected book/range.
 This is separate from the five-tool external library server. It exposes only:
 
 | Tool | Behavior |
