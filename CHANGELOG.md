@@ -30,8 +30,11 @@ that its Git tag or GitHub Release has been published.
   over from `org.nomadamas.bookshelf`.
 - `register-mcp.command` replaces a pre-rename `bookshelf` entry that runs
   `bookshelf-cli`, and the local installer reports a remaining `Bookshelf.app`.
-- The Homebrew cask is now `nomadamas/bookside/bookside`. `brew upgrade` moves a
-  `bookshelf` cask install to it and installs `Bookside.app`; the library stays where it is.
+- The Homebrew cask is now `nomadamas/bookside/bookside`. A `bookshelf` cask install
+  moves to it with `brew trust --cask nomadamas/bookshelf/bookside`,
+  `brew migrate --cask bookshelf`, and `brew upgrade --cask bookside`, which installs
+  `Bookside.app`; the library stays where it is. See
+  [Install with Homebrew](docs/01-getting-started.md#install-with-homebrew).
 
 ### Deprecated
 
@@ -49,6 +52,8 @@ that its Git tag or GitHub Release has been published.
 - Ad-hoc signed developer preview, not notarized by Apple.
 - Opening a book whose file was moved or deleted reports an iCloud download message
   ([#18](https://github.com/NomaDamas/bookside/issues/18)).
+- `bookside-cli` installed by Homebrew can wait at a Gatekeeper prompt until macOS
+  allows the app ([#24](https://github.com/NomaDamas/bookside/issues/24)).
 
 ## [0.1.0] - 2026-10-17
 

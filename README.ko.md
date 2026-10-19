@@ -58,13 +58,13 @@ brew install --cask nomadamas/bookside/bookside
 
 ### DMG로 설치하기
 
-[v0.1.0 개발자 프리뷰](https://github.com/NomaDamas/bookside/releases/tag/v0.1.0)를
+[v0.2.0 개발자 프리뷰](https://github.com/NomaDamas/bookside/releases/tag/v0.2.0)를
 내려받을 수 있습니다. macOS 14 이상을 대상으로 합니다.
 
 | Mac | 다운로드 |
 | --- | --- |
-| Apple Silicon (M 시리즈) | [Apple Silicon DMG](https://github.com/NomaDamas/bookside/releases/download/v0.1.0/Bookshelf-0.1.0-macos-arm64.dmg) |
-| Intel | [Intel DMG](https://github.com/NomaDamas/bookside/releases/download/v0.1.0/Bookshelf-0.1.0-macos-x86_64.dmg) |
+| Apple Silicon (M 시리즈) | [Apple Silicon DMG](https://github.com/NomaDamas/bookside/releases/download/v0.2.0/Bookside-0.2.0-macos-arm64.dmg) |
+| Intel | [Intel DMG](https://github.com/NomaDamas/bookside/releases/download/v0.2.0/Bookside-0.2.0-macos-x86_64.dmg) |
 
 릴리스 페이지의 SHA-256 파일로 무결성을 확인한 뒤 DMG를 열고 `Bookside.app`을
 Applications로 옮기면 됩니다. 업데이트할 때는 기존 앱을 먼저 종료하세요.

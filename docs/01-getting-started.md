@@ -18,7 +18,10 @@ on newer Homebrew versions, it establishes trust for this cask specifically.
 
 This installs the same **ad-hoc signed, unnotarized developer preview** as the DMG
 below. Homebrew keeps quarantine protections; follow the first-launch guidance
-below if macOS blocks opening it. OCR remains an optional, separate installation.
+below if macOS blocks opening it. Until macOS allows the app, `bookside-cli` can wait
+at a Gatekeeper prompt instead of returning
+([#24](https://github.com/NomaDamas/bookside/issues/24)). OCR remains an optional,
+separate installation.
 
 Quit Bookside before updating:
 
@@ -36,6 +39,20 @@ brew uninstall --cask nomadamas/bookside/bookside
 This leaves PDFs, notes, and reading history intact. The cask does not define a
 `zap` operation that removes library data.
 
+If you installed the `bookshelf` cask before the rename, quit Bookshelf and move it
+to `bookside`:
+
+```sh
+brew update
+brew trust --cask nomadamas/bookshelf/bookside
+brew migrate --cask bookshelf
+brew upgrade --cask bookside
+```
+
+Homebrew trusts casks by name, so the new name needs its own `trust`. See
+[Coming from Bookshelf](https://github.com/NomaDamas/homebrew-bookside#coming-from-bookshelf)
+in the tap for what each step does. The library stays where it is.
+
 If you installed Bookside manually, check `/Applications` and `~/Applications`
 before switching. Homebrew refuses to overwrite a different existing app; keep
 the old copy until you have verified the new installation. If both locations
@@ -45,7 +62,7 @@ check that their executable paths still point to the intended app; see
 
 ## Install the developer preview
 
-The [v0.1.0 release](https://github.com/NomaDamas/bookside/releases/tag/v0.1.0)
+The [v0.2.0 release](https://github.com/NomaDamas/bookside/releases/tag/v0.2.0)
 provides separate DMGs for Apple Silicon (`arm64`) and Intel (`x86_64`). The deployment
 target is macOS 14. Downloaded apps do not require Xcode or Python; optional OCR
 has [separate dependencies](04-ocr.md#install-the-optional-engine).
@@ -54,7 +71,7 @@ has [separate dependencies](04-ocr.md#install-the-optional-engine).
 2. In that download folder, verify the checksum. For Apple Silicon:
 
     ```sh
-    shasum -a 256 -c Bookshelf-0.1.0-macos-arm64.dmg.sha256
+    shasum -a 256 -c Bookside-0.2.0-macos-arm64.dmg.sha256
     ```
 
     Use the `x86_64` filename for Intel. Continue only if the result is `OK`.

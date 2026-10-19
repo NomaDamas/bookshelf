@@ -66,13 +66,13 @@ below. See [Homebrew installation and updates](docs/01-getting-started.md#instal
 
 ### Download a DMG
 
-Download the [v0.1.0 developer preview](https://github.com/NomaDamas/bookside/releases/tag/v0.1.0)
+Download the [v0.2.0 developer preview](https://github.com/NomaDamas/bookside/releases/tag/v0.2.0)
 for macOS 14 or later:
 
 | Mac | Download |
 | --- | --- |
-| Apple Silicon (M series) | [Apple Silicon DMG](https://github.com/NomaDamas/bookside/releases/download/v0.1.0/Bookshelf-0.1.0-macos-arm64.dmg) |
-| Intel | [Intel DMG](https://github.com/NomaDamas/bookside/releases/download/v0.1.0/Bookshelf-0.1.0-macos-x86_64.dmg) |
+| Apple Silicon (M series) | [Apple Silicon DMG](https://github.com/NomaDamas/bookside/releases/download/v0.2.0/Bookside-0.2.0-macos-arm64.dmg) |
+| Intel | [Intel DMG](https://github.com/NomaDamas/bookside/releases/download/v0.2.0/Bookside-0.2.0-macos-x86_64.dmg) |
 
 Verify the matching SHA-256 file on the release page, open the DMG, and drag
 `Bookside.app` to Applications. Quit the old app before replacing it; your library

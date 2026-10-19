@@ -21,6 +21,8 @@ Bookside leaves PDFs where they are and keeps book IDs, notes, highlights, bookm
 3. Installs from before the rename have `Bookshelf.app` with `bookshelf-cli`, which takes the same commands.
 4. If none exists, tell the user and give the install command: `brew install --cask nomadamas/bookside/bookside`.
 
+Run the first command with a timeout, such as `perl -e 'alarm 20; exec @ARGV' bookside-cli --version`. Until macOS allows the app, the CLI can wait at a Gatekeeper prompt and never return. If it times out, tell the user that macOS is holding the unnotarized app and point them to the [first-launch guide](https://github.com/NomaDamas/bookside/blob/main/docs/01-getting-started.md#install-the-developer-preview); do not retry in a loop.
+
 `bookside-cli --help` is the authoritative command list; `mcp` and `reading-mcp` there serve MCP clients and are not needed here. `bookside-cli doctor` reports the library directory and book count; check it first when results look wrong. A library created before the rename stays in `~/Library/Application Support/Bookshelf`, so that directory is expected. `BOOKSIDE_DATA_DIR` points the CLI at a different library.
 
 ## Read a book
