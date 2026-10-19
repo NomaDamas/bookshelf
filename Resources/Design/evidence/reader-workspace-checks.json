@@ -1,0 +1,62 @@
+{
+  "environment": {
+    "macOS": "26.6.2",
+    "architecture": "Apple Silicon",
+    "swift": "6.4",
+    "node": "26.8.1",
+    "bun": "1.4.0"
+  },
+  "automated": {
+    "swift_pass": 52,
+    "bun_pass": 9,
+    "typecheck": "pass",
+    "biome": "no errors; 28 warnings and 3 informational diagnostics"
+  },
+  "native_checks": {
+    "Four book tools on the left": true,
+    "Notebook remains available": true,
+    "Excerpt controls remain available": true,
+    "Search returns the authored page": true,
+    "Clear conversation persists": true,
+    "Undo restores the entire conversation": true,
+    "Clear and undo preserve the notebook": true,
+    "Toolbar returns to library": true,
+    "Returning to the open book preserves chat": true,
+    "Settings exposes both official account connections": true,
+    "A custom AI-panel shortcut is saved": true,
+    "The custom shortcut toggles the AI panel both ways": true,
+    "Editing a question regenerates from that point": true,
+    "Undo restores the prior answer after editing": true,
+    "Import 반복 횟수.html": true,
+    "Self-contained HTML interaction works": true,
+    "Import 재생 확인.m4a": true,
+    "Native M4A playback advances and pauses": true,
+    "Selected Sonnet answered through the official Claude CLI": true,
+    "Official token usage persisted": true,
+    "Thumbnail navigation in PDF mode": true,
+    "Thumbnail navigation in text mode": true,
+    "Repeated clear and undo stays responsive": true,
+    "Relaunch retains conversation attachments": true,
+    "Relaunch retains model choice and shortcut": true,
+    "Shortcut conflicts are explained and rejected": true,
+    "Resize 1380x900 to 1000x730 and back stays responsive": true,
+    "Offline HTML cannot access network, parent DOM or storage": true
+  },
+  "fixtures": "Authored two-page PDFs, a self-contained HTML counter and a generated quiet M4A tone. No personal PDFs or notes.",
+  "known_limits": [
+    "Live Codex sign-in and inference require the user account flow; tracked in issue #8.",
+    "VoiceOver and global macOS accessibility preference transitions were not exercised."
+  ],
+  "regressions": {
+    "small_pipe_frames": "Failed before POSIX streaming fix; passed afterward.",
+    "renderer_url": "Foundation relative/base URLs compared unequal; canonical path checks restore native previews.",
+    "chat_menu_update_loop": "Clear/undo hung with per-message SwiftUI Menu controls. Direct edit/delete buttons passed two repeats with about 17 ms AX response.",
+    "resize_feedback": "Removed scroll-on-resize feedback; three resize/AX-response checks passed."
+  },
+  "source_hashes": {
+    "Sources/BookshelfApp/BookChatView.swift": "36dc4c2ec94c9da50b2b9d1249733b1a0d27976aac93d0f5e8dda54b617ddd74",
+    "Sources/BookshelfApp/ReaderWorkspaceSplit.swift": "2b222b05affb854c68e90c1b0ab863fa48656f61a24a4cd0e0cf51c0b7008e6a",
+    "Sources/BookshelfCore/AgentBridge.swift": "b102cb888e17f12713270996860e22d43d4a2db74f222cf394afc3a54e93c860",
+    "Sources/BookshelfAgent/renderer.ts": "683668826ff9e2dbfba0f0277b604f33f286a92d8b50da757589cf691e6945d8"
+  }
+}

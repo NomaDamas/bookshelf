@@ -20,10 +20,10 @@ print(f"""
 ### Downloads and installation
 
 - `macos-arm64.dmg`: Apple Silicon. `macos-x86_64.dmg`: Intel.
-- Verify the matching `.dmg.sha256` file, open the DMG, and drag Bookshelf.app to Applications.
-- Quit an existing Bookshelf before replacing it. PDFs, notes, and progress remain in their existing locations.
+- Verify the matching `.dmg.sha256` file, open the DMG, and drag Bookside.app to Applications.
+- Quit an existing Bookside before replacing it. PDFs, notes, and progress remain in their existing locations.
 - OCR tools are external installations; see the OCR guide in the repository.
-- See the [installation guide](https://github.com/NomaDamas/bookshelf/blob/{tag}/docs/01-getting-started.md#install-the-developer-preview)
+- See the [installation guide](https://github.com/NomaDamas/bookside/blob/{tag}/docs/01-getting-started.md#install-the-developer-preview)
   for checksum verification and first-launch guidance.
 
 ### Distribution status

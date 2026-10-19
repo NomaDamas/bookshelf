@@ -16,4 +16,12 @@ enum ReaderTokens {
     static let mutedOpacity: Double = 0.05
     static let selectionOpacity: Double = 0.1
     static let borderOpacity: Double = 0.1
+    static let composerRadius: CGFloat = 22.4
+    static let controlDuration: Double = 0.15
+    static let panelDuration: Double = 0.24
+    static let messageDuration: Double = 0.2
+    static let easeX1: Double = 0.4
+    static let easeY1: Double = 0
+    static let easeX2: Double = 0.2
+    static let easeY2: Double = 1
 }

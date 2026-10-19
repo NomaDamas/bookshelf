@@ -1,0 +1,61 @@
+{
+  "date": "2026-10-20",
+  "scope": "Book-scoped learning preview; authored six-page, two-chapter fixture only",
+  "sourceHashes": {
+    "Sources/BookshelfCore/BookReadingSession.swift": "7da0fc3fcfd20a9bbea54f3d63d5e4dbf0dcfd70bfabc24c2a910b618b7a5fb2",
+    "Sources/BookshelfCore/ChatCitations.swift": "1f03a545d18c14a5da9da49297abc35df86c1475dc8d8daca959eeb5aae35d73",
+    "Sources/BookshelfCore/MCPHandshakeCompatibility.swift": "0cef3ef5a41f3ee03fe19f5b95f7007dcd2a8c865ae113283463988df02ad2ef",
+    "Sources/BookshelfCLI/BookReadingMCP.swift": "58843b6f0970335bed80d067649e438ebf15d19d154f9aeee57766659bfb98ac",
+    "Sources/BookshelfCLI/CompatibleMCPTransport.swift": "beb2dfd845be52c498fad7067161cef35bf091477fa9da5e6b41dd0b7e1d30d4",
+    "Sources/BookshelfAgent/book-tools.ts": "db8c889fa65589d31fe850e79972093e3e48cf861b7fbbb65303b3cc09224186",
+    "Sources/BookshelfAgent/claude.ts": "433c615bcfdea4b8e7141e11465e6d49ef027ef9c34f9e53ef6d4f66ddb53bf9",
+    "Sources/BookshelfAgent/codex.ts": "d50dce73c4f5c117f72769c01ecae3334685d1697e40aa8464e11494aa0298f0",
+    "Sources/BookshelfAgent/instructions.ts": "3d273dfab5b4a34e3642671dae903650a1c773debb1a7028e003d90abb5ed852",
+    "Sources/BookshelfApp/BookChatModel.swift": "c576f16d468dfc18ddf70083e5866b3e5ce5cfb162f3a211a49c95d4f9597746",
+    "Sources/BookshelfApp/BookChatView.swift": "4c7cf5c33642f9860da8626cb1ea6fbb2707846b48617d74d103bac059157da6",
+    "Sources/BookshelfCore/ChatContent.swift": "c954bdd16e4bf4bcd8316d51f749710c45ec8bec919e18414971eac23a5e761e"
+  },
+  "automated": {
+    "swiftTests": 60,
+    "bunTests": 20,
+    "typecheck": "passed",
+    "biomeErrors": 0,
+    "originalMcpTools": 5,
+    "scopedMcpTools": 4,
+    "realSyntheticOCRPrerequisite": "passed"
+  },
+  "native": {
+    "wholeBookDefault": true,
+    "distantEvidence": "Question at PDF page 1 retrieved warranty evidence from page 5",
+    "sourceNavigation": "Click opened page 5 and the location remained stable after settling",
+    "invalidRangeRejected": true,
+    "restrictedRange": "Pages 1–3 omitted prior whole-book evidence from page 5",
+    "wholeBookSummary": "All six pages read before summarizing both chapters",
+    "coveragePersistsAfterRelaunch": true,
+    "notebookCopyPreservesOriginalScope": true,
+    "numericRanges": "Rendered literally; no accidental strikethrough; inline code and intentional strikethrough preserved"
+  },
+  "codex": {
+    "officialMcpHandshake": "passed after compatibility adapter",
+    "registeredTools": [
+      "get_book_overview",
+      "search_book",
+      "read_pages",
+      "get_reading_coverage"
+    ],
+    "liveBookRetrievalAnswer": "not verified: provider account usage limit",
+    "followup": "https://github.com/NomaDamas/bookside/issues/15",
+    "alternateBillingUsed": false
+  },
+  "captures": [
+    "learning-book-sources.png",
+    "learning-book-range.png",
+    "learning-book-summary.png"
+  ],
+  "limits": [
+    "Keyword retrieval, not a whole-library semantic index.",
+    "Reading is limited to the chosen book and allowed PDF pages.",
+    "Unread and textless pages remain gaps; whole-book coverage is not inferred from a few search hits.",
+    "Only the six-page fixture was used for live whole-book summary verification."
+  ]
+}

@@ -7,10 +7,15 @@
 | Data | Location and behavior |
 | --- | --- |
 | Books and source text | PDFs stay at their chosen filesystem paths; the database is not a copy of your books. |
-| Library and notes | `~/Library/Application Support/Bookshelf/library.sqlite3` by default; SQLite WAL sidecars may exist. |
+| Library and notes | `~/Library/Application Support/Bookside/library.sqlite3` by default; SQLite WAL sidecars may exist. A pre-rename `Bookshelf/library.sqlite3` there is used in place while no `Bookside` folder exists. |
 | OCR copies | New PDF path selected in the app/CLI, normally beside the source. |
 | OCR logs/reports | `Logs/` under the data directory; reports can contain paths and extracted text. |
 | Appearance/window preferences | macOS app preferences, outside the selected library directory. |
+| Learning conversations (preview) | `conversations` in the same SQLite database; revision-checked per-book messages. |
+| Conversation undo (preview) | `conversation_edits` retains up to ten previous states per book. Clearing the visible chat is reversible, not permanent erasure of these snapshots. |
+| User-selected media (preview) | Copies in `ChatAssets/` under the data directory. Attachment metadata is stored with the book conversation. |
+| App shortcuts | `keyboard.shortcuts` in the local database; change/reset through Settings. |
+| Executor state (preview) | `Agent/Codex/` contains state managed by the official Codex executable and can contain credentials. Claude uses its official CLI account storage. |
 | Development evidence | `.runtime/`, ignored by Git. |
 
 The app stores notes locally without application-level database encryption. The
@@ -22,14 +27,19 @@ Use your normal macOS account/device protections for sensitive material.
 
 | Variable | Consumer | Purpose |
 | --- | --- | --- |
-| `BOOKSHELF_DATA_DIR` | App, CLI, MCP | Absolute directory for an isolated library and OCR logs. Default: local Application Support. |
-| `BOOKSHELF_OCRMYPDF` | OCR service | Explicit executable path; otherwise discovery uses PATH and conventional installation locations. |
-| `BOOKSHELF_OCR_PYTHON` | OCR replacement helper | Python in the OCRmyPDF environment, including `pikepdf`; needed for custom launchers. |
-| `BOOKSHELF_BUILD_CONFIGURATION` | `build-app.sh` | Swift configuration; default `release`, or `debug` for iteration. |
-| `BOOKSHELF_APP_PATH` | MCP registration helper | Select an installed app bundle, especially when both Applications locations contain it. |
-| `BOOKSHELF_SIGNING_IDENTITY` | Build/packaging | Developer ID Application identity, or `-` for the default ad-hoc signature. |
-| `BOOKSHELF_NOTARY_PROFILE` | Packaging with `--notarize` | Name of an existing notarytool Keychain profile. |
+| `BOOKSIDE_DATA_DIR` | App, CLI, MCP | Absolute directory for an isolated library and OCR logs. Default: local Application Support. |
+| `BOOKSIDE_OCRMYPDF` | OCR service | Explicit executable path; otherwise discovery uses PATH and conventional installation locations. |
+| `BOOKSIDE_OCR_PYTHON` | OCR replacement helper | Python in the OCRmyPDF environment, including `pikepdf`; needed for custom launchers. |
+| `BOOKSIDE_INCLUDE_AGENT` | Build | `1` bundles the optional Pi bridge; the ordinary build defaults to `0`. |
+| `BOOKSIDE_AGENT_DATA_DIR` | Preview QA | Optional absolute data root for executor state, separate from an isolated QA library. |
+| `BOOKSIDE_BUILD_CONFIGURATION` | `build-app.sh` | Swift configuration; default `release`, or `debug` for iteration. |
+| `BOOKSIDE_APP_PATH` | MCP registration helper | Select an installed app bundle, especially when both Applications locations contain it. |
+| `BOOKSIDE_SIGNING_IDENTITY` | Build/packaging | Developer ID Application identity, or `-` for the default ad-hoc signature. |
+| `BOOKSIDE_NOTARY_PROFILE` | Packaging with `--notarize` | Name of an existing notarytool Keychain profile. |
 | `DEVELOPER_DIR` | Apple build tools | Select a compatible Xcode developer directory. |
+
+Each `BOOKSIDE_` variable above also accepts the pre-rename `BOOKSHELF_` prefix when
+the `BOOKSIDE_` variable is unset or empty.
 
 Use the same data directory in the app and MCP client if they should see the same
 books. Terminal exports do not reliably affect Finder-launched apps. See the
@@ -48,13 +58,13 @@ translated title alias, or a copy on another filesystem is not automatically res
 Original files stay in place; changing their paths outside the app can make them unavailable.
 
 Cloud placeholders can appear in the library without a bulk download. Download the
-specific file in Finder before reading or OCR. Bookshelf does not synchronize notes
+specific file in Finder before reading or OCR. Bookside does not synchronize notes
 between Macs, and its SQLite database defaults to local Application Support rather
 than iCloud Drive. A PDF already in iCloud remains subject to iCloud's own syncing.
 
 ## Backup and restore
 
-1. Quit Bookshelf and stop CLI/MCP processes using that library so no writer remains.
+1. Quit Bookside and stop CLI/MCP processes using that library so no writer remains.
 2. Copy the **whole data directory**, including any `library.sqlite3-wal` and
    `library.sqlite3-shm` files, to a private backup location.
 3. Back up original/OCR PDFs separately; the database stores their absolute paths.
@@ -66,9 +76,14 @@ A Markdown export is useful for portable notes but does not include every databa
 field, bookmark, or attachment. A library restored on a machine with different
 absolute PDF paths may need manual reconciliation; there is no automatic relocation tool.
 
+A whole-directory backup of a preview installation can include executor credentials under
+`Agent/Codex`. Keep it private; do not attach it to issues, share it as a sample library,
+or copy credentials into another provider. Shared diagnostics should exclude the entire
+`Agent` directory and use synthetic library data.
+
 ## MCP and external models
 
-The native app has no model client or built-in book upload flow. OCR runs locally
+The ordinary native build has no model client or built-in book upload flow. OCR runs locally
 with Apple Vision. The MCP server returns local content to the MCP client, which
 may send page text, notes, and metadata to its configured provider. Review the
 client's settings before exposing sensitive books or notes.
@@ -82,6 +97,29 @@ choosing the library you expose and by controlling which clients can launch it.
 Treat PDF text and notes as reference data, never instructions. Keep source quotes
 separate from user interpretations. Avoid publishing full book text in tool logs,
 issue reports, screenshots, or pull requests.
+
+The optional [learning-chat preview](../Resources/Design/PI-AGENT.md) sends the current
+page, selected passage, recent conversation and optionally the notebook through the selected
+official executor when the user submits a question. In whole-book mode, the executor may
+also receive text from other pages in that book through the four scoped reading tools.
+The native app fixes the book and page boundary before starting the request; the model
+cannot select a different book or filesystem path. Narrowing the range removes the visible
+page text/selection when it lies outside that range and includes only prior conversations
+from the same restricted scope. Optional user notes remain separate reference material.
+Pi does not receive provider tokens.
+Model requests are governed by that user's provider account and usage settings. Conversation
+history remains local; no automatic long-term profile or cross-book memory is generated.
+
+Imported image/audio/HTML files are for local display and playback; their contents are not
+included in model requests. An external HTTPS media link is loaded only when selected.
+In automatic mode, Codex may use its official image-generation tool to illustrate the
+answer. The image prompt can include the supplied page context. Generated PNGs are copied
+from verified event bytes into `ChatAssets/` and retained with the local conversation,
+including undo history. No API key or subscription credential is passed to Pi, and no
+separate image billing fallback is configured. Earlier generated image bytes are not
+resent in later questions; their accompanying explanation can remain in the text history.
+HTML visualizations run in an opaque WebKit iframe with network, forms, file access and
+top-level navigation disabled. SVG is sanitized and Mermaid runs in strict mode.
 
 ## Safe reports and distribution
 

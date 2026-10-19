@@ -2,14 +2,14 @@
 
 [Documentation](README.md) / Architecture
 
-Bookshelf is one Swift package with a shared core, a native app, and a CLI.
+Bookside is one Swift package with a shared core, a native app, and a CLI.
 The MCP server runs inside the CLI process over stdio. No application web server,
 account service, or embedded model is required.
 
 ```mermaid
 flowchart LR
     App[SwiftUI / AppKit app] --> Core[BookshelfCore]
-    CLI[bookshelf-cli commands] --> Core
+    CLI[bookside-cli commands] --> Core
     Client[MCP client] <-->|stdio| MCP[MCP server in CLI]
     MCP -->|read tools| Core
     Core --> DB[(Local SQLite)]
@@ -69,7 +69,10 @@ initialization is not a general versioned migration framework.
 | `notebooks` | One body, revision, and update time per book. |
 | `highlights` | Source quote, user comment, PDF page, and rectangles. |
 | `bookmarks` | Book/page pairs. |
-| `settings` | Library/UI settings, reading-shelf choices, inspection cache metadata. |
+| `settings` | Library/UI settings, sort preference, legacy reading-shelf choices, inspection cache metadata. |
+| `reading_states` / `reading_completions` | Current reading status and dated read-through completions. |
+| `conversations` | Optional learning-chat messages and revision per book. |
+| `conversation_edits` | Up to ten previous message snapshots per book for undoing chat edits or clearing. |
 | `ocr_candidates` | Pending candidate paths and review report paths. |
 | `ocr_versions` | Accepted asset ownership across rescans. |
 
@@ -110,3 +113,10 @@ intentional native differences.
 
 The historical web prototype is preserved at commit `57ad734` on
 `feat/reader-ui-prototype`. It is not the native app's source or a web deployment.
+
+
+## Optional learning-chat preview
+
+The opt-in bridge and its account/isolation boundaries are documented in the
+[Pi experiment](../Resources/Design/PI-AGENT.md). The standard native build and
+external read-only MCP tools remain usable without Node or an AI account.

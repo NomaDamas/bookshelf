@@ -1,10 +1,10 @@
-![Bookshelf on macOS: PDF library, reading view, and a per-book notebook](Resources/Design/evidence/readme-reader-light.jpg)
+![Bookside on macOS: PDF library, reading view, and a per-book notebook](Resources/Design/evidence/readme-reader-light.jpg)
 
-# Bookshelf / 서재
+# Bookside / 서재
 
 **Read your PDFs. Keep your thoughts beside them. Bring the context to your AI client.**
 
-Bookshelf is a native macOS PDF reader with per-book notebooks, local OCR, and a
+Bookside is a native macOS PDF reader with per-book notebooks, local OCR, and a
 read-only MCP server for clients such as Claude Code and Codex. Your PDFs stay in
 their folders; notes, bookmarks, and reading progress live in a local SQLite database.
 
@@ -56,26 +56,26 @@ Screenshots use authored fixtures. See [capture provenance and verification](doc
 ### Install with Homebrew
 
 ```sh
-brew install --cask nomadamas/bookshelf/bookshelf
+brew install --cask nomadamas/bookside/bookside
 ```
 
-The [NomaDamas tap](https://github.com/NomaDamas/homebrew-bookshelf) selects the DMG
-for your Mac, checks its SHA-256, installs `Bookshelf.app`, and adds `bookshelf-cli`
+The [NomaDamas tap](https://github.com/NomaDamas/homebrew-bookside) selects the DMG
+for your Mac, checks its SHA-256, installs `Bookside.app`, and adds `bookside-cli`
 to your Homebrew `bin` directory. This installs the same developer preview described
 below. See [Homebrew installation and updates](docs/01-getting-started.md#install-with-homebrew).
 
 ### Download a DMG
 
-Download the [v0.1.0 developer preview](https://github.com/NomaDamas/bookshelf/releases/tag/v0.1.0)
+Download the [v0.1.0 developer preview](https://github.com/NomaDamas/bookside/releases/tag/v0.1.0)
 for macOS 14 or later:
 
 | Mac | Download |
 | --- | --- |
-| Apple Silicon (M series) | [Apple Silicon DMG](https://github.com/NomaDamas/bookshelf/releases/download/v0.1.0/Bookshelf-0.1.0-macos-arm64.dmg) |
-| Intel | [Intel DMG](https://github.com/NomaDamas/bookshelf/releases/download/v0.1.0/Bookshelf-0.1.0-macos-x86_64.dmg) |
+| Apple Silicon (M series) | [Apple Silicon DMG](https://github.com/NomaDamas/bookside/releases/download/v0.1.0/Bookshelf-0.1.0-macos-arm64.dmg) |
+| Intel | [Intel DMG](https://github.com/NomaDamas/bookside/releases/download/v0.1.0/Bookshelf-0.1.0-macos-x86_64.dmg) |
 
 Verify the matching SHA-256 file on the release page, open the DMG, and drag
-`Bookshelf.app` to Applications. Quit the old app before replacing it; your library
+`Bookside.app` to Applications. Quit the old app before replacing it; your library
 data stays outside the app. These previews are **ad-hoc signed and not notarized by
 Apple**, so macOS may block the first launch. See [installation and Gatekeeper](docs/01-getting-started.md#install-the-developer-preview).
 
@@ -87,8 +87,8 @@ Silicon. Both architectures pass build and copied-CLI checks in CI; this does no
 establish native UI compatibility with every supported Mac.
 
 ```sh
-git clone https://github.com/NomaDamas/bookshelf.git
-cd bookshelf
+git clone https://github.com/NomaDamas/bookside.git
+cd bookside
 ./scripts/build-app.sh
 ./scripts/open-app.command
 ```
@@ -96,7 +96,7 @@ cd bookshelf
 Choose **PDF 추가…** (`Command-O`) or **폴더 추가…** (`Command-Shift-O`), open a
 book, and write in **메모**. Reading and notes work without OCR or an AI account.
 
-To install the built app in `~/Applications/Bookshelf.app`:
+To install the built app in `~/Applications/Bookside.app`:
 
 ```sh
 ./scripts/install-local.command
@@ -109,6 +109,34 @@ signing, and draft GitHub Releases.
 The local app is ad-hoc signed by default. See [setup and troubleshooting](docs/01-getting-started.md)
 for toolchain selection, updates, and an isolated sample library.
 
+## Optional: in-app learning chat preview
+
+The experiment on this branch adds a dedicated AI panel beside a Preview-style reading
+workspace. Page thumbnails, notes, excerpts and search live on the left. Pi manages the
+conversation through official Claude Code/Codex executors, with model selection and
+English learning instructions. Questions can search and read the selected book, using the
+current page as the reading location. Current-page and explicit page-range scopes are available.
+Replies show verified source-page links and how much of the permitted range was read.
+The default automatic mode chooses text, tables or visual explanations for the question.
+Codex can also generate images through its official image tool and keep them in the chat.
+
+The panel renders Mermaid, SVG and isolated HTML, displays reported context usage, and
+plays user-selected audio/media. Questions can be edited and retried; conversation edits
+and clearing can be undone. **Settings > AI 연결** manages accounts and Pi;
+**Settings > 단축키** changes app shortcuts. Replies stay with each book.
+
+The ordinary build remains independent of Node. To build the separate preview, install
+Node.js 22.19 or later, pnpm and Bun, then run:
+
+```sh
+./scripts/install-pi-preview.command
+```
+
+Read [the experiment's scope, official account routes and verification](Resources/Design/PI-AGENT.md)
+before connecting. Verification evidence distinguishes local tests and native interactions
+from live Claude/Codex requests and image generation. Each user signs in through the
+official account flow; provider availability and limits still apply.
+
 ## Optional: connect an AI client
 
 After installing the app, run this helper from a cloned repository:
@@ -118,7 +146,7 @@ After installing the app, run this helper from a cloned repository:
 ```
 
 This registers the installed CLI with available Codex and Claude Code clients,
-preserving existing `bookshelf` entries. Restart the clients and verify the tools.
+preserving existing `bookside` entries. Restart the clients and verify the tools.
 For example: “Find my book, search for attention, and cite the PDF pages.”
 
 MCP can read your library and notes. Your client may send those results to its model
@@ -147,7 +175,7 @@ performance measurements, and historical native verification records.
 
 ## Current scope
 
-Bookshelf reads PDFs on macOS. EPUB support, semantic search, a built-in model,
+Bookside reads PDFs on macOS. EPUB support, semantic search, a built-in model,
 and cross-device note sync are not implemented. iCloud PDFs can be indexed without
 bulk downloads; download a file in Finder before reading it. The deployment target
 does not imply that every earlier macOS version has been tested.

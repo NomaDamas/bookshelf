@@ -1,6 +1,6 @@
 ![실제 macOS 서재 앱의 PDF 책장, 읽기 화면과 책별 메모](Resources/Design/evidence/readme-reader-light.jpg)
 
-# Bookshelf / 서재
+# Bookside / 서재
 
 **PDF를 읽고, 옆에 생각을 남기고, 읽던 맥락을 AI 클라이언트로 이어갈 수 있습니다.**
 
@@ -48,25 +48,25 @@ OCR 사본 검토:
 ### Homebrew로 설치하기
 
 ```sh
-brew install --cask nomadamas/bookshelf/bookshelf
+brew install --cask nomadamas/bookside/bookside
 ```
 
-[NomaDamas tap](https://github.com/NomaDamas/homebrew-bookshelf)이 Mac에 맞는 DMG를
-선택하고 SHA-256을 확인한 뒤 앱을 설치합니다. `bookshelf-cli`도 Homebrew의 `bin`
+[NomaDamas tap](https://github.com/NomaDamas/homebrew-bookside)이 Mac에 맞는 DMG를
+선택하고 SHA-256을 확인한 뒤 앱을 설치합니다. `bookside-cli`도 Homebrew의 `bin`
 디렉터리에 연결합니다. 아래에서 설명하는 것과 같은 개발자 프리뷰입니다.
 [Homebrew 설치와 업데이트](docs/01-getting-started.md#install-with-homebrew)를 참고하세요.
 
 ### DMG로 설치하기
 
-[v0.1.0 개발자 프리뷰](https://github.com/NomaDamas/bookshelf/releases/tag/v0.1.0)를
+[v0.1.0 개발자 프리뷰](https://github.com/NomaDamas/bookside/releases/tag/v0.1.0)를
 내려받을 수 있습니다. macOS 14 이상을 대상으로 합니다.
 
 | Mac | 다운로드 |
 | --- | --- |
-| Apple Silicon (M 시리즈) | [Apple Silicon DMG](https://github.com/NomaDamas/bookshelf/releases/download/v0.1.0/Bookshelf-0.1.0-macos-arm64.dmg) |
-| Intel | [Intel DMG](https://github.com/NomaDamas/bookshelf/releases/download/v0.1.0/Bookshelf-0.1.0-macos-x86_64.dmg) |
+| Apple Silicon (M 시리즈) | [Apple Silicon DMG](https://github.com/NomaDamas/bookside/releases/download/v0.1.0/Bookshelf-0.1.0-macos-arm64.dmg) |
+| Intel | [Intel DMG](https://github.com/NomaDamas/bookside/releases/download/v0.1.0/Bookshelf-0.1.0-macos-x86_64.dmg) |
 
-릴리스 페이지의 SHA-256 파일로 무결성을 확인한 뒤 DMG를 열고 `Bookshelf.app`을
+릴리스 페이지의 SHA-256 파일로 무결성을 확인한 뒤 DMG를 열고 `Bookside.app`을
 Applications로 옮기면 됩니다. 업데이트할 때는 기존 앱을 먼저 종료하세요.
 서재 데이터는 앱 밖에 보관하므로 앱을 교체해도 유지됩니다.
 이 프리뷰는 **임시 서명(ad-hoc signing)을 사용하며 Apple 공증을 받지 않았습니다.**
@@ -77,8 +77,8 @@ macOS가 첫 실행을 차단할 수 있습니다. [설치와 Gatekeeper 안내]
 호환되는 Xcode/Swift 도구 체인과 빌드 보조 스크립트용 Python 3가 필요합니다.
 
 ```sh
-git clone https://github.com/NomaDamas/bookshelf.git
-cd bookshelf
+git clone https://github.com/NomaDamas/bookside.git
+cd bookside
 ./scripts/build-app.sh
 ./scripts/open-app.command
 ```
@@ -86,7 +86,7 @@ cd bookshelf
 **PDF 추가…** (`Command-O`) 또는 **폴더 추가…** (`Command-Shift-O`)로 자료를 넣고,
 책을 선택한 뒤 **메모**에 생각을 적으면 됩니다. 읽기와 메모에는 OCR 설치나 AI 계정이 필요하지 않습니다.
 
-빌드한 앱을 `~/Applications/Bookshelf.app`에 설치하려면:
+빌드한 앱을 `~/Applications/Bookside.app`에 설치하려면:
 
 ```sh
 ./scripts/install-local.command
@@ -102,6 +102,31 @@ macOS 26.6.2, Xcode 27 / Swift 6.4이며, 이전 macOS와 Intel Mac의 전체 �
 버전 관리, 아키텍처별 파일, 정식 서명과 GitHub 초안 릴리스는 [배포 안내](docs/09-releasing.md)를 참고하세요. [설치 및 문제 해결](docs/01-getting-started.md)
 문서에서 도구 체인 선택과 별도 샘플 서재 실행을 설명합니다.
 
+## 선택 기능: 앱 내 대화 실험
+
+이 브랜치의 프리뷰는 Preview처럼 왼쪽에서 페이지, 메모, 발췌, 검색을 전환하고 오른쪽에서 AI와 대화합니다.
+Pi가 대화를 관리하고 공식 Claude Code 또는 Codex 실행기로 선택한 모델의 답변을 받습니다.
+시스템 지침은 영어이며, 답변은 질문의 언어를 따릅니다.
+기본 **자동** 모드가 질문에 맞게 글, 표, 다이어그램을 고릅니다. Codex는 공식 이미지 생성 도구로
+그림을 만들고 대화에 보관할 수 있습니다. 이미지는 확대, 복사, 저장할 수 있습니다.
+
+Mermaid, SVG, 격리된 HTML을 표시하고 음성 파일을 재생할 수 있습니다. 실행기가 제공한 컨텍스트 사용량,
+질문 수정과 재시도, 대화 비우기와 되돌리기를 지원합니다. **설정 > AI 연결**에서 계정과 Pi를,
+**설정 > 단축키**에서 키 조합을 바꿀 수 있습니다.
+기본 질문 범위는 **이 책 전체**입니다. AI가 필요한 페이지를 검색하고 읽으며, 현재 페이지와
+선택 문장, 선택한 책 노트도 참고합니다. 현재 페이지만 보거나 페이지 범위를 지정할 수도 있습니다.
+답변의 출처를 누르면 해당 쪽으로 이동하고, 본문을 확인한 범위를 볼 수 있습니다. 대화는 책별로 저장합니다.
+
+일반 빌드에는 Node가 필요하지 않습니다. 프리뷰는 Node.js 22.19 이상, pnpm, Bun을 준비한 뒤
+아래 명령으로 별도의 앱을 설치할 수 있습니다.
+
+```sh
+./scripts/install-pi-preview.command
+```
+
+[실험 범위와 계정 연결, 검증 상태](Resources/Design/PI-AGENT.md)를 확인해 주세요.
+자동 테스트와 실제 화면 검증 범위를 구분해 기록했습니다. Codex는 사용자가 공식 로그인을 완료해야 합니다.
+
 ## 선택 기능: OCR과 AI 연결
 
 OCR은 [설치 및 검토 안내](docs/04-ocr.md)를 따라 별도로 준비할 수 있습니다.
@@ -114,7 +139,7 @@ OCR은 [설치 및 검토 안내](docs/04-ocr.md)를 따라 별도로 준비할 
 ./scripts/register-mcp.command
 ```
 
-설치된 Codex/Claude Code에 서버를 등록하며, 기존 `bookshelf` 등록은 유지합니다.
+설치된 Codex/Claude Code에 서버를 등록하며, 기존 `bookside` 등록은 유지합니다.
 클라이언트를 다시 시작하고 도구 목록과 실제 호출을 확인하면 됩니다.
 예: “내 서재에서 책을 찾아 집중력이라는 단어가 나오는 PDF 페이지를 근거와 함께 알려줘.”
 

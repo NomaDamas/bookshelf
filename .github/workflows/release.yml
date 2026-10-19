@@ -75,4 +75,4 @@ jobs:
           fi
           gh release create "$RELEASE_TAG" release-assets/* \
             --verify-tag --draft --prerelease \
-            --title "Bookshelf $RELEASE_TAG" --notes-file release-notes.md
+            --title "Bookside $RELEASE_TAG" --notes-file release-notes.md

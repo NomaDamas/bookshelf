@@ -314,7 +314,7 @@ def main():
     parser.add_argument("--apply", action="store_true")
     args = parser.parse_args()
     args.output.mkdir(parents=True, exist_ok=True)
-    environment = {**os.environ, "BOOKSHELF_DATA_DIR": str(args.data_dir)}
+    environment = {**os.environ, "BOOKSIDE_DATA_DIR": str(args.data_dir)}
     signal.signal(signal.SIGTERM, lambda *_: STOP.set())
     signal.signal(signal.SIGINT, lambda *_: STOP.set())
     write_json(

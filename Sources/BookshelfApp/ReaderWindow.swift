@@ -25,15 +25,14 @@ struct ReaderWindow: View {
                 }.padding(.horizontal, 18).padding(.vertical, 10).background(Color.accentColor.opacity(0.06))
                 Divider()
             }
-            HSplitView {
-                if model.sidebarVisible { BookSidebar(model: model).frame(minWidth: 220, idealWidth: ReaderTokens.sidebarWidth, maxWidth: 340) }
-                if model.readingShelfVisible {
-                    ReadingShelfView(model: model).frame(minWidth: 450, maxWidth: .infinity, maxHeight: .infinity)
-                } else if let book = model.activeBook {
-                    ReaderSurface(model: model, book: book)
-                        .padding(8).frame(minWidth: 420, maxWidth: .infinity, maxHeight: .infinity)
-                    if model.notesVisible { NotesPanel(model: model, book: book).frame(minWidth: 300, idealWidth: 340, maxWidth: 440) }
-                } else { EmptyLibraryView(model: model).frame(maxWidth: .infinity, maxHeight: .infinity) }
+            if model.isReadingBook, let book = model.activeBook {
+                ReaderWorkspaceSplit(model: model, book: book)
+            } else {
+                HSplitView {
+                    if model.sidebarVisible { BookSidebar(model: model).frame(minWidth: 220, idealWidth: ReaderTokens.sidebarWidth, maxWidth: 340) }
+                    if model.readingShelfVisible { ReadingShelfView(model: model).frame(minWidth: 450, maxWidth: .infinity, maxHeight: .infinity) }
+                    else { EmptyLibraryView(model: model).frame(maxWidth: .infinity, maxHeight: .infinity) }
+                }
             }
             if let information = model.information {
                 Divider()
@@ -50,9 +49,13 @@ struct ReaderWindow: View {
         .tint(ReaderStyle.accent)
         .toolbar {
             ToolbarItemGroup(placement: .navigation) {
-                Button { withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.15)) { model.sidebarVisible.toggle() } } label: { Image(systemName: "sidebar.left") }.help("책장 표시 (⌘0)").accessibilityLabel("책장 표시")
+                if model.isReadingBook {
+                    Button { model.showLibrary() } label: { Label("서재", systemImage: "chevron.left") }
+                        .help("서재로 돌아가기 (\(model.shortcuts[.library].label))").accessibilityLabel("서재로 돌아가기")
+                }
+                Button { withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.15)) { model.sidebarVisible.toggle() } } label: { Image(systemName: "sidebar.left") }.help("왼쪽 사이드바 표시 (\(model.shortcuts[.leftSidebar].label))").accessibilityLabel("왼쪽 사이드바 표시")
                 Button { model.showReadingShelf() } label: { Image(systemName: "books.vertical") }
-                    .help("독서 현황 (⌘⇧L)").accessibilityLabel("독서 현황")
+                    .help("독서 현황").accessibilityLabel("독서 현황")
                 Menu { Button("PDF 추가…") { model.chooseFiles() }; Button("폴더 추가…") { model.chooseFiles(folder: true) } } label: { Image(systemName: "plus") }.help("서재에 추가")
             }
             ToolbarItem(placement: .principal) {
@@ -60,7 +63,9 @@ struct ReaderWindow: View {
             }
             ToolbarItemGroup(placement: .primaryAction) {
                 Button { model.showSettings = true } label: { Image(systemName: "slider.horizontal.3") }.help("OCR와 AI 연결 설정").accessibilityLabel("설정")
-                Button { withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.15)) { model.toggleNotesPanel() } } label: { Image(systemName: "sidebar.right") }.help("책별 메모 표시 (⌘⇧M)").accessibilityLabel("메모 패널 표시")
+                if AgentRuntime.bridgeURL != nil {
+                    Button { withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.15)) { model.toggleAIPanel() } } label: { Image(systemName: "sidebar.right") }.help("AI 패널 표시 (\(model.shortcuts[.aiPanel].label))").accessibilityLabel("AI 패널 표시")
+                }
             }
         }
         .sheet(isPresented: $model.showSettings) { SettingsView(model: model) }
@@ -273,7 +278,7 @@ struct ReaderSurface: View {
                 }
                 Spacer(minLength: 0)
                 ReaderIconButton(symbol: "keyboard", label: "키보드 조작 안내") { showKeyboardHelp.toggle() }
-                    .popover(isPresented: $showKeyboardHelp, arrowEdge: .top) { KeyboardHelp() }
+                    .popover(isPresented: $showKeyboardHelp, arrowEdge: .top) { KeyboardHelp(model: model) }
             }.padding(.horizontal, 18).frame(height: ReaderStyle.footerHeight)
         }
     }

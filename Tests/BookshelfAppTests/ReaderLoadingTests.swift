@@ -38,7 +38,8 @@ import BookshelfCore
         let model = AppModel(store: store)
         model.sidebarVisible = true
         let first = try await open(book, in: model)
-        XCTAssertTrue(model.sidebarVisible, "Opening a book must not hide its location in the library")
+        XCTAssertTrue(model.sidebarVisible, "Opening a book keeps its book tools available")
+        XCTAssertTrue(model.isReadingBook)
         model.goToPage(2)
         let again = try await open(book, in: model)
         XCTAssertTrue(first === again, "Selecting the current book must not parse and rebuild its PDF")
@@ -76,11 +77,11 @@ import BookshelfCore
         let firstView = ReaderPDFView(); firstView.document = pdf
         let first = PDFReaderView.Coordinator(model: model); first.view = firstView
         first.drawHighlights([highlight])
-        XCTAssertEqual(page.annotations.filter { $0.userName == "Bookshelf" }.count, 1)
+        XCTAssertEqual(page.annotations.filter { $0.userName == "Bookside" }.count, 1)
         let nextView = ReaderPDFView(); nextView.document = pdf
         let next = PDFReaderView.Coordinator(model: model); next.view = nextView
         next.drawHighlights([])
-        XCTAssertEqual(page.annotations.filter { $0.userName == "Bookshelf" }.count, 0)
+        XCTAssertEqual(page.annotations.filter { $0.userName == "Bookside" }.count, 0)
         XCTAssertTrue(page.annotations.contains { $0 === original })
     }
 

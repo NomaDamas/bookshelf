@@ -15,7 +15,7 @@ run.mkdir(parents=True)
 scan, source, output = (
     run / name for name in ["scan.pdf", "legacy_ocr.pdf", "improved_ocr.pdf"]
 )
-env = {**os.environ, "BOOKSHELF_DATA_DIR": str(run / "data")}
+env = {**os.environ, "BOOKSIDE_DATA_DIR": str(run / "data")}
 
 
 def command(arguments, timeout=240):

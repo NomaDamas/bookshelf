@@ -4,15 +4,24 @@ import BookshelfCore
 struct NotesPanel: View {
     @ObservedObject var model: AppModel
     let book: Book
+    private var hasAgent: Bool { AgentRuntime.bridgeURL != nil }
+    private var choices: [(String, String)] { [("페이지", "pages"), ("메모", "notes"), ("발췌", "quotes"), ("검색", "search")] }
 
     var body: some View {
         VStack(spacing: 0) {
-            ReaderPicker(choices: [("메모", "notes"), (model.highlights.isEmpty ? "발췌" : "발췌 \(model.highlights.count)", "quotes"), ("검색", "search")],
-                         selection: $model.panelTab, label: "책 패널")
+            VStack(alignment: .leading, spacing: 14) {
+                Button { model.showLibrary() } label: { Label("서재로 돌아가기", systemImage: "chevron.left") }
+                    .buttonStyle(.plain).font(.system(size: 12)).foregroundStyle(.secondary)
+                    .accessibilityIdentifier("reader-back-to-library")
+                Text(book.title).font(.system(size: 14, weight: .semibold)).lineLimit(2)
+            }.frame(maxWidth: .infinity, alignment: .leading).padding(18)
+            ReaderPicker(choices: choices,
+                         selection: $model.panelTab, label: "책 도구")
                 .frame(height: 28)
                 .padding(.horizontal, 16).frame(height: ReaderStyle.toolbarHeight + 8)
             Group {
                 switch model.panelTab {
+                case "pages": BookPagesSidebar(model: model)
                 case "quotes": quotes
                 case "search": search
                 default: notebook
@@ -20,11 +29,10 @@ struct NotesPanel: View {
             }.frame(maxWidth: .infinity, maxHeight: .infinity)
             ReaderHairline().padding(.horizontal, 16)
             HStack(spacing: 4) {
-                Button { model.copyContext() } label: {
-                    Label("AI로 이어가기", systemImage: "arrow.up.right.square")
-                        .font(.system(size: 12, weight: .medium)).foregroundStyle(.primary)
-                }.buttonStyle(.plain).accessibilityLabel("AI로 이어가기")
-                    .help("현재 페이지와 메모를 복사해 Codex 또는 Claude Code에 전달합니다.")
+                if !hasAgent {
+                    Button { model.copyContext() } label: { Label("AI로 이어가기", systemImage: "arrow.up.right.square") }
+                        .buttonStyle(.plain).font(.system(size: 12)).help("현재 책과 메모를 외부 AI에 전달할 문맥으로 복사합니다.")
+                } else { Text("이 Mac에 저장됨").font(.system(size: 11)).foregroundStyle(.secondary) }
                 Spacer()
                 ReaderIconButton(symbol: "square.and.arrow.up", label: "메모 내보내기") { model.exportNotes() }
                 ReaderIconButton(symbol: "link", label: "CLI MCP 연결 안내") { model.showSettings = true }

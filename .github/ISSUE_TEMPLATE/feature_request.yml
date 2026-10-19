@@ -1,5 +1,5 @@
 name: Feature request
-description: Describe a reading or development task Bookshelf could support better.
+description: Describe a reading or development task Bookside could support better.
 body:
   - type: textarea
     id: problem

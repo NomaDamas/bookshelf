@@ -113,7 +113,7 @@ def main():
         if old_images != new_images:
             failures.append("image bytes")
     rendered = []
-    with tempfile.TemporaryDirectory(prefix="bookshelf-layer-validation-") as temporary:
+    with tempfile.TemporaryDirectory(prefix="bookside-layer-validation-") as temporary:
         for number in filter(None, args.render_pages.split(",")):
             pixels = []
             for index, source in enumerate([args.original, args.repaired]):

@@ -10,15 +10,16 @@ over stdio. Both use `BookshelfCore` and the same local database.
 From a source checkout after building:
 
 ```sh
-BOOKSHELF_CLI="$PWD/dist/Bookshelf.app/Contents/MacOS/bookshelf-cli"
-"$BOOKSHELF_CLI" --help
-"$BOOKSHELF_CLI" doctor
+BOOKSIDE_CLI="$PWD/dist/Bookside.app/Contents/MacOS/bookside-cli"
+"$BOOKSIDE_CLI" --help
+"$BOOKSIDE_CLI" doctor
 ```
 
 For the installed app, use
-`BOOKSHELF_CLI="$HOME/Applications/Bookshelf.app/Contents/MacOS/bookshelf-cli"`.
-This shell variable is just for these examples. `BOOKSHELF_DATA_DIR` selects the
-database; the default is `~/Library/Application Support/Bookshelf`. `doctor` reports
+`BOOKSIDE_CLI="$HOME/Applications/Bookside.app/Contents/MacOS/bookside-cli"`.
+This shell variable is just for these examples. `BOOKSIDE_DATA_DIR` selects the
+database; the default is `~/Library/Application Support/Bookside`, or the pre-rename
+`Bookshelf` folder there when only that one holds a library. `doctor` reports
 that path, the discovered OCR executable, book count, and version.
 
 Commands print JSON to stdout except `help`/`--help` and `version`/`--version`
@@ -50,17 +51,18 @@ are **1-based PDF page indices**, which may differ from printed page numbers.
 | `ocr-accept <result-json>` | Attach a reviewed, unchanged candidate to the existing book. |
 | `ocr-original <book-id>` | Select the original again, preserving notes and OCR copies. |
 | `mcp` | Run the stdio MCP server until the client disconnects. |
+| `reading-mcp <book-id> <book\|page\|range> <first-page> <last-page> [provided-page provided-characters]` | App-owned read-only session limited to one book and an immutable PDF page range; no global registration is needed. |
 
 ### Read and export
 
 ```sh
-"$BOOKSHELF_CLI" books "sample"
+"$BOOKSIDE_CLI" books "sample"
 BOOK_ID="paste-the-id-returned-by-books"
-"$BOOKSHELF_CLI" read "$BOOK_ID" 1
-"$BOOKSHELF_CLI" search "$BOOK_ID" "독서 메모"
-"$BOOKSHELF_CLI" search "$BOOK_ID" "독서 메모" --exact-spacing
-"$BOOKSHELF_CLI" notes "$BOOK_ID"
-"$BOOKSHELF_CLI" export "$BOOK_ID" > notes.md
+"$BOOKSIDE_CLI" read "$BOOK_ID" 1
+"$BOOKSIDE_CLI" search "$BOOK_ID" "독서 메모"
+"$BOOKSIDE_CLI" search "$BOOK_ID" "독서 메모" --exact-spacing
+"$BOOKSIDE_CLI" notes "$BOOK_ID"
+"$BOOKSIDE_CLI" export "$BOOK_ID" > notes.md
 ```
 
 Shell redirection writes `notes.md`; choose a new destination to keep an earlier
@@ -81,23 +83,23 @@ review is retained but not automatically attached. For controlled review, use th
 
 ## Register MCP
 
-After installing the app in `~/Applications/Bookshelf.app` or `/Applications/Bookshelf.app`:
+After installing the app in `~/Applications/Bookside.app` or `/Applications/Bookside.app`:
 
 ```sh
 ./scripts/register-mcp.command
 ```
 
 The helper calls each available client's official registration command and keeps
-existing `bookshelf` entries unchanged. If both installation locations exist, set
-`BOOKSHELF_APP_PATH` to the desired absolute app path. Missing apps or supported
+existing `bookside` entries unchanged. If both installation locations exist, set
+`BOOKSIDE_APP_PATH` to the desired absolute app path. Missing apps or supported
 clients produce an error. Its final message alone does not prove a
 client was installed, a registration was added, or a connection succeeded.
 
 Verify in the clients you use:
 
 ```sh
-codex mcp get bookshelf
-claude mcp get bookshelf
+codex mcp get bookside
+claude mcp get bookside
 ```
 
 Restart those clients, confirm the five tools are available, and request
@@ -107,23 +109,23 @@ your client configuration or make a model request.
 
 For another MCP client, configure a **stdio** server with the absolute installed
 binary path as `command`, `["mcp"]` as `args`, and an optional absolute
-`BOOKSHELF_DATA_DIR` in its environment. JSON configs generally do not expand `~`,
+`BOOKSIDE_DATA_DIR` in its environment. JSON configs generally do not expand `~`,
 `$HOME`, or shell variables. Use your actual full path and the client's schema.
 
 ### DMG-only installation
 
 The registration helper lives in the source checkout. If you installed only the
 DMG, configure a stdio server directly in your client with
-`/Applications/Bookshelf.app/Contents/MacOS/bookshelf-cli` and the argument `mcp`.
+`/Applications/Bookside.app/Contents/MacOS/bookside-cli` and the argument `mcp`.
 For a new registration with the corresponding client installed:
 
 ```sh
-codex mcp add bookshelf -- /Applications/Bookshelf.app/Contents/MacOS/bookshelf-cli mcp
-claude mcp add --scope user --transport stdio bookshelf -- /Applications/Bookshelf.app/Contents/MacOS/bookshelf-cli mcp
+codex mcp add bookside -- /Applications/Bookside.app/Contents/MacOS/bookside-cli mcp
+claude mcp add --scope user --transport stdio bookside -- /Applications/Bookside.app/Contents/MacOS/bookside-cli mcp
 ```
 
 Use only the command for your client and adjust the path if you installed elsewhere.
-Inspect an existing `bookshelf` registration first rather than replacing it blindly.
+Inspect an existing `bookside` registration first rather than replacing it blindly.
 Restart the client and verify an actual tool call as described above.
 
 ## MCP tools
@@ -154,9 +156,27 @@ Example tool arguments:
 Search is keyword search. Normalization does not correct characters, rewrite quotes,
 or add semantic retrieval. See [search behavior](02-reading-and-notes.md#searching-ocr-text).
 
+### In-app book reading tools
+
+The optional learning preview starts `reading-mcp` with the app's selected book/range.
+This is separate from the five-tool external library server. It exposes only:
+
+| Tool | Behavior |
+| --- | --- |
+| `get_book_overview` | PDF page count, permitted range and embedded outline with chapter boundaries. |
+| `search_book` | Whitespace-tolerant keyword search within the range; up to 12 original excerpts and a continuation page. |
+| `read_pages` | Up to 10 pages / 24,000 characters per call, with `nextPage` and `nextOffset` for complete retrieval. |
+| `get_reading_coverage` | Fully read pages, excerpt source pages and pages without extractable text for this request. |
+
+These tool schemas have no `book_id` or file-path argument. The server rejects out-of-range
+pages and extra arguments. Both servers use a narrow initialization adapter for Swift MCP
+SDK 0.12.1: object-valued experimental client extensions (such as Codex `codex/auth-change`)
+are ignored because this local server does not implement them. Standard capabilities and
+all non-initialization messages are preserved.
+
 ## Deep links and the trust boundary
 
-Page results include `bookshelf://book/<book-id>?page=<number>`. The app must be
+Page results include `bookside://book/<book-id>?page=<number>`. The app must be
 registered with macOS and use the same library for the ID to resolve.
 
 MCP cannot import, change notes, start OCR, or delete files. Its database connection

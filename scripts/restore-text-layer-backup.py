@@ -39,7 +39,7 @@ def main():
         repaired_copy.parent.mkdir(parents=True, exist_ok=True)
         if not repaired_copy.exists():
             shutil.copy2(source, repaired_copy)
-        temporary = source.parent / (".bookshelf-restore-" + uuid.uuid4().hex + ".pdf")
+        temporary = source.parent / (".bookside-restore-" + uuid.uuid4().hex + ".pdf")
         try:
             shutil.copy2(backup, temporary)
             if digest(temporary) != row["original_sha256"]:

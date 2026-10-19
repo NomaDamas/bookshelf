@@ -15,8 +15,19 @@ public enum AppMetadata {
         guard let url = CoreResources.url(forResource: "AppMetadata", withExtension: "json"),
               let data = try? Data(contentsOf: url),
               let metadata = try? JSONDecoder().decode(ProductMetadata.self, from: data) else {
-            fatalError("Bookshelf product metadata is missing or invalid. Rebuild the app bundle.")
+            fatalError("Bookside product metadata is missing or invalid. Rebuild the app bundle.")
         }
         return metadata
     }()
+}
+
+/// Reads `BOOKSIDE_<name>`. The pre-rename `BOOKSHELF_<name>` still applies when the
+/// new variable is unset, so MCP configs written for Bookshelf keep their settings.
+public enum ProductEnvironment {
+    public static func value(_ name: String, in environment: [String: String] = ProcessInfo.processInfo.environment) -> String? {
+        for prefix in ["BOOKSIDE_", "BOOKSHELF_"] {
+            if let value = environment[prefix + name], !value.isEmpty { return value }
+        }
+        return nil
+    }
 }

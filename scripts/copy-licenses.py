@@ -11,4 +11,4 @@ for dependency in Path('.build/checkouts').iterdir():
             target = output / dependency.name
             target.mkdir(exist_ok=True)
             shutil.copyfile(source, target / name)
-shutil.copyfile('LICENSE', output / 'Bookshelf-LICENSE.txt')
+shutil.copyfile('LICENSE', output / 'Bookside-LICENSE.txt')

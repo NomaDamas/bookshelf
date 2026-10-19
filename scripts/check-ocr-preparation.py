@@ -13,7 +13,7 @@ import pikepdf
 
 root = Path(__file__).resolve().parents[1]
 helper = root / "Sources/BookshelfCore/Resources/prepare-ocr-replacement.py"
-with tempfile.TemporaryDirectory(prefix="bookshelf-preparation-") as temporary:
+with tempfile.TemporaryDirectory(prefix="bookside-preparation-") as temporary:
     folder = Path(temporary)
     source, output = folder / "source.pdf", folder / "prepared.pdf"
     with pikepdf.Pdf.new() as pdf:

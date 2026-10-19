@@ -10,7 +10,7 @@ The documentation branch does not change app source.
 | UI | SwiftUI/AppKit/PDFKit, 1380 x 900 point window |
 | Captures | [Light](readme-reader-light.jpg), [dark](readme-reader-dark.jpg) |
 | Method | Native window screenshot; no composited or generated UI |
-| Isolation | Dedicated `BOOKSHELF_DATA_DIR` and a copy of the built bundle with a separate documentation bundle ID |
+| Isolation | Dedicated `BOOKSIDE_DATA_DIR` and a copy of the built bundle with a separate documentation bundle ID |
 | Content | Three authored eight-page PDFs and sample notebook text created for this capture; no commercial book or private notebook |
 
 The selected sample is titled “생각을 정리하는 독서”. Its page says that it is an

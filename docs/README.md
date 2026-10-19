@@ -1,4 +1,4 @@
-# Bookshelf documentation
+# Bookside documentation
 
 [Project overview](../README.md) | [한국어 소개](../README.ko.md)
 
@@ -33,3 +33,7 @@ used independently.
 
 Evidence documents describe the runs recorded in them. They do not imply every
 platform or interaction has been retested for each subsequent commit.
+
+
+The [Pi learning-chat experiment](../Resources/Design/PI-AGENT.md) covers the optional
+native chat preview, account boundaries, dependencies and observed verification.

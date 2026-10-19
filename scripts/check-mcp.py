@@ -11,7 +11,7 @@ root = Path(__file__).resolve().parents[1]
 state = json.loads((root / '.runtime/ocr-check-result.json').read_text())
 if len(sys.argv) > 1:
     state['binary'] = str(Path(sys.argv[1]).resolve())
-env = {**os.environ, 'BOOKSHELF_DATA_DIR': state['data_dir']}
+env = {**os.environ, 'BOOKSIDE_DATA_DIR': state['data_dir']}
 stderr = (root / '.runtime/mcp-stderr.log').open('w')
 process = subprocess.Popen([state['binary'], 'mcp'], stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=stderr, text=True, bufsize=1, env=env)
 selector = selectors.DefaultSelector(); selector.register(process.stdout, selectors.EVENT_READ)
@@ -41,7 +41,7 @@ def send(method, params=None, notification=False):
     raise TimeoutError(method)
 
 try:
-    init = send('initialize', {'protocolVersion': '2025-11-25', 'capabilities': {}, 'clientInfo': {'name': 'bookshelf-integration-check', 'version': '1'}})
+    init = send('initialize', {'protocolVersion': '2025-11-25', 'capabilities': {'experimental': {'codex/auth-change': {}}, 'elicitation': {'form': {}, 'url': {}}}, 'clientInfo': {'name': 'bookside-integration-check', 'version': '1'}})
     send('notifications/initialized', notification=True)
     tools = send('tools/list')['tools']
     assert len(tools) == 5
@@ -70,7 +70,7 @@ try:
     assert responses['get_reading_context']['page'] == 2
     invalid = send('tools/call', {'name': 'read_page', 'arguments': {'book_id': book_id, 'page': 0}})
     assert invalid.get('isError')
-    report = {'protocol': init['protocolVersion'], 'tools': [t['name'] for t in tools], 'all_read_only': True, 'all_calls_passed': True, 'invalid_page_rejected': True, 'ocr_whitespace_search': True, 'exact_spacing_option': True, 'invalid_search_option_rejected': True}
+    report = {'protocol': init['protocolVersion'], 'tools': [t['name'] for t in tools], 'all_read_only': True, 'all_calls_passed': True, 'invalid_page_rejected': True, 'ocr_whitespace_search': True, 'exact_spacing_option': True, 'invalid_search_option_rejected': True, 'object_experimental_capability_ignored': True}
     (root / '.runtime/mcp-check-result.json').write_text(json.dumps(report, indent=2), encoding='utf-8')
     print(json.dumps(report, indent=2))
 finally:

@@ -23,6 +23,12 @@ enum ReaderStyle {
     static let footerHeight = ReaderTokens.footerHeight
 }
 
+enum ReaderMotion {
+    static func ease(_ duration: Double) -> Animation {
+        .timingCurve(ReaderTokens.easeX1, ReaderTokens.easeY1, ReaderTokens.easeX2, ReaderTokens.easeY2, duration: duration)
+    }
+}
+
 /// Reading surfaces stay opaque; Reduce Transparency gets a solid fallback.
 struct ReaderMaterial: View {
     var material: NSVisualEffectView.Material = .sidebar
@@ -77,6 +83,7 @@ struct ReaderIconButton: View {
     let action: () -> Void
     @State private var hovering = false
     @Environment(\.isEnabled) private var isEnabled
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     var body: some View {
         Button(action: action) {
             Image(systemName: symbol)
@@ -90,6 +97,7 @@ struct ReaderIconButton: View {
                     in: RoundedRectangle(cornerRadius: ReaderTokens.radiusMedium, style: .continuous))
         .opacity(isEnabled ? 1 : 0.35)
         .onHover { hovering = $0 }
+        .animation(reduceMotion ? nil : ReaderMotion.ease(ReaderTokens.controlDuration), value: hovering)
         .help(label).accessibilityLabel(label)
         .accessibilityAddTraits(selected ? .isSelected : [])
     }
@@ -161,6 +169,7 @@ struct ReaderPicker<Value: Hashable>: NSViewRepresentable {
 }
 
 struct KeyboardHelp: View {
+    @ObservedObject var model: AppModel
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             Label("키보드로 읽기", systemImage: "keyboard").font(.system(size: 16, weight: .semibold))
@@ -170,8 +179,10 @@ struct KeyboardHelp: View {
                 shortcut("이전 페이지", "Shift Space / Fn ↑")
                 shortcut("첫 / 마지막 페이지", "Fn ← / Fn →")
                 shortcut("페이지 안에서 스크롤", "↑  ↓")
-                shortcut("읽기 화면으로", "⌘ ⇧ R")
-                shortcut("읽는 중인 책 모아보기", "⌘ ⇧ L")
+                shortcut("읽기 화면으로", model.shortcuts[.focusReader].label)
+                shortcut("서재로 돌아가기", model.shortcuts[.library].label)
+                shortcut("왼쪽 사이드바", model.shortcuts[.leftSidebar].label)
+                shortcut("AI 패널", model.shortcuts[.aiPanel].label)
             }
             Divider()
             Text("원문과 텍스트 보기에서 사용할 수 있습니다.\n메모와 검색어를 입력할 때는 글 편집에 쓰입니다.")

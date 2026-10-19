@@ -1,4 +1,4 @@
-# Contributing to Bookshelf
+# Contributing to Bookside
 
 Bug reports, documentation fixes, native UI improvements, and focused patches are
 welcome. You do not need an AI account, the maintainer's library, or a private skill
@@ -9,7 +9,7 @@ to build the app or run its core tests.
 1. Read the [overview](README.md) and [getting started guide](docs/01-getting-started.md).
 2. Fork the repository and clone your fork for a contribution. Create a focused branch.
 3. Build with `./scripts/build-app.sh` and run `swift test`.
-4. Use an isolated `BOOKSHELF_DATA_DIR` and synthetic PDFs for development.
+4. Use an isolated `BOOKSIDE_DATA_DIR` and synthetic PDFs for development.
 5. Read [architecture](docs/05-architecture.md) before changing persistence, import,
    OCR, or the app/CLI boundary.
 
@@ -19,7 +19,7 @@ check requires the fixture/state produced by `check-ocr.py` first.
 
 ## Report a bug
 
-Search [existing issues](https://github.com/NomaDamas/bookshelf/issues) first, then
+Search [existing issues](https://github.com/NomaDamas/bookside/issues) first, then
 use the bug template. Include:
 
 - What you did, expected behavior, and actual behavior.
