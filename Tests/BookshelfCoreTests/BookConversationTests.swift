@@ -23,6 +23,16 @@ final class BookConversationTests: XCTestCase {
         XCTAssertFalse(try reopened.canUndoConversationEdit(bookID: book.id))
         XCTAssertEqual(try reopened.notebook(bookID: book.id).body, "")
     }
+    func testMessagesSavedBeforeStepsStillDecodeAndNewStepsRoundTrip() throws {
+        let legacy = #"[{"id":"A","role":"assistant","text":"답","backend":"claude","page":3,"state":"complete","created":1}]"#
+        let decoded = try JSONDecoder().decode([BookChatMessage].self, from: Data(legacy.utf8))
+        XCTAssertNil(decoded[0].steps); XCTAssertNil(decoded[0].finished); XCTAssertEqual(decoded[0].text, "답")
+        var message = decoded[0]
+        var step = ChatStep(kind: "read", title: "책 읽기", detail: "3~4쪽", started: 2); step.result = "2쪽 읽음"; step.state = "done"; step.finished = 5
+        message.steps = [step]; message.finished = 6
+        let again = try JSONDecoder().decode([BookChatMessage].self, from: JSONEncoder().encode([message]))
+        XCTAssertEqual(again, [message])
+    }
     func testConversationSurvivesReopenAndStaysSeparateFromNotesAndOtherBooks() throws {
         let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         defer { try? FileManager.default.removeItem(at: root) }

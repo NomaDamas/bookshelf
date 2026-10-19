@@ -14,6 +14,10 @@ public struct BookChatMessage: Codable, Identifiable, Equatable, Sendable {
     public var attachments: [ChatAttachment]?
     public var scope: BookReadingScope?
     public var reading: BookReadingCoverage?
+    /// Tool steps the agent took for this reply. Absent in conversations saved before steps existed.
+    public var steps: [ChatStep]?
+    /// When the reply stopped streaming (completed, failed or interrupted).
+    public var finished: Double?
     public var sourcePages: [Int] {
         Array(Set(reading?.sourcePages ?? (scope?.contains(page) == false ? [] : [page]))).sorted()
     }
@@ -39,6 +43,24 @@ public struct AgentContextUsage: Codable, Equatable, Sendable {
     public init(model: String? = nil, inputTokens: Int, outputTokens: Int, contextWindow: Int? = nil, cachedInputTokens: Int? = nil) {
         self.model = model; self.inputTokens = inputTokens; self.outputTokens = outputTokens
         self.contextWindow = contextWindow; self.cachedInputTokens = cachedInputTokens
+    }
+}
+
+/// One agent step within a reply, such as a page read or an image generation.
+/// `title`/`detail` are stored as shown so later wording changes do not rewrite history.
+public struct ChatStep: Codable, Identifiable, Equatable, Sendable {
+    public var id: String
+    public var kind: String
+    public var title: String
+    public var detail: String?
+    public var result: String?
+    /// "running", "done", "failed" or "interrupted".
+    public var state: String
+    public var started: Double
+    public var finished: Double?
+    public init(kind: String, title: String, detail: String? = nil, state: String = "running", started: Double = Date().timeIntervalSince1970) {
+        id = UUID().uuidString; self.kind = kind; self.title = title; self.detail = detail
+        self.state = state; self.started = started
     }
 }
 

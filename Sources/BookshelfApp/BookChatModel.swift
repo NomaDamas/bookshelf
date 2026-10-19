@@ -19,8 +19,14 @@ import BookshelfCore
         }
         return BookReadingScope(mode: "book", startPage: 1, endPage: max(1, pageCount))
     }
+    /// A chat reply or sign-in owns the bridge. Account status checks run separately and never lock the panel.
     @Published private(set) var busy = false
     @Published private(set) var operation = ""
+    @Published private var statusChecks = 0
+    var checkingStatus: Bool { statusChecks > 0 }
+    /// Executors whose status was read at least once; before that the panel treats the account as being checked.
+    @Published private(set) var checkedBackends: Set<ChatBackend> = []
+    @Published private(set) var loginBackend: ChatBackend?
     @Published private(set) var accounts: [ChatBackend: AgentAccountStatus] = [:]
     @Published var errorMessage: String?
     @Published var loginURL: URL?
@@ -33,6 +39,7 @@ import BookshelfCore
     private var revision = 0
     private var runID = UUID()
     private var task: Task<Void, Never>?
+    private var statusTask: Task<Void, Never>?
     private var bridge: AgentBridge?
     private var drafts: [String: String] = [:]
     private var assistantID: String?
@@ -74,28 +81,42 @@ import BookshelfCore
         do { try store.setSetting("agent.model." + backend.rawValue, value: value); selectedModels[backend] = value }
         catch { errorMessage = error.localizedDescription }
     }
-    func login(using backend: ChatBackend) { guard !busy else { return }; chooseBackend(backend, checkStatus: false); login() }
+    /// Signs in to one executor without changing the engine the current conversation uses.
+    func login(using target: ChatBackend) {
+        guard !busy else { return }
+        loginURL = nil; loginBackend = target
+        start(AgentRequest(action: "login", backend: target, directory: store.directory))
+    }
     func refreshConnections() async {
         guard !busy else { return }
         for backend in ChatBackend.allCases {
             guard !Task.isCancelled else { return }
-            let connection = bridgeFactory()
-            do {
-                for try await event in connection.events(for: AgentRequest(action: "status", backend: backend, directory: store.directory)) {
-                    guard !Task.isCancelled else { connection.cancel(); return }
-                    if event.type == "status", let status = event.status { accounts[backend] = status }
-                    if event.type == "models", let options = event.models { models[backend] = options }
-                }
-            } catch { errorMessage = error.localizedDescription }
+            await readStatus(of: backend)
         }
+    }
+    private func readStatus(of backend: ChatBackend) async {
+        statusChecks += 1; defer { statusChecks -= 1; checkedBackends.insert(backend) }
+        let connection = bridgeFactory()
+        do {
+            for try await event in connection.events(for: AgentRequest(action: "status", backend: backend, directory: store.directory)) {
+                guard !Task.isCancelled else { connection.cancel(); return }
+                if event.type == "status", let status = event.status { accounts[backend] = status }
+                if event.type == "models", let options = event.models { models[backend] = options }
+            }
+        } catch { if !Task.isCancelled { errorMessage = error.localizedDescription } }
     }
     func setPi(_ enabled: Bool) {
         guard enabled != usePi else { return }
         stop(); usePi = enabled
         do { try store.setSetting("agent.usePi", value: enabled ? "true" : "false") } catch { errorMessage = error.localizedDescription }
     }
-    func checkConnection() { guard !busy else { return }; start(AgentRequest(action: "status", backend: backend, directory: store.directory)) }
-    func login() { guard !busy else { return }; start(AgentRequest(action: "login", backend: backend, directory: store.directory)) }
+    func checkConnection() {
+        guard !busy else { return }
+        statusTask?.cancel()
+        let target = backend
+        statusTask = Task { [weak self] in await self?.readStatus(of: target) }
+    }
+    func login() { login(using: backend) }
     func send(context: AgentRequest.Context) {
         guard !busy, selectBook(context.id), persist() else { return }
         let question = draft.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -126,9 +147,38 @@ import BookshelfCore
         runID = UUID(); task?.cancel(); bridge?.cancel(); task = nil; bridge = nil
         if let index = messages.firstIndex(where: { $0.id == assistantID }) {
             messages[index].state = receivedAnswer ? "complete" : "interrupted"
-            hasUnsavedChanges = true
+            finishTurn(at: index, openSteps: "interrupted")
         }
         assistantID = nil; busy = false; operation = ""; activityMessage = ""; _ = persist()
+    }
+    /// Records when a reply stopped and settles steps that never reported an end.
+    private func finishTurn(at index: Int, openSteps state: String) {
+        let now = Date().timeIntervalSince1970
+        messages[index].finished = now
+        if var steps = messages[index].steps {
+            for i in steps.indices where steps[i].state == "running" { steps[i].state = state; steps[i].finished = now }
+            messages[index].steps = steps
+        }
+        hasUnsavedChanges = true
+    }
+    private func updateSteps(_ change: (inout [ChatStep]) -> Void) {
+        guard let index = messages.firstIndex(where: { $0.id == assistantID }) else { return }
+        var steps = messages[index].steps ?? []
+        change(&steps)
+        messages[index].steps = steps; hasUnsavedChanges = true
+    }
+    /// The bridge opens a step with a non-empty activity and closes the oldest open one with an empty activity.
+    private func recordActivity(_ message: String) {
+        if message.isEmpty {
+            updateSteps { steps in
+                guard let i = steps.firstIndex(where: { $0.state == "running" }) else { return }
+                if steps[i].kind == "image" && steps[i].result == nil { steps[i].state = "failed"; steps[i].result = "그림을 만들지 못했습니다" }
+                else { steps[i].state = "done" }
+                steps[i].finished = Date().timeIntervalSince1970
+            }
+        } else {
+            updateSteps { $0.append(PiStepWording.step(for: message)) }
+        }
     }
     private func flushDelta() {
         deltaTask?.cancel(); deltaTask = nil
@@ -152,6 +202,24 @@ import BookshelfCore
         draft = text; send(context: context)
     }
     var lastQuestion: BookChatMessage? { messages.last(where: { $0.role == "user" && ($0.attachments?.isEmpty ?? true) }) }
+    /// Plain-text copy of the whole conversation, in the order shown in the panel.
+    func transcript() -> String {
+        messages.compactMap { message -> String? in
+            if message.backend == "local" {
+                let names = (message.attachments ?? []).map(\.name)
+                return names.isEmpty ? nil : "자료: " + names.joined(separator: ", ")
+            }
+            guard !message.text.isEmpty else { return nil }
+            return (message.role == "user" ? "질문 (\(message.page)쪽)" : speaker(of: message)) + "\n" + message.text
+        }.joined(separator: "\n\n")
+    }
+    /// Executor and model that produced a reply, named as in the model menu, e.g. "Claude / Sonnet".
+    func speaker(of message: BookChatMessage) -> String {
+        let backend = ChatBackend(rawValue: message.backend)
+        guard let model = message.model, !model.isEmpty else { return (backend?.title ?? "Pi") + " / 자동" }
+        let label = backend.flatMap { models[$0] }?.first(where: { $0.id == model })?.label ?? model
+        return (backend?.title ?? "Pi") + " / " + label
+    }
     func undoEdit() {
         stop(); guard persist(), let bookID else { return }
         do {
@@ -212,7 +280,8 @@ import BookshelfCore
             guard id == runID else { return }
             flushDelta()
             if let index = messages.firstIndex(where: { $0.id == assistantID }) {
-                messages[index].state = receivedAnswer ? "complete" : "failed"; hasUnsavedChanges = true
+                messages[index].state = receivedAnswer ? "complete" : "failed"
+                finishTurn(at: index, openSteps: receivedAnswer ? "done" : "failed")
             }
             assistantID = nil; busy = false; operation = ""; activityMessage = ""; bridge = nil; _ = persist()
         }
@@ -221,17 +290,25 @@ import BookshelfCore
         switch event.type {
         case "status": if let status = event.status { accounts[backend] = status }
         case "models": if let options = event.models { models[backend] = options }
-        case "activity": activityMessage = event.message ?? ""
+        case "activity":
+            activityMessage = event.message ?? ""
+            if operation == "chat" { recordActivity(activityMessage) }
         case "reading":
             guard let reading = event.reading, reading.bookID == bookID,
                   let index = messages.firstIndex(where: { $0.id == assistantID }), reading.scope == messages[index].scope,
                   (reading.readPages + reading.sourcePages + reading.emptyPages).allSatisfy({ reading.scope.contains($0) }) else { return }
             let old = messages[index].reading
-            messages[index].reading = BookReadingCoverage(bookID: reading.bookID, scope: reading.scope,
+            let merged = BookReadingCoverage(bookID: reading.bookID, scope: reading.scope,
                 readPages: Array(Set((old?.readPages ?? []) + reading.readPages)).sorted(),
                 sourcePages: Array(Set((old?.sourcePages ?? []) + reading.sourcePages)).sorted(),
                 emptyPages: Array(Set((old?.emptyPages ?? []) + reading.emptyPages)).sorted())
+            messages[index].reading = merged
             hasUnsavedChanges = true
+            // The oldest open step without a result owns this tool's coverage report.
+            updateSteps { steps in
+                guard let i = steps.firstIndex(where: { $0.state == "running" && $0.result == nil }) else { return }
+                steps[i].result = PiStepWording.result(for: steps[i], before: old, after: merged)
+            }
         case "attachment":
             guard backend == .codex, let attachment = event.attachment, attachment.kind == "image",
                   let index = messages.firstIndex(where: { $0.id == assistantID }),
@@ -240,6 +317,10 @@ import BookshelfCore
             }
             if !(messages[index].attachments ?? []).contains(where: { $0.id == attachment.id }) {
                 messages[index].attachments = (messages[index].attachments ?? []) + [attachment]
+                let count = messages[index].attachments?.filter { $0.kind == "image" }.count ?? 1
+                updateSteps { steps in
+                    if let i = steps.lastIndex(where: { $0.kind == "image" && $0.state == "running" }) { steps[i].result = "그림 \(count)장 만듦" }
+                }
                 hasUnsavedChanges = true; _ = persist()
             }
         case "usage":
@@ -271,5 +352,99 @@ import BookshelfCore
             if event.openAutomatically == true { NSWorkspace.shared.open(url) }
         default: break
         }
+    }
+}
+
+/// Why the composer cannot send yet. An empty draft is not a reason: the empty field already shows it.
+enum PiComposerBlock: Equatable {
+    case nodeMissing, bridgeMissing
+    case checkingAccount(ChatBackend), signingIn(ChatBackend)
+    case accountDisconnected(ChatBackend), accountUnknown(ChatBackend)
+    case documentLoading, choosingRange, editingQuestion, tooLong
+
+    static func evaluate(nodeFound: Bool, bridgeFound: Bool, backend: ChatBackend, connected: Bool?, checking: Bool,
+                         operation: String, documentReady: Bool, choosingRange: Bool, editing: Bool, draft: String) -> PiComposerBlock? {
+        if !bridgeFound { return .bridgeMissing }
+        if !nodeFound { return .nodeMissing }
+        if connected != true {
+            if operation == "login" { return .signingIn(backend) }
+            if checking { return .checkingAccount(backend) }
+            return connected == false ? .accountDisconnected(backend) : .accountUnknown(backend)
+        }
+        if !documentReady { return .documentLoading }
+        if choosingRange { return .choosingRange }
+        if editing { return .editingQuestion }
+        if draft.utf16.count > 10000 { return .tooLong }
+        return nil
+    }
+    /// Runtime and account problems replace the suggestions with a card that opens the Pi settings.
+    var needsConnection: Bool {
+        switch self {
+        case .nodeMissing, .bridgeMissing, .accountDisconnected, .accountUnknown: return true
+        default: return false
+        }
+    }
+    var message: String {
+        switch self {
+        case .nodeMissing: return "Pi를 실행하려면 Node.js 22.19 이상이 필요합니다."
+        case .bridgeMissing: return "이 앱에는 Pi 실행 모듈이 없습니다."
+        case .checkingAccount(let backend): return "\(backend.title) 연결을 확인하고 있습니다."
+        case .signingIn(let backend): return "\(backend.title) 로그인을 마치면 질문할 수 있습니다."
+        case .accountDisconnected(let backend): return "\(backend.title) 계정이 연결되지 않았습니다."
+        case .accountUnknown(let backend): return "\(backend.title) 연결 상태를 확인하지 못했습니다."
+        case .documentLoading: return "PDF를 불러오고 있습니다."
+        case .choosingRange: return "페이지 범위를 고르는 중입니다."
+        case .editingQuestion: return "수정 중인 질문을 먼저 마쳐 주세요."
+        case .tooLong: return "질문은 10000자 이내로 입력해 주세요."
+        }
+    }
+}
+
+extension BookReadingScope {
+    /// Composer label: the scope and the reader's page together, matching the scope menu's item names.
+    func composerLabel(currentPage: Int) -> String {
+        if mode == "book" { return "이 책 전체, \(currentPage)쪽에서" }
+        if mode == "page" { return "현재 쪽(\(startPage)쪽)" }
+        return "\(startPage)~\(endPage)쪽"
+    }
+}
+
+/// Turns the bridge's activity sentences (`bookToolActivity` in book-tools.ts, image generation in
+/// codex.ts) and coverage reports into transcript step lines. Unknown sentences stay readable as is.
+enum PiStepWording {
+    static func step(for activity: String) -> ChatStep {
+        if activity.hasPrefix("책에서 관련 내용을 찾") { return ChatStep(kind: "search", title: "책 검색") }
+        if activity.hasPrefix("읽은 범위를 확인") { return ChatStep(kind: "coverage", title: "읽은 범위 확인") }
+        if activity.hasPrefix("책의 목차를 확인") { return ChatStep(kind: "outline", title: "목차 확인") }
+        if activity.hasPrefix("이미지를 만들") { return ChatStep(kind: "image", title: "그림 만들기") }
+        if let range = activity.range(of: "쪽을 읽고 있습니다") {
+            let pages = String(activity[..<range.lowerBound])
+            if !pages.isEmpty, pages.allSatisfy({ $0.isNumber || $0 == "~" }) { return ChatStep(kind: "read", title: "책 읽기", detail: pages + "쪽") }
+        }
+        return ChatStep(kind: "other", title: activity.trimmingCharacters(in: CharacterSet(charactersIn: ". ")))
+    }
+    /// Child line from the reply's coverage after this tool call. Empty means nothing to report.
+    /// Coverage is cumulative, so a page read counts the pages the call asked for and other tools count what they added.
+    static func result(for step: ChatStep, before: BookReadingCoverage?, after: BookReadingCoverage) -> String {
+        let asked = step.kind == "read" ? pages(in: step.detail) : nil
+        func count(_ path: KeyPath<BookReadingCoverage, [Int]>) -> Int {
+            let pages = Set(after[keyPath: path])
+            return asked.map { pages.intersection($0).count } ?? pages.subtracting(before?[keyPath: path] ?? []).count
+        }
+        let read = count(\.readPages), seen = count(\.sourcePages), empty = count(\.emptyPages)
+        switch step.kind {
+        case "read":
+            let blank = empty > 0 ? ", 글자 없는 쪽 \(empty)" : ""
+            return (read > 0 ? "\(read)쪽 읽음" : seen > 0 ? "\(seen)쪽 일부 읽음" : "읽은 쪽 없음") + blank
+        case "search": return seen > 0 ? "관련 쪽 \(seen)곳 찾음" : "새로 찾은 쪽 없음"
+        case "coverage": return "본문 \(after.readPages.count)/\(after.scope.pageCount)쪽 확인"
+        default: return ""
+        }
+    }
+    /// Pages named in a read step's detail, "27~29쪽" or "5쪽".
+    private static func pages(in detail: String?) -> ClosedRange<Int>? {
+        guard let bounds = detail?.replacingOccurrences(of: "쪽", with: "").split(separator: "~").map({ Int($0) }),
+              let first = bounds.first ?? nil, let last = bounds.last ?? nil, bounds.count <= 2, first <= last else { return nil }
+        return first...last
     }
 }

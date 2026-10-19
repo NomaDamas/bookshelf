@@ -41,7 +41,7 @@ that its Git tag or GitHub Release has been published.
   same library. The keyboard shortcut window is reached from the 도움말 menu only.
 - The 책 menu also has **책장에서 보기**, **Finder에서 보기** and **AI로 이어가기**, so every
   command in the title menu is in the menu bar too.
-- Settings use the standard Settings tabs (일반, AI 연결, 단축키) with the tab name as the window
+- Settings use the standard Settings tabs (일반, Pi, 단축키) with the tab name as the window
   title; the extra "서재 설정" header and version line are gone (the version is in About).
 - The library toolbar no longer shows the Pi panel button, which only applies to an open book,
   and the sidebar footer with a second add-folder button is gone; adding uses the toolbar `+`
@@ -49,6 +49,23 @@ that its Git tag or GitHub Release has been published.
 - Icons have one meaning each: in-book page jumps use a page-number chip instead of an
   outward arrow, and the undo arrow is no longer used for reading-status changes,
   "펼친 책으로" or "원본 PDF 사용".
+- The AI panel is named **Pi** in its header, in **Settings > Pi** (formerly AI 연결) and in
+  its notices. The header keeps only the title, the current page and a ⋯ menu for undo, copying or clearing
+  the conversation, context usage, the learning instructions and connection settings.
+- The question composer has two rows: scope, notes and explanation choices above the field;
+  자료 열기, the executor/model menu and send below it. The scope label includes the reader's
+  page, and all three menus mark the current choice the same way. A line under the field says
+  why sending is off.
+- When Node.js is missing or the selected account is not connected, the panel shows a notice
+  with **연결하기** that opens the Pi settings. Signing in stays in Settings.
+- The conversation reads as a transcript instead of chat bubbles: a `❯` question line, the
+  agent's tool steps with their results (`● 책 읽기 (27~29쪽)` / `└ 3쪽 읽음`), the answer
+  as plain text and a summary line such as `✻ 12초 동안 작업, 오후 9:41 완료, Claude / Sonnet`.
+  While a reply runs, steps show a spinner and the summary line counts the seconds. Steps
+  and the finish time are saved with the reply; earlier conversations still open.
+- Replies show source page chips; copy, regenerate and save-to-notes sit on the summary line
+  with tooltips. Questions are edited in place, removal from a message onward moves to its
+  context menu with a confirmation, and three starting prompts fill the question field.
 
 ### Added
 
@@ -61,6 +78,12 @@ that its Git tag or GitHub Release has been published.
   same way under a Korean input source.
 - Option-Up/Down page commands step aside while you type, so the keys still move the cursor
   in notes, search and the Pi composer.
+
+### Fixed
+
+- Opening a book no longer disables the Pi panel while the account status is checked.
+- Connecting an account in **Settings > Pi** no longer switches the conversation to that engine.
+- Pi panel errors can be dismissed.
 
 ### Removed
 

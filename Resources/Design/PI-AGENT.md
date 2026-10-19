@@ -1,6 +1,6 @@
 # Pi learning chat
 
-Bookside includes a native chat panel. It uses Pi agent core for conversation state and streaming, with adapters that invoke unmodified official executables. The same panel can bypass Pi to compare the extra layer. The default is Pi enabled. Each message records the selected harness and learning profile; Pi replies are labeled accordingly.
+Bookside includes a native chat panel. It uses Pi agent core for conversation state and streaming, with adapters that invoke unmodified official executables. The same panel can bypass Pi to compare the extra layer. The default is Pi enabled. Each message records the selected harness and learning profile. A reply's summary line names the executor and model (for example `Claude / Sonnet`); its tooltip says whether Pi handled the request.
 
 ## Scope
 
@@ -27,13 +27,65 @@ when the left sidebar is hidden.
 
 The layout follows the Preview document/sidebar structure. Surfaces, composer density and
 motion easing reuse the existing Aside source study; see [design](DESIGN.md). Settings are
-split into General, AI connections and Shortcuts. The AI section owns Pi, official account
-login/status and model selection. The shortcut recorder rejects duplicates and keys that
-macOS or fixed menus use, saves choices to the local database, and can clear a shortcut or
-restore one or all defaults.
+split into General, Pi and Shortcuts. The Pi tab owns official account login/status, model
+selection and the advanced switch that sends requests to the executor without Pi. Signing
+in to an executor there does not change the engine the current conversation uses. The
+shortcut recorder rejects duplicates and keys that macOS or fixed menus use, saves choices
+to the local database, and can clear a shortcut or restore one or all defaults.
 
-The context indicator shows the latest request's input plus output tokens, not a lifetime
-total or a guessed remaining balance. Claude input includes cache reads and cache creation;
+The panel is called Pi in its header, settings and notices. Frequent controls stay visible;
+occasional ones move to the header's ⋯ menu:
+
+- Header: one line with the bold title and the current page in secondary text (the window
+  toolbar already shows the book title),
+  and a ⋯ menu with undo, copy conversation, clear conversation (confirmed), context usage,
+  learning instructions and connection settings.
+- Composer: a top row with the question scope, notes and explanation menus, the field, and a
+  bottom row with 자료 열기, the executor/model menu and send/stop. The three menus mark the
+  current choice with the native checkmark, and their labels match the item names. The scope
+  label carries the reader's page (`이 책 전체, 27쪽에서`, `현재 쪽(27쪽)`, `27~40쪽`).
+- When sending is unavailable, one line under the field gives the reason: Node.js missing,
+  account not connected or still being checked, sign-in in progress, PDF loading, a page range
+  being chosen, a question being edited, or a question over 10000 characters.
+- A missing runtime or disconnected account shows a notice line with **연결하기**, which opens
+  **Settings > Pi**. Account status checks run separately from replies and sign-in, so opening
+  a book never disables the panel. Errors can be dismissed.
+- Questions show the page they were asked from; editing happens in place. "여기부터 지우기"
+  is in the message's context menu, asks for confirmation and can be restored with undo.
+- Replies end with source page chips. Copy, regenerate (latest reply only) and save-to-notes
+  icons sit on the turn's summary line, each with a tooltip.
+- The empty conversation and the latest completed reply offer three fixed prompts (explain this
+  page, summarize this chapter, quiz me). Choosing one fills the field; nothing is sent until
+  the reader sends it.
+
+### Transcript
+
+The conversation reads as a transcript rather than chat bubbles. Turns are separated by space
+and type weight, without borders or backgrounds. Answers stay in the proportional reading font.
+
+- A question is one line marked with `❯` in medium weight. The answer is plain body text under
+  it, aligned to the same text column; status marks sit in a narrow column to the left.
+- Tool steps appear between the question and the answer, one line each, with the bold step
+  name, its arguments in secondary text and a child result line:
+  `● 책 읽기 (27~29쪽)` / `└ 3쪽 읽음`. Steps come from the bridge's existing events: the
+  `activity` sentences from `bookToolActivity` and Codex image generation open a step, an
+  empty `activity` closes the oldest open one, and `reading` coverage or a generated image
+  fills its result. The step names are 책 검색, 책 읽기, 읽은 범위 확인, 목차 확인 and
+  그림 만들기; an unknown sentence is shown as sent. A page read reports the pages the call
+  asked for, so reading a page again still counts.
+- Status marks: a spinner while a step runs, an orange ring when the reader has to act (a
+  failed step or turn, sign-in in the browser, a connection notice), a green dot when done
+  and a gray dot when interrupted.
+- Each finished turn ends with a muted summary line, for example
+  `✻ 12초 동안 작업, 오후 9:41 완료, Claude / Sonnet`, or `완료하지 못함` / `중단됨`. While the
+  reply runs it reads `✻ 생각하는 중, 8초`, then `답변 쓰는 중` once text arrives, ticking
+  once a second.
+- Steps and the finish time are saved with the reply (`steps`, `finished`). Both are optional,
+  so conversations saved earlier still open; their summary line shows only the state and the
+  executor/model.
+
+The Pi menu's context usage item shows the latest request's input plus output tokens, not a
+lifetime total or a guessed remaining balance; choosing it opens the token breakdown. Claude input includes cache reads and cache creation;
 Codex uses the `last` token breakdown. Missing usage/window metadata is shown as unavailable.
 Older conversations remain readable without these optional fields.
 
@@ -42,7 +94,7 @@ sanitized. HTML runs in an opaque iframe with inline scripts/styles, data images
 network, forms, file access, popups or top-level navigation. Native bridge messages from
 child frames are rejected. The large preview supports zoom and source viewing.
 
-The attachment button imports user-selected media into `ChatAssets/` and stores references
+The 자료 열기 button (document icon) imports user-selected media into `ChatAssets/` and stores references
 with that book. Audio supports play/pause, seeking and playback speed through AVFoundation.
 External HTTPS media requires an explicit load action. The native viewer never opens
 paths supplied in answer text. Imported files are display material and are not sent to the model.
@@ -84,7 +136,7 @@ remain visible. Complete summaries must follow page continuations and check cove
 
 ## Learning profile isolation
 
-`Sources/BookshelfAgent/instructions.ts` is the instruction source. Build output contains a generated `profile.json`, which the app's information button reads. The bridge does not discover skills, plugins or instructions from user/project directories.
+`Sources/BookshelfAgent/instructions.ts` is the instruction source. Build output contains a generated `profile.json`, which the Pi menu's 학습 지침 보기 item shows. The bridge does not discover skills, plugins or instructions from user/project directories.
 
 - Claude account status/login and legacy tool-free requests use `--safe-mode`. Book-reading requests use `--restricted`, empty `--setting-sources`, explicit `disableAllHooks`, `--disable-slash-commands`, `--tools ""`, `--strict-mcp-config` and one explicit `--mcp-config` server. Only its four read-only tools are allowed. `CLAUDE_CODE_DISABLE_CLAUDE_MDS`, `CLAUDE_CODE_DISABLE_AUTO_MEMORY` and `CLAUDE_CODE_DISABLE_ATTACHMENTS` prevent ambient memory/instruction files and `@` file expansion. `--bare` is excluded because it disables subscription/keychain authentication. Initialization rejects unexpected tools, MCP servers, custom plugins or skills; built-in vendor plugins/policies remain.
 - Codex rejects unknown configuration keys with `--strict-config` and uses a dedicated `CODEX_HOME` under Bookside's data directory and a dedicated working directory. It overrides the base instructions, disables automatic skill instructions and bundled skills, sets `project_doc_max_bytes=0`, disables shell/plugins/apps/multi-agent/view-image/skill-search/tool-suggest/sleep/web-search features and uses read-only sandboxing with no approval escalation. The official image-generation feature is enabled for new images from descriptions. The app accepts image-generation events and rejects other unexpected tool-execution items and client-side tool or credential requests. Some fixed Codex runtime behavior and vendor-managed policies remain; this is not a claim that every internal tool or policy is replaced.
@@ -125,8 +177,8 @@ Every build bundles the bridge, including the release DMGs and the Homebrew cask
 
 Conversations live in the library database's conversations table, and executor state lives under the library directory's `Agent/` folder. Through 0.2.0 the chat shipped as a separate `Bookside Pi.app` (`org.nomadamas.bookside.pi`) that shared the same library, so its conversations and Codex sign-in appear in Bookside. `install-local.command` reports a remaining preview app; quit it and move it to the Trash.
 
-Open **Settings > AI 연결**, enable Pi and use the official connection buttons. Choose
-the executor/model there or in the chat composer. Claude uses the official `sonnet`, `opus`
+Open **Settings > Pi** and use the official connection buttons. Pi is on unless the advanced
+direct-request switch is turned on. Choose the executor/model there or in the composer. Claude uses the official `sonnet`, `opus`
 and `haiku` aliases; Codex lists models returned by the signed-in official App Server.
 Automatic selection follows the executor default. Claude can use an existing official CLI
 subscription login. Codex deliberately uses a separate app-owned configuration directory,
@@ -142,6 +194,7 @@ The bridge is bundled, but the executors and Node runtime are not redistributed.
 - Earlier tool-free Claude Max requests returned Korean and English explanations. The current reading profile exposed exactly four scoped bookside tools, one bookside MCP server and no skills. Live Claude requests retrieved a distant warranty passage, refused to infer its value after narrowing the scope to pages 1–3, and read all six fixture pages before summarizing both chapters.
 - On 2026-10-19, a fresh official Codex App Server process confirmed the app-owned ChatGPT subscription login. A native Pi/Codex request returned a 1312 by 1199 PNG plus a source-grounded explanation. The app displayed it, enlarged it, copied it, exported identical PNG bytes, and restored it after clear/undo and relaunch. The same book then continued through Claude Sonnet without losing the generated image. No credentials were copied.
 - Native checks with authored PDFs verified library return, all four book tools, search, clear/undo, custom shortcuts, account controls, selected Sonnet inference, question edit/regeneration/undo, interactive HTML and M4A playback. Media, model choice and shortcuts survived relaunch. Automatic mode selected both a Markdown table and Mermaid for a comparison/process question without either format being explicitly requested. [Account acceptance](https://github.com/NomaDamas/bookside/issues/8) and [automatic/image evidence](evidence/automatic-learning-checks.json) record the boundaries.
+- On 2026-10-20 the Pi panel layout passed 68 Swift tests, including status checks that leave the panel enabled, Settings sign-in that keeps the conversation engine, composer block reasons, scope labels and conversation copy. A native debug build with an isolated library and a seeded synthetic conversation showed the empty, conversation, inline-edit, minimum-width (320 pt), disconnected-Codex and Settings > Pi states; menus were checked through their accessibility items. No model request or sign-in was made.
 - Native screenshots use authored synthetic PDF pages. Private source books, notes, account tokens and raw authentication URLs must not be committed as evidence.
 - On 2026-10-20, the original five-tool MCP protocol and the four-tool scoped protocol passed after the real synthetic OCR prerequisite. A real Codex App Server listed all four reading tools after the compatibility fix. Codex inference then returned the account usage limit, so live book-retrieval answers through Codex remain unverified in [issue #15](https://github.com/NomaDamas/bookside/issues/15); no alternate billing route was used. See [book-scope evidence](evidence/book-reading-checks.json).
 

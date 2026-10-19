@@ -67,7 +67,7 @@ private struct RemoteChatMedia: View {
                     Text(url.host ?? "").font(.system(size: 10)).foregroundStyle(.secondary)
                 }
             } else {
-                Label(title.isEmpty ? "로컬 자료" : title, systemImage: "paperclip").font(.system(size: 12))
+                Label(title.isEmpty ? "로컬 자료" : title, systemImage: "doc").font(.system(size: 12))
                 Text("자료 열기 버튼으로 파일을 선택하면 이 대화에서 볼 수 있습니다.").font(.system(size: 11)).foregroundStyle(.secondary)
             }
         }.frame(maxWidth: .infinity, alignment: .leading)
