@@ -112,7 +112,7 @@ for toolchain selection, updates, and an isolated sample library.
 
 ## Learning chat
 
-Bookside has a dedicated AI panel beside a Preview-style reading
+Bookside has a dedicated AI panel, **Pi**, beside a Preview-style reading
 workspace. Page thumbnails, notes, excerpts and search live on the left. Pi manages the
 conversation through official Claude Code/Codex executors, with model selection and
 English learning instructions. Questions can search and read the selected book, using the
@@ -121,10 +121,15 @@ Replies show verified source-page links and how much of the permitted range was 
 The default automatic mode chooses text, tables or visual explanations for the question.
 Codex can also generate images through its official image tool and keep them in the chat.
 
-The panel renders Mermaid, SVG and isolated HTML, displays reported context usage, and
-plays user-selected audio/media. Questions can be edited and retried; conversation edits
-and clearing can be undone. **Settings > AI 연결** manages accounts and Pi;
-**Settings > 단축키** changes app shortcuts. Replies stay with each book.
+The conversation reads as a transcript: each question, the pages the agent searched and
+read, the answer, and how long the reply took with which executor and model.
+The panel renders Mermaid, SVG and isolated HTML and plays user-selected audio/media. Its
+header keeps only the title, the current page and a ⋯ menu for undo, copying or clearing the conversation,
+context usage, the learning instructions and connection settings. Questions can be edited in
+place and retried; conversation edits and clearing can be undone. If Node.js or an account
+connection is missing, the panel says so and links to **Settings > Pi**, which manages
+accounts, models and the direct-request option. **Settings > 단축키** changes app shortcuts.
+Replies stay with each book.
 
 The chat needs Node.js 22.19 or later and the official Claude Code or Codex executable.
 The rest of the app works without them, and the panel says what is missing.

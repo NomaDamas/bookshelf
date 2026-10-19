@@ -7,7 +7,7 @@
 The library sidebar lists PDFs by title/category. After opening a book, it becomes
 a book-specific sidebar with **페이지** (page thumbnails), **메모** (notebook),
 **발췌** (quotations), and **검색** (search). The original PDF or extracted text stays
-in the center. The learning chat places its AI conversation on the right.
+in the center. The learning chat's **Pi** panel sits on the right.
 The **서재** toolbar button returns to the library even when the left sidebar is hidden.
 
 ![Native PDF reader with sample notes](../Resources/Design/evidence/readme-reader-light.jpg)
@@ -151,14 +151,22 @@ result to jump to its PDF page.
 
 ## Appearance and AI handoff
 
-Settings open from **Bookside > 설정…** (`Command-,`) in one window with 일반, AI 연결 and 단축키 tabs, which also opens
+Settings open from **Bookside > 설정…** (`Command-,`) in one window with 일반, Pi and 단축키 tabs, which also opens
 when a panel needs a setting, such as Pi's sign-in. Settings offer system, light, and dark appearance. Native materials surround opaque
 reading/writing surfaces. Reduced transparency, increased contrast, and reduced
 motion have fallback paths; see [design and verification](../Resources/Design/DESIGN.md).
 
-The AI panel beside the page runs the [learning chat](../Resources/Design/PI-AGENT.md).
-Its settings contain Pi/account/model choices, and its conversation supports
-visual previews, audio playback, question editing, retry and reversible clearing.
+The **Pi** panel beside the page runs the [learning chat](../Resources/Design/PI-AGENT.md).
+Its header holds only the title, the current page and a ⋯ menu (the book title is in the toolbar): undo, copy the conversation, clear it
+(with confirmation), context usage, the learning instructions and connection settings.
+Account sign-in, model choice and the advanced direct-request switch live in
+**Settings > Pi**. When Node.js is missing or the selected account is not connected, the
+panel shows a notice whose **연결하기** button opens that tab, and a line under the question
+field says why sending is off. The conversation reads as a transcript: each question line,
+the pages the agent searched and read (for example **책 읽기 (27~29쪽)** with **3쪽 읽음**),
+the answer, and a line with the time taken and the executor/model. It supports visual
+previews, audio playback, in-place question editing, retry and reversible removal. Starting prompts such as
+**이 페이지 쉽게 설명해줘** fill the question field; nothing is sent until you send it.
 The default **자동** mode chooses prose, tables or visual explanations for the question.
 You can still select a specific explanation format. Codex can generate images through its
 official image tool; generated images stay with the conversation and can be enlarged,
@@ -168,7 +176,8 @@ follow [CLI and MCP setup](03-cli-and-mcp.md).
 
 The default question scope is **이 책 전체** (this book). The current page identifies what
 you are looking at; the agent can search the book and read other relevant pages. Use the
-**질문 범위** menu to choose **현재 페이지** or **페이지 범위 지정…**. A selected range
+**질문 범위** menu to choose **현재 쪽** or **페이지 범위…**. The menu label shows the scope
+with the reader's page, for example **이 책 전체, 27쪽에서** or **현재 쪽(27쪽)**. A selected range
 uses 1-based PDF indices and is enforced by the read-only server. Switching books resets
 the selection to the whole new book. Retrying or editing a question keeps its original range.
 Conversations created before range metadata existed keep their original single PDF page

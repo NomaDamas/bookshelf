@@ -10,7 +10,7 @@ struct SettingsView: View {
     var body: some View {
         TabView(selection: $model.settingsTab) {
             page { general }.tabItem { Label("일반", systemImage: "gearshape") }.tag("general")
-            page { ai }.tabItem { Label("AI 연결", systemImage: "bubble.left.and.bubble.right") }.tag("ai")
+            page { ai }.tabItem { Label("Pi", systemImage: "bubble.left.and.bubble.right") }.tag("ai")
             page { shortcuts }.tabItem { Label("단축키", systemImage: "keyboard") }.tag("shortcuts")
         }.frame(width: 560, height: 600)
             .tint(ReaderStyle.accent)
@@ -68,7 +68,7 @@ struct SettingsView: View {
 
     @ViewBuilder private var ai: some View {
         if AgentRuntime.bridgeURL != nil {
-            settingsSection("Pi와 모델 연결", symbol: "bubble.left.and.bubble.right") { AgentConnectionSettingsView(chat: model.chat) }
+            settingsSection("Pi 연결", symbol: "bubble.left.and.bubble.right") { AgentConnectionSettingsView(chat: model.chat) }
         }
         settingsSection("외부 CLI / MCP", symbol: "link") {
             VStack(alignment: .leading, spacing: 14) {

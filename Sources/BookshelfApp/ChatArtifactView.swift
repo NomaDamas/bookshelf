@@ -23,7 +23,7 @@ struct ChatArtifactView: View {
                 Spacer()
                 Button(showSource ? "미리보기" : "코드") { showSource.toggle() }.buttonStyle(.borderless)
                 Button { expanded = true } label: { Image(systemName: "arrow.up.left.and.arrow.down.right") }
-                    .buttonStyle(.borderless).accessibilityLabel("시각 자료 크게 보기")
+                    .buttonStyle(.borderless).accessibilityLabel("시각 자료 크게 보기").help("시각 자료 크게 보기")
             }.font(.system(size: 11)).foregroundStyle(.secondary).padding(10)
             ReaderHairline()
             if showSource {
