@@ -73,10 +73,11 @@ The complete conversation is stored by Bookshelf. Each request includes at most 
 The app starts a private `reading-mcp` instance with a fixed book ID, library directory and
 page range. Four tools provide the outline, keyword search, paginated page reading and
 coverage. Neither the model nor tool arguments can change the book or filesystem path.
+Claude uses a per-tool output ceiling of 64,000 tokens so bounded CJK page chunks keep
+their complete JSON envelope. The server still limits reads to 24,000 characters per call.
 The whole-book scope is the default; narrower scopes exclude current-page text/selection
 outside the boundary and omit prior conversations with a different scope. Optional notes
-remain user reference material. Metadata from matching tool results creates source links;
-assistant text cannot invent a clickable source. Concurrent tool results merge coverage
+remain user reference material. Local PDF-page links only target pages confirmed by the app or matching tool results. Concurrent tool results merge coverage
 monotonically. Search excerpts do not count as full page reads, and unread/empty pages
 remain visible. Complete summaries must follow page continuations and check coverage.
 
@@ -135,7 +136,7 @@ The bridge is bundled, but the executors and Node runtime are not redistributed.
 
 ## Verification
 
-- All 59 Swift tests passed on macOS 26.6.2 / Apple Silicon with Swift 6.4. They cover persistence/undo conflicts, preserved unsent drafts, shortcuts, asset boundaries, generated-image validation/reopen/undo, bounded book retrieval, page continuations, source links, coverage persistence, MCP initialization, Markdown fences, renderer URLs, small pipe frames and stale replies on book switches.
+- All 60 Swift tests passed on macOS 26.6.2 / Apple Silicon with Swift 6.4. They cover persistence/undo conflicts, preserved unsent drafts, shortcuts, asset boundaries, generated-image validation/reopen/undo, bounded book retrieval, page continuations, source links, coverage persistence, MCP initialization, Markdown fences, renderer URLs, small pipe frames and stale replies on book switches.
 - All 20 Bun tests and the TypeScript check passed with Node 26.8.1 and Bun 1.4.0. They cover English instructions, automatic defaults, isolated executor profiles, explicit model forwarding, Pi/direct streaming, reading progress/source events, latest-response usage, image-only replies, large image events, duplicate images, failure/cancellation and billing guards. Linux CI verifies these credential-free paths and bundled notices.
 - Earlier tool-free Claude Max requests returned Korean and English explanations. The current reading profile exposed exactly four scoped bookshelf tools, one bookshelf MCP server and no skills. Live Claude requests retrieved a distant warranty passage, refused to infer its value after narrowing the scope to pages 1–3, and read all six fixture pages before summarizing both chapters.
 - On 2026-10-19, a fresh official Codex App Server process confirmed the app-owned ChatGPT subscription login. A native Pi/Codex request returned a 1312 by 1199 PNG plus a source-grounded explanation. The app displayed it, enlarged it, copied it, exported identical PNG bytes, and restored it after clear/undo and relaunch. The same book then continued through Claude Sonnet without losing the generated image. No credentials were copied.

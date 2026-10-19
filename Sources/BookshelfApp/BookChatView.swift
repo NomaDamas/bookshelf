@@ -339,6 +339,6 @@ struct ChatMarkdownText: View {
         }
     }
     private func inline(_ text: String) -> AttributedString {
-        (try? AttributedString(markdown: ChatCitations.linkedMarkdown(text, pages: sourcePages), options: .init(interpretedSyntax: .inlineOnlyPreservingWhitespace))) ?? AttributedString(text)
+        (try? AttributedString(markdown: ChatCitations.linkedMarkdown(ChatContent.markdownProse(text), pages: sourcePages), options: .init(interpretedSyntax: .inlineOnlyPreservingWhitespace))) ?? AttributedString(text)
     }
 }

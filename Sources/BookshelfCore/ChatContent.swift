@@ -10,6 +10,19 @@ public struct ChatContentBlock: Identifiable, Equatable, Sendable {
 
 /// Preserve fenced content before inline Markdown processing can discard its boundaries.
 public enum ChatContent {
+    /// Foundation Markdown treats paired single tildes as strikethrough, including
+    /// Korean page ranges spanning paragraphs. Keep numeric ranges literal.
+    public static func markdownProse(_ text: String) -> String {
+        guard let regex = try? NSRegularExpression(pattern: #"(?<=[0-9])([ \t]*)~([ \t]*)(?=[0-9])"#) else { return text }
+        let original = text as NSString, result = NSMutableString(string: text)
+        let code = try? NSRegularExpression(pattern: #"(`+)[\s\S]*?\1"#)
+        let codeRanges = code?.matches(in: text, range: NSRange(location: 0, length: original.length)).map(\.range) ?? []
+        for match in regex.matches(in: text, range: NSRange(location: 0, length: original.length)).reversed() {
+            if codeRanges.contains(where: { NSIntersectionRange($0, match.range).length > 0 }) { continue }
+            result.replaceCharacters(in: match.range, with: original.substring(with: match.range).replacingOccurrences(of: "~", with: "\\~"))
+        }
+        return result as String
+    }
     public static func blocks(_ text: String) -> [ChatContentBlock] {
         let lines = text.components(separatedBy: .newlines)
         var result: [ChatContentBlock] = [], paragraph: [String] = [], index = 0

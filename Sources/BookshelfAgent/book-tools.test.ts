@@ -151,7 +151,7 @@ for (const backend of ["claude", "codex"] as const) {
 				backend === "claude"
 					? `
 if(process.argv.includes('status')){console.log(JSON.stringify({loggedIn:true,authMethod:'claude.ai',apiProvider:'firstParty'}));process.exit(0);}
-if(process.env.CLAUDE_CODE_DISABLE_CLAUDE_MDS!=='1'||process.env.CLAUDE_CODE_DISABLE_ATTACHMENTS!=='1')process.exit(2);
+if(process.env.CLAUDE_CODE_DISABLE_CLAUDE_MDS!=='1'||process.env.CLAUDE_CODE_DISABLE_ATTACHMENTS!=='1'||process.env.MAX_MCP_OUTPUT_TOKENS!=='64000')process.exit(2);
 process.stdin.resume();process.stdin.on('end',()=>{
 const emit=x=>console.log(JSON.stringify(x));
 emit({type:'system',subtype:'init',tools:${JSON.stringify(claudeBookTools)},mcp_servers:[{name:'bookshelf',status:'connected'}],skills:[]});

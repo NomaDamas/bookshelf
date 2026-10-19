@@ -2,6 +2,16 @@ import XCTest
 @testable import BookshelfCore
 
 final class ChatContentTests: XCTestCase {
+    func testNumericPageRangesDoNotStrikeOutTheAnswer() throws {
+        let text = "범위 1~3쪽입니다.\n\n다음은 4 ~ 6쪽입니다."
+        let rendered = try AttributedString(markdown: ChatContent.markdownProse(text), options: .init(interpretedSyntax: .inlineOnlyPreservingWhitespace))
+        XCTAssertEqual(String(rendered.characters), text)
+        XCTAssertFalse(rendered.runs.contains { $0.inlinePresentationIntent?.contains(.strikethrough) == true })
+        let intentional = try AttributedString(markdown: ChatContent.markdownProse("~~삭제할 문장~~"))
+        XCTAssertTrue(intentional.runs.contains { $0.inlinePresentationIntent?.contains(.strikethrough) == true })
+        let code = try AttributedString(markdown: ChatContent.markdownProse("`1~3` and ``4 ~ 6``"))
+        XCTAssertEqual(String(code.characters), "1~3 and 4 ~ 6")
+    }
     func testVisualFencesPreserveLinesAndTablesStayOutsideCode() {
         let text = """
         핵심 관계입니다.

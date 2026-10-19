@@ -116,6 +116,8 @@ export async function claudeChat(
 				CLAUDE_CODE_DISABLE_CLAUDE_MDS: "1",
 				CLAUDE_CODE_DISABLE_AUTO_MEMORY: "1",
 				CLAUDE_CODE_DISABLE_ATTACHMENTS: "1",
+				// Preserve bounded CJK page chunks instead of the CLI truncating their JSON.
+				...(request.reading ? { MAX_MCP_OUTPUT_TOKENS: "64000" } : {}),
 			},
 		);
 		let text = "",
