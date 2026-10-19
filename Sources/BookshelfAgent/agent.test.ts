@@ -80,7 +80,7 @@ test("Book text is delimited as reference data and shared history survives provi
 });
 
 test("Pi and direct paths both stream through the same official-executor adapter", async () => {
-	const root = await mkdtemp(join(tmpdir(), "bookshelf-agent-test-"));
+	const root = await mkdtemp(join(tmpdir(), "bookside-agent-test-"));
 	try {
 		const cli = join(root, "claude-fixture");
 		await writeFile(
@@ -134,7 +134,7 @@ console.log(JSON.stringify({type:'result',subtype:'success',is_error:false,resul
 });
 
 test("Unexpected executor tools stop the run before accepting an answer", async () => {
-	const root = await mkdtemp(join(tmpdir(), "bookshelf-isolation-test-"));
+	const root = await mkdtemp(join(tmpdir(), "bookside-isolation-test-"));
 	try {
 		const cli = join(root, "claude-fixture");
 		await writeFile(
@@ -164,7 +164,7 @@ process.stdin.resume();process.stdin.on('end',()=>{console.log(JSON.stringify({t
 });
 
 test("Codex adapter uses isolated official auth and preserves cross-engine conversation", async () => {
-	const root = await mkdtemp(join(tmpdir(), "bookshelf-codex-test-"));
+	const root = await mkdtemp(join(tmpdir(), "bookside-codex-test-"));
 	try {
 		const cli = join(root, "codex-fixture");
 		await writeFile(
@@ -264,7 +264,7 @@ test("Context meters use the last request and never invent an unavailable model 
 });
 
 test("API authentication does not silently fall back from subscription mode", async () => {
-	const root = await mkdtemp(join(tmpdir(), "bookshelf-billing-test-"));
+	const root = await mkdtemp(join(tmpdir(), "bookside-billing-test-"));
 	try {
 		const cli = join(root, "claude-fixture");
 		await writeFile(
@@ -294,7 +294,7 @@ throw new Error('Inference must not start');`,
 });
 
 test("Cancelling Pi stops a running executor and never saves a complete reply", async () => {
-	const root = await mkdtemp(join(tmpdir(), "bookshelf-cancel-test-"));
+	const root = await mkdtemp(join(tmpdir(), "bookside-cancel-test-"));
 	try {
 		const cli = join(root, "claude-fixture");
 		await writeFile(

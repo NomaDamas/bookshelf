@@ -158,7 +158,7 @@ export async function handle(input: unknown, signal: AbortSignal, emit: Emit) {
 	const model: Model<any> = {
 		id: request.model ?? request.backend,
 		name: request.model ?? request.backend,
-		api: "bookshelf-official-runtime",
+		api: "bookside-official-runtime",
 		provider: request.backend,
 		baseUrl: "",
 		reasoning: false,

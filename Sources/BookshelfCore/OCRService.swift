@@ -21,7 +21,7 @@ public final class OCRService: @unchecked Sendable {
 
     public static func executable() -> URL? {
         let env = ProcessInfo.processInfo.environment
-        if let explicit = env["BOOKSHELF_OCRMYPDF"], FileManager.default.isExecutableFile(atPath: explicit) { return URL(fileURLWithPath: explicit) }
+        if let explicit = env["BOOKSIDE_OCRMYPDF"], FileManager.default.isExecutableFile(atPath: explicit) { return URL(fileURLWithPath: explicit) }
         let directories = (env["PATH"] ?? "").split(separator: ":").map(String.init) + [NSHomeDirectory() + "/.local/bin", "/opt/homebrew/bin", "/usr/local/bin"]
         return directories.map { URL(fileURLWithPath: $0).appendingPathComponent("ocrmypdf") }.first { FileManager.default.isExecutableFile(atPath: $0.path) }
     }
@@ -55,9 +55,9 @@ public final class OCRService: @unchecked Sendable {
         }
         let handle = try FileHandle(forReadingFrom: ocrExecutable); defer { try? handle.close() }
         let header = String(decoding: try handle.read(upToCount: 4096) ?? Data(), as: UTF8.self).components(separatedBy: "\n")[0]
-        let interpreter = ProcessInfo.processInfo.environment["BOOKSHELF_OCR_PYTHON"] ?? (header.hasPrefix("#!/") ? String(header.dropFirst(2)) : "")
+        let interpreter = ProcessInfo.processInfo.environment["BOOKSIDE_OCR_PYTHON"] ?? (header.hasPrefix("#!/") ? String(header.dropFirst(2)) : "")
         guard FileManager.default.isExecutableFile(atPath: interpreter) else {
-            throw ShelfError.message("OCRmyPDF의 Python 실행 환경을 확인할 수 없습니다. BOOKSHELF_OCR_PYTHON을 지정해 주세요.")
+            throw ShelfError.message("OCRmyPDF의 Python 실행 환경을 확인할 수 없습니다. BOOKSIDE_OCR_PYTHON을 지정해 주세요.")
         }
         let helper = Process(), pipe = Pipe()
         helper.executableURL = URL(fileURLWithPath: interpreter)
@@ -98,8 +98,8 @@ public final class OCRService: @unchecked Sendable {
         let sourceDigest = try OCRQualityCheck.digest(book.url)
         try checkCancellation()
         let token = UUID().uuidString
-        let temp = output.deletingLastPathComponent().appendingPathComponent(".bookshelf-\(token).partial.pdf")
-        let prepared = output.deletingLastPathComponent().appendingPathComponent(".bookshelf-\(token).prepared.pdf")
+        let temp = output.deletingLastPathComponent().appendingPathComponent(".bookside-\(token).partial.pdf")
+        let prepared = output.deletingLastPathComponent().appendingPathComponent(".bookside-\(token).prepared.pdf")
         let logDirectory = store.directory.appendingPathComponent("Logs", isDirectory: true)
         try FileManager.default.createDirectory(at: logDirectory, withIntermediateDirectories: true, attributes: [.posixPermissions: 0o700])
         let logURL = logDirectory.appendingPathComponent("ocr-\(token).log")

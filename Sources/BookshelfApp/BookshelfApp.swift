@@ -45,7 +45,7 @@ import BookshelfCore
                 .preferredColorScheme(appearance.colorScheme)
                 .onAppear { delegate.model = model }
                 .onOpenURL { url in
-                    guard url.scheme == "bookshelf", url.host == "book", let id = url.pathComponents.last, let book = try? model.store.book(id) else { return }
+                    guard url.scheme == "bookside", url.host == "book", let id = url.pathComponents.last, let book = try? model.store.book(id) else { return }
                     model.selectBook(book)
                     if let raw = URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems?.first(where: { $0.name == "page" })?.value, let page = Int(raw) {
                         Task { for _ in 0..<100 { if model.document != nil && model.activeBook?.id == id { model.goToPage(page); return }; try? await Task.sleep(for: .milliseconds(100)) } }

@@ -53,21 +53,21 @@ export function codexArguments(request?: Request): string[] {
 		...(server
 			? [
 					"-c",
-					`mcp_servers.bookshelf.command=${JSON.stringify(server.command)}`,
+					`mcp_servers.bookside.command=${JSON.stringify(server.command)}`,
 					"-c",
-					`mcp_servers.bookshelf.args=${JSON.stringify(server.args)}`,
+					`mcp_servers.bookside.args=${JSON.stringify(server.args)}`,
 					"-c",
-					`mcp_servers.bookshelf.env.BOOKSHELF_DATA_DIR=${JSON.stringify(server.env.BOOKSHELF_DATA_DIR)}`,
+					`mcp_servers.bookside.env.BOOKSIDE_DATA_DIR=${JSON.stringify(server.env.BOOKSIDE_DATA_DIR)}`,
 					"-c",
-					`mcp_servers.bookshelf.enabled_tools=${JSON.stringify(bookToolNames)}`,
+					`mcp_servers.bookside.enabled_tools=${JSON.stringify(bookToolNames)}`,
 					"-c",
-					'mcp_servers.bookshelf.default_tools_approval_mode="auto"',
+					'mcp_servers.bookside.default_tools_approval_mode="auto"',
 					"-c",
-					"mcp_servers.bookshelf.required=true",
+					"mcp_servers.bookside.required=true",
 					"-c",
-					"mcp_servers.bookshelf.startup_timeout_sec=30",
+					"mcp_servers.bookside.startup_timeout_sec=30",
 					"-c",
-					"mcp_servers.bookshelf.tool_timeout_sec=120",
+					"mcp_servers.bookside.tool_timeout_sec=120",
 				]
 			: []),
 	];
@@ -163,8 +163,8 @@ class CodexConnection {
 	async initialize() {
 		await this.call("initialize", {
 			clientInfo: {
-				name: "bookshelf_pi_preview",
-				title: "Bookshelf Pi Preview",
+				name: "bookside_pi_preview",
+				title: "Bookside Pi Preview",
 				version: this.request.clientVersion ?? "dev",
 			},
 		});
@@ -308,7 +308,7 @@ export async function codexChat(
 			model: selected.model ?? selected.id,
 			baseInstructions: instructions,
 			developerInstructions:
-				"Use supplied text and successful bookshelf tool results as evidence. Choose the explanation format yourself unless the user specifies one. Only explicitly configured bookshelf read-only tools and official image_gen.imagegen are permitted. Use book tools when more pages are needed. Do not read arbitrary files or reference local image paths. The app displays generated images automatically.",
+				"Use supplied text and successful bookside tool results as evidence. Choose the explanation format yourself unless the user specifies one. Only explicitly configured bookside read-only tools and official image_gen.imagegen are permitted. Use book tools when more pages are needed. Do not read arbitrary files or reference local image paths. The app displays generated images automatically.",
 			cwd: request.workspace,
 			sandbox: "read-only",
 			approvalPolicy: "never",

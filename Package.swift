@@ -2,12 +2,12 @@
 import PackageDescription
 
 let package = Package(
-    name: "Bookshelf",
+    name: "Bookside",
     platforms: [.macOS(.v14)],
     products: [
         .library(name: "BookshelfCore", targets: ["BookshelfCore"]),
-        .executable(name: "Bookshelf", targets: ["BookshelfApp"]),
-        .executable(name: "bookshelf-cli", targets: ["BookshelfCLI"]),
+        .executable(name: "Bookside", targets: ["BookshelfApp"]),
+        .executable(name: "bookside-cli", targets: ["BookshelfCLI"]),
     ],
     dependencies: [.package(url: "https://github.com/modelcontextprotocol/swift-sdk.git", exact: "0.12.1")],
     targets: [

@@ -135,7 +135,7 @@ struct PDFReaderView: NSViewRepresentable {
             let previous = (Self.annotatedPages.object(forKey: document) ?? NSIndexSet()) as IndexSet
             for i in previous {
                 guard let page = document.page(at: i) else { continue }
-                for annotation in page.annotations where annotation.userName == "Bookshelf" { page.removeAnnotation(annotation) }
+                for annotation in page.annotations where annotation.userName == "Bookside" { page.removeAnnotation(annotation) }
             }
             var touched = IndexSet()
             for h in highlights {
@@ -145,7 +145,7 @@ struct PDFReaderView: NSViewRepresentable {
                 for normalized in h.rects {
                     let rect = CGRect(x: bounds.minX + normalized.x*bounds.width, y: bounds.minY + normalized.y*bounds.height, width: normalized.width*bounds.width, height: normalized.height*bounds.height)
                     let mark = PDFAnnotation(bounds: rect, forType: .highlight, withProperties: nil)
-                    mark.color = NSColor.systemYellow.withAlphaComponent(0.35); mark.userName = "Bookshelf"; mark.contents = h.comment
+                    mark.color = NSColor.systemYellow.withAlphaComponent(0.35); mark.userName = "Bookside"; mark.contents = h.comment
                     page.addAnnotation(mark)
                 }
             }

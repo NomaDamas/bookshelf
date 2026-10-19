@@ -7,12 +7,12 @@
 With a current [Homebrew](https://brew.sh/) installation:
 
 ```sh
-brew install --cask nomadamas/bookshelf/bookshelf
+brew install --cask nomadamas/bookside/bookside
 ```
 
-The [NomaDamas tap](https://github.com/NomaDamas/homebrew-bookshelf) selects the
-Apple Silicon or Intel release, checks its SHA-256, and installs `Bookshelf.app`
-in `/Applications` by default. It also links the app's `bookshelf-cli` into the
+The [NomaDamas tap](https://github.com/NomaDamas/homebrew-bookside) selects the
+Apple Silicon or Intel release, checks its SHA-256, and installs `Bookside.app`
+in `/Applications` by default. It also links the app's `bookside-cli` into the
 Homebrew `bin` directory. The fully qualified command adds the tap automatically;
 on newer Homebrew versions, it establishes trust for this cask specifically.
 
@@ -20,23 +20,23 @@ This installs the same **ad-hoc signed, unnotarized developer preview** as the D
 below. Homebrew keeps quarantine protections; follow the first-launch guidance
 below if macOS blocks opening it. OCR remains an optional, separate installation.
 
-Quit Bookshelf before updating:
+Quit Bookside before updating:
 
 ```sh
 brew update
-brew upgrade --cask nomadamas/bookshelf/bookshelf
+brew upgrade --cask nomadamas/bookside/bookside
 ```
 
 To remove the app and the CLI link, run:
 
 ```sh
-brew uninstall --cask nomadamas/bookshelf/bookshelf
+brew uninstall --cask nomadamas/bookside/bookside
 ```
 
 This leaves PDFs, notes, and reading history intact. The cask does not define a
 `zap` operation that removes library data.
 
-If you installed Bookshelf manually, check `/Applications` and `~/Applications`
+If you installed Bookside manually, check `/Applications` and `~/Applications`
 before switching. Homebrew refuses to overwrite a different existing app; keep
 the old copy until you have verified the new installation. If both locations
 contain an app, open the intended one explicitly. For existing MCP registrations,
@@ -45,7 +45,7 @@ check that their executable paths still point to the intended app; see
 
 ## Install the developer preview
 
-The [v0.1.0 release](https://github.com/NomaDamas/bookshelf/releases/tag/v0.1.0)
+The [v0.1.0 release](https://github.com/NomaDamas/bookside/releases/tag/v0.1.0)
 provides separate DMGs for Apple Silicon (`arm64`) and Intel (`x86_64`). The deployment
 target is macOS 14. Downloaded apps do not require Xcode or Python; optional OCR
 has [separate dependencies](04-ocr.md#install-the-optional-engine).
@@ -58,8 +58,8 @@ has [separate dependencies](04-ocr.md#install-the-optional-engine).
     ```
 
     Use the `x86_64` filename for Intel. Continue only if the result is `OK`.
-3. Quit any existing Bookshelf, open the DMG, and drag `Bookshelf.app` to Applications.
-4. Open Bookshelf from Applications. Replacing the app preserves the library data
+3. Quit any existing Bookside, open the DMG, and drag `Bookside.app` to Applications.
+4. Open Bookside from Applications. Replacing the app preserves the library data
    stored outside it; see [backup and restore](07-data-and-privacy.md#backup-and-restore).
 
 These developer previews are **ad-hoc signed, not Developer ID signed or notarized
@@ -89,15 +89,15 @@ end-to-end run on Swift 6.0, macOS 14/15, or an Intel Mac.
 ## Build and open
 
 ```sh
-git clone https://github.com/NomaDamas/bookshelf.git
-cd bookshelf
+git clone https://github.com/NomaDamas/bookside.git
+cd bookside
 ./scripts/build-app.sh
 ./scripts/open-app.command
 ```
 
-The build creates `dist/Bookshelf.app`, checks generated design tokens, copies the
+The build creates `dist/Bookside.app`, checks generated design tokens, copies the
 OCR helper and dependency notices, and verifies an ad-hoc signature. The bundle
-contains `Bookshelf` and `bookshelf-cli` in `Contents/MacOS/`.
+contains `Bookside` and `bookside-cli` in `Contents/MacOS/`.
 
 If `DEVELOPER_DIR` is unset, the build script prefers
 `/Applications/Xcode.app/Contents/Developer` when it exists; otherwise the selected
@@ -123,7 +123,7 @@ Scans skip hidden folders, symlinks, and [documented exclusions](07-data-and-pri
 
 ```sh
 ./scripts/install-local.command
-open "$HOME/Applications/Bookshelf.app"
+open "$HOME/Applications/Bookside.app"
 ```
 
 The installer copies the build and checks its signature. It builds only when the
@@ -142,18 +142,18 @@ From the repository root after building:
 ```sh
 mkdir -p .runtime/demo
 swift scripts/make-fixture.swift "$PWD/.runtime/demo/sample.pdf" 2
-export BOOKSHELF_DATA_DIR="$PWD/.runtime/demo/data"
-dist/Bookshelf.app/Contents/MacOS/bookshelf-cli import "$PWD/.runtime/demo/sample.pdf"
-dist/Bookshelf.app/Contents/MacOS/Bookshelf
+export BOOKSIDE_DATA_DIR="$PWD/.runtime/demo/data"
+dist/Bookside.app/Contents/MacOS/bookside-cli import "$PWD/.runtime/demo/sample.pdf"
+dist/Bookside.app/Contents/MacOS/Bookside
 ```
 
-This launches the executable directly so it inherits `BOOKSHELF_DATA_DIR`. Quit any
+This launches the executable directly so it inherits `BOOKSIDE_DATA_DIR`. Quit any
 development instance first. A Finder/LaunchServices launch does not reliably inherit
 terminal variables. The sample is a two-page raster PDF: reading and notes work
 immediately; text selection/search require [OCR](04-ocr.md).
 
 The variable also applies to later commands in that terminal. After closing the
-sample app, run `unset BOOKSHELF_DATA_DIR` to use your normal library again.
+sample app, run `unset BOOKSIDE_DATA_DIR` to use your normal library again.
 The separate database does not isolate macOS appearance/window preferences.
 
 ## Troubleshooting
@@ -165,9 +165,9 @@ The separate database does not isolate macOS appearance/window preferences.
 | No selectable text | The PDF may be image-only. See [OCR](04-ocr.md). |
 | Cloud icon or unavailable PDF | Download the file in Finder. Listing a placeholder does not download it. |
 | Missing PDFs after folder import | Check excluded folder names, symlinks, extensions, and permissions. Try explicitly importing one PDF. |
-| App and CLI show different books | Compare `BOOKSHELF_DATA_DIR`; run CLI `doctor`. |
+| App and CLI show different books | Compare `BOOKSIDE_DATA_DIR`; run CLI `doctor`. |
 | New code is not visible | Rebuild before reopening/reinstalling. Open/install helpers reuse an existing bundle. |
 | OCR engine not found | Use [engine troubleshooting](04-ocr.md#engine-discovery-and-troubleshooting). |
 
-For a reproducible failure, open a [bug report](https://github.com/NomaDamas/bookshelf/issues/new?template=bug_report.yml)
+For a reproducible failure, open a [bug report](https://github.com/NomaDamas/bookside/issues/new?template=bug_report.yml)
 with the command, toolchain, and a synthetic example. Remove private paths/text from logs.

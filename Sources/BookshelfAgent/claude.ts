@@ -71,7 +71,7 @@ export function claudeArguments(
 					"--settings",
 					JSON.stringify({ disableAllHooks: true }),
 					"--mcp-config",
-					JSON.stringify({ mcpServers: { bookshelf: server } }),
+					JSON.stringify({ mcpServers: { bookside: server } }),
 					"--allowedTools",
 					...claudeBookTools,
 				]
@@ -145,7 +145,7 @@ export async function claudeChat(
 					if (
 						tools.some((name: string) => !expectedTools.includes(name)) ||
 						(record.mcp_servers ?? []).some(
-							(server: any) => !request.reading || server.name !== "bookshelf",
+							(server: any) => !request.reading || server.name !== "bookside",
 						) ||
 						(request.reading &&
 							expectedTools.some((name) => !tools.includes(name))) ||
@@ -173,7 +173,7 @@ export async function claudeChat(
 							stopChild(child);
 							return;
 						}
-						const name = block.name.replace("mcp__bookshelf__", "");
+						const name = block.name.replace("mcp__bookside__", "");
 						readingCalls.set(block.id, name);
 						emit({
 							type: "activity",

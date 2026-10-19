@@ -7,7 +7,7 @@ export const bookToolNames = [
 	"get_reading_coverage",
 ] as const;
 export const claudeBookTools = bookToolNames.map(
-	(name) => `mcp__bookshelf__${name}`,
+	(name) => `mcp__bookside__${name}`,
 );
 
 export function bookServer(request: Request) {
@@ -24,7 +24,7 @@ export function bookServer(request: Request) {
 			String(request.book.page),
 			String(request.book.providedCharacters ?? 0),
 		],
-		env: { BOOKSHELF_DATA_DIR: request.reading.directory },
+		env: { BOOKSIDE_DATA_DIR: request.reading.directory },
 	};
 }
 
@@ -35,7 +35,7 @@ export function isBookTool(
 ): boolean {
 	return (
 		Boolean(request.reading) &&
-		server === "bookshelf" &&
+		server === "bookside" &&
 		typeof tool === "string" &&
 		(bookToolNames as readonly string[]).includes(tool)
 	);

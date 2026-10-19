@@ -3,13 +3,13 @@
 <plist version="1.0">
 <dict>
 	<key>CFBundleExecutable</key>
-	<string>Bookshelf</string>
+	<string>Bookside</string>
 	<key>CFBundleIdentifier</key>
-	<string>org.nomadamas.bookshelf</string>
+	<string>org.nomadamas.bookside</string>
 	<key>CFBundleName</key>
-	<string>Bookshelf</string>
+	<string>Bookside</string>
 	<key>CFBundleDisplayName</key>
-	<string>Bookshelf</string>
+	<string>Bookside</string>
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
@@ -25,15 +25,15 @@
 	<key>NSPrincipalClass</key>
 	<string>NSApplication</string>
 	<key>NSHumanReadableCopyright</key>
-	<string>Bookshelf contributors. MIT License.</string>
+	<string>Bookside contributors. MIT License.</string>
 	<key>CFBundleURLTypes</key>
 	<array>
 		<dict>
 			<key>CFBundleURLName</key>
-			<string>org.nomadamas.bookshelf.book</string>
+			<string>org.nomadamas.bookside.book</string>
 			<key>CFBundleURLSchemes</key>
 			<array>
-				<string>bookshelf</string>
+				<string>bookside</string>
 			</array>
 		</dict>
 	</array>

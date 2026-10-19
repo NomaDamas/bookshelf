@@ -14,7 +14,7 @@ binary = Path(sys.argv[1]).resolve()
 work = root / '.runtime' / ('cancel-check-' + uuid.uuid4().hex[:8])
 work.mkdir(parents=True)
 source, output = work / 'source.pdf', work / 'source_ocr.pdf'
-env = {**os.environ, 'BOOKSHELF_DATA_DIR': str(work / 'data')}
+env = {**os.environ, 'BOOKSIDE_DATA_DIR': str(work / 'data')}
 subprocess.run(['swift', str(root / 'scripts/make-fixture.swift'), str(source), '20'], env=env, check=True, capture_output=True)
 original_hash = hashlib.sha256(source.read_bytes()).hexdigest()
 book = json.loads(subprocess.check_output([str(binary), 'import', str(source)], env=env, text=True))[0]

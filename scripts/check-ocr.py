@@ -13,7 +13,7 @@ run = root / '.runtime' / ('ocr-check-' + uuid.uuid4().hex[:8])
 run.mkdir(parents=True)
 original = run / 'scan.pdf'
 output = run / 'scan_ocr.pdf'
-env = {**os.environ, 'BOOKSHELF_DATA_DIR': str(run / 'data')}
+env = {**os.environ, 'BOOKSIDE_DATA_DIR': str(run / 'data')}
 subprocess.run(['swift', str(root / 'scripts/make-fixture.swift'), str(original), '2'], check=True, env=env, capture_output=True)
 
 def call(*args, timeout=30):
@@ -46,6 +46,6 @@ assert len(books) == 1 and books[0]['id'] == book_id and books[0]['lastPage'] ==
 overwrite = subprocess.run([str(binary), 'ocr', book_id, '--output', str(original)], env=env, capture_output=True, text=True)
 assert overwrite.returncode != 0
 assert hashlib.sha256(original.read_bytes()).hexdigest() == before_hash
-state = {'book_id': book_id, 'data_dir': env['BOOKSHELF_DATA_DIR'], 'source': str(original), 'ocr': str(output), 'before': before, 'after': after, 'source_sha256': before_hash, 'binary': str(binary), 'passed': ['real Apple Vision OCR', 'selectable PDF text', 'original bytes preserved', 'same book identity', 'notebook retained', 'reading page retained', 'bookmark retained', 'overwrite refused', 'rescan deduplicated']}
+state = {'book_id': book_id, 'data_dir': env['BOOKSIDE_DATA_DIR'], 'source': str(original), 'ocr': str(output), 'before': before, 'after': after, 'source_sha256': before_hash, 'binary': str(binary), 'passed': ['real Apple Vision OCR', 'selectable PDF text', 'original bytes preserved', 'same book identity', 'notebook retained', 'reading page retained', 'bookmark retained', 'overwrite refused', 'rescan deduplicated']}
 (root / '.runtime/ocr-check-result.json').write_text(json.dumps(state, ensure_ascii=False, indent=2), encoding='utf-8')
 print(json.dumps(state, ensure_ascii=False, indent=2))

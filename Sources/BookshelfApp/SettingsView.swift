@@ -74,7 +74,7 @@ struct SettingsView: View {
                                 Label("읽기 전용 연결", systemImage: "lock").font(.system(size: 12)).foregroundStyle(.secondary)
                                 Spacer()
                                 Button("MCP 실행 명령 복사") {
-                                    let url = Bundle.main.bundleURL.appendingPathComponent("Contents/MacOS/bookshelf-cli")
+                                    let url = Bundle.main.bundleURL.appendingPathComponent("Contents/MacOS/bookside-cli")
                                     NSPasteboard.general.clearContents()
                                     NSPasteboard.general.setString("\"\(url.path)\" mcp", forType: .string)
                                 }.controlSize(.small)

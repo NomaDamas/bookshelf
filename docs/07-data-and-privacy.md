@@ -7,7 +7,7 @@
 | Data | Location and behavior |
 | --- | --- |
 | Books and source text | PDFs stay at their chosen filesystem paths; the database is not a copy of your books. |
-| Library and notes | `~/Library/Application Support/Bookshelf/library.sqlite3` by default; SQLite WAL sidecars may exist. |
+| Library and notes | `~/Library/Application Support/Bookside/library.sqlite3` by default; SQLite WAL sidecars may exist. |
 | OCR copies | New PDF path selected in the app/CLI, normally beside the source. |
 | OCR logs/reports | `Logs/` under the data directory; reports can contain paths and extracted text. |
 | Appearance/window preferences | macOS app preferences, outside the selected library directory. |
@@ -27,15 +27,15 @@ Use your normal macOS account/device protections for sensitive material.
 
 | Variable | Consumer | Purpose |
 | --- | --- | --- |
-| `BOOKSHELF_DATA_DIR` | App, CLI, MCP | Absolute directory for an isolated library and OCR logs. Default: local Application Support. |
-| `BOOKSHELF_OCRMYPDF` | OCR service | Explicit executable path; otherwise discovery uses PATH and conventional installation locations. |
-| `BOOKSHELF_OCR_PYTHON` | OCR replacement helper | Python in the OCRmyPDF environment, including `pikepdf`; needed for custom launchers. |
-| `BOOKSHELF_INCLUDE_AGENT` | Build | `1` bundles the optional Pi bridge; the ordinary build defaults to `0`. |
-| `BOOKSHELF_AGENT_DATA_DIR` | Preview QA | Optional absolute data root for executor state, separate from an isolated QA library. |
-| `BOOKSHELF_BUILD_CONFIGURATION` | `build-app.sh` | Swift configuration; default `release`, or `debug` for iteration. |
-| `BOOKSHELF_APP_PATH` | MCP registration helper | Select an installed app bundle, especially when both Applications locations contain it. |
-| `BOOKSHELF_SIGNING_IDENTITY` | Build/packaging | Developer ID Application identity, or `-` for the default ad-hoc signature. |
-| `BOOKSHELF_NOTARY_PROFILE` | Packaging with `--notarize` | Name of an existing notarytool Keychain profile. |
+| `BOOKSIDE_DATA_DIR` | App, CLI, MCP | Absolute directory for an isolated library and OCR logs. Default: local Application Support. |
+| `BOOKSIDE_OCRMYPDF` | OCR service | Explicit executable path; otherwise discovery uses PATH and conventional installation locations. |
+| `BOOKSIDE_OCR_PYTHON` | OCR replacement helper | Python in the OCRmyPDF environment, including `pikepdf`; needed for custom launchers. |
+| `BOOKSIDE_INCLUDE_AGENT` | Build | `1` bundles the optional Pi bridge; the ordinary build defaults to `0`. |
+| `BOOKSIDE_AGENT_DATA_DIR` | Preview QA | Optional absolute data root for executor state, separate from an isolated QA library. |
+| `BOOKSIDE_BUILD_CONFIGURATION` | `build-app.sh` | Swift configuration; default `release`, or `debug` for iteration. |
+| `BOOKSIDE_APP_PATH` | MCP registration helper | Select an installed app bundle, especially when both Applications locations contain it. |
+| `BOOKSIDE_SIGNING_IDENTITY` | Build/packaging | Developer ID Application identity, or `-` for the default ad-hoc signature. |
+| `BOOKSIDE_NOTARY_PROFILE` | Packaging with `--notarize` | Name of an existing notarytool Keychain profile. |
 | `DEVELOPER_DIR` | Apple build tools | Select a compatible Xcode developer directory. |
 
 Use the same data directory in the app and MCP client if they should see the same
@@ -55,13 +55,13 @@ translated title alias, or a copy on another filesystem is not automatically res
 Original files stay in place; changing their paths outside the app can make them unavailable.
 
 Cloud placeholders can appear in the library without a bulk download. Download the
-specific file in Finder before reading or OCR. Bookshelf does not synchronize notes
+specific file in Finder before reading or OCR. Bookside does not synchronize notes
 between Macs, and its SQLite database defaults to local Application Support rather
 than iCloud Drive. A PDF already in iCloud remains subject to iCloud's own syncing.
 
 ## Backup and restore
 
-1. Quit Bookshelf and stop CLI/MCP processes using that library so no writer remains.
+1. Quit Bookside and stop CLI/MCP processes using that library so no writer remains.
 2. Copy the **whole data directory**, including any `library.sqlite3-wal` and
    `library.sqlite3-shm` files, to a private backup location.
 3. Back up original/OCR PDFs separately; the database stores their absolute paths.

@@ -2,14 +2,14 @@
 
 [Documentation](README.md) / Architecture
 
-Bookshelf is one Swift package with a shared core, a native app, and a CLI.
+Bookside is one Swift package with a shared core, a native app, and a CLI.
 The MCP server runs inside the CLI process over stdio. No application web server,
 account service, or embedded model is required.
 
 ```mermaid
 flowchart LR
     App[SwiftUI / AppKit app] --> Core[BookshelfCore]
-    CLI[bookshelf-cli commands] --> Core
+    CLI[bookside-cli commands] --> Core
     Client[MCP client] <-->|stdio| MCP[MCP server in CLI]
     MCP -->|read tools| Core
     Core --> DB[(Local SQLite)]

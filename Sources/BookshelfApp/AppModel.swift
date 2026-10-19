@@ -67,7 +67,7 @@ import BookshelfCore
 
     init(store suppliedStore: LibraryStore? = nil) {
         do { store = try suppliedStore ?? LibraryStore() }
-        catch { fatalError("Bookshelf could not open its local store: \(error.localizedDescription)") }
+        catch { fatalError("Bookside could not open its local store: \(error.localizedDescription)") }
         chat = BookChatModel(store: store)
         if let saved = try? store.setting("keyboard.shortcuts"), let value = try? JSONDecoder().decode(AppShortcuts.self, from: Data(saved.utf8)) { shortcuts = value }
         reloadLibrary()

@@ -77,11 +77,11 @@ import BookshelfCore
         let firstView = ReaderPDFView(); firstView.document = pdf
         let first = PDFReaderView.Coordinator(model: model); first.view = firstView
         first.drawHighlights([highlight])
-        XCTAssertEqual(page.annotations.filter { $0.userName == "Bookshelf" }.count, 1)
+        XCTAssertEqual(page.annotations.filter { $0.userName == "Bookside" }.count, 1)
         let nextView = ReaderPDFView(); nextView.document = pdf
         let next = PDFReaderView.Coordinator(model: model); next.view = nextView
         next.drawHighlights([])
-        XCTAssertEqual(page.annotations.filter { $0.userName == "Bookshelf" }.count, 0)
+        XCTAssertEqual(page.annotations.filter { $0.userName == "Bookside" }.count, 0)
         XCTAssertTrue(page.annotations.contains { $0 === original })
     }
 

@@ -42,7 +42,7 @@
       "get_reading_coverage"
     ],
     "liveBookRetrievalAnswer": "not verified: provider account usage limit",
-    "followup": "https://github.com/NomaDamas/bookshelf/issues/15",
+    "followup": "https://github.com/NomaDamas/bookside/issues/15",
     "alternateBillingUsed": false
   },
   "captures": [

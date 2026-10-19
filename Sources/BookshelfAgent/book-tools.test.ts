@@ -23,7 +23,7 @@ const base: Request = {
 	workspace: "/workspace",
 	codexHome: "/codex",
 	reading: {
-		command: "/Applications/Bookshelf Pi.app/Contents/MacOS/bookshelf-cli",
+		command: "/Applications/Bookside Pi.app/Contents/MacOS/bookside-cli",
 		directory: "/library",
 	},
 	question: "Where is the warranty?",
@@ -58,7 +58,7 @@ test("Only the selected book and explicit local MCP server enter executor config
 		"1",
 		"12",
 	]);
-	expect(server.env).toEqual({ BOOKSHELF_DATA_DIR: "/library" });
+	expect(server.env).toEqual({ BOOKSIDE_DATA_DIR: "/library" });
 	const args = claudeArguments("learning", undefined, base);
 	expect(args).not.toContain("--safe-mode");
 	expect(args).not.toContain("--bare");
@@ -71,7 +71,7 @@ test("Only the selected book and explicit local MCP server enter executor config
 	expect(args[args.indexOf("--tools") + 1]).toBe("");
 	for (const tool of claudeBookTools) expect(args).toContain(tool);
 	expect(codexArguments(base)).toContain(
-		`mcp_servers.bookshelf.enabled_tools=${JSON.stringify(bookToolNames)}`,
+		`mcp_servers.bookside.enabled_tools=${JSON.stringify(bookToolNames)}`,
 	);
 	expect(systemInstructions("auto", "claude", true)).toContain(
 		"nextPage/nextOffset",
@@ -135,7 +135,7 @@ test("The context meter uses the final response after multiple tool rounds", () 
 
 for (const backend of ["claude", "codex"] as const) {
 	test(`${backend} streams book progress and sources through Pi`, async () => {
-		const root = await mkdtemp(join(tmpdir(), "bookshelf-reading-"));
+		const root = await mkdtemp(join(tmpdir(), "bookside-reading-"));
 		try {
 			const cli = join(root, "runtime-fixture"),
 				content = [
@@ -154,8 +154,8 @@ if(process.argv.includes('status')){console.log(JSON.stringify({loggedIn:true,au
 if(process.env.CLAUDE_CODE_DISABLE_CLAUDE_MDS!=='1'||process.env.CLAUDE_CODE_DISABLE_ATTACHMENTS!=='1')process.exit(2);
 process.stdin.resume();process.stdin.on('end',()=>{
 const emit=x=>console.log(JSON.stringify(x));
-emit({type:'system',subtype:'init',tools:${JSON.stringify(claudeBookTools)},mcp_servers:[{name:'bookshelf',status:'connected'}],skills:[]});
-emit({type:'assistant',message:{content:[{type:'tool_use',id:'read',name:'mcp__bookshelf__read_pages',input:{start_page:5,end_page:5}}]}});
+emit({type:'system',subtype:'init',tools:${JSON.stringify(claudeBookTools)},mcp_servers:[{name:'bookside',status:'connected'}],skills:[]});
+emit({type:'assistant',message:{content:[{type:'tool_use',id:'read',name:'mcp__bookside__read_pages',input:{start_page:5,end_page:5}}]}});
 emit({type:'user',message:{content:[{type:'tool_result',tool_use_id:'read',content:${JSON.stringify(content)}}]}});
 emit({type:'stream_event',event:{type:'message_start',message:{id:'final',model:'chosen',usage:{input_tokens:4000,output_tokens:1}}}});
 emit({type:'stream_event',event:{type:'message_delta',usage:{output_tokens:80}}});
@@ -172,8 +172,8 @@ case 'model/list':reply({data:[{id:'fixture',model:'fixture',isDefault:true}]});
 case 'thread/start':reply({thread:{id:'thread'}});break;
 case 'turn/start':
 reply({turn:{id:'turn'}});
-send({method:'item/started',params:{threadId:'thread',item:{type:'mcpToolCall',id:'read',server:'bookshelf',tool:'read_pages',arguments:{start_page:5}}}});
-send({method:'item/completed',params:{threadId:'thread',item:{type:'mcpToolCall',id:'read',server:'bookshelf',tool:'read_pages',status:'completed',result:{content:${JSON.stringify(content)}}}}});
+send({method:'item/started',params:{threadId:'thread',item:{type:'mcpToolCall',id:'read',server:'bookside',tool:'read_pages',arguments:{start_page:5}}}});
+send({method:'item/completed',params:{threadId:'thread',item:{type:'mcpToolCall',id:'read',server:'bookside',tool:'read_pages',status:'completed',result:{content:${JSON.stringify(content)}}}}});
 send({method:'item/agentMessage/delta',params:{threadId:'thread',delta:'Warranty lasts nine years. [p. 5]'}});
 send({method:'turn/completed',params:{threadId:'thread',turn:{status:'completed'}}});break;
 default:reply({});}});`;

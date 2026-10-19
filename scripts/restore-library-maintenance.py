@@ -44,7 +44,7 @@ def main():
             raise SystemExit("Maintenance is still saving; restoration has not started")
     options = job["args"]
     cli = options[options.index("--cli") + 1]
-    env = {**os.environ, "BOOKSHELF_DATA_DIR": options[options.index("--data-dir") + 1]}
+    env = {**os.environ, "BOOKSIDE_DATA_DIR": options[options.index("--data-dir") + 1]}
     events, history = {}, []
     for line in (
         Path(job["report"]).parent.joinpath("02-events.jsonl").read_text().splitlines()

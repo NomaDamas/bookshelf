@@ -1,6 +1,6 @@
-# Working on Bookshelf
+# Working on Bookside
 
-Bookshelf is a native macOS PDF reader with shared app/CLI storage and a read-only
+Bookside is a native macOS PDF reader with shared app/CLI storage and a read-only
 MCP tool surface. Follow [CONTRIBUTING.md](CONTRIBUTING.md) for changes and PR evidence.
 
 ## Read when relevant
@@ -42,7 +42,7 @@ MCP tool surface. Follow [CONTRIBUTING.md](CONTRIBUTING.md) for changes and PR e
 - UI changes: run the native app with synthetic content; check focus/navigation and
   quit/relaunch when state persistence changes. Keep original and text views usable.
 - Docs changes: verify command contracts, links, image rendering, and both README entry points.
-- Use an absolute `BOOKSHELF_DATA_DIR` for development. Keep private libraries,
+- Use an absolute `BOOKSIDE_DATA_DIR` for development. Keep private libraries,
   credentials, personal paths, and runtime artifacts out of source commits.
 - Report actual toolchain, checks, and limitations. Distinguish source build, local
   installation, client registration, successful tool calls, and public release.

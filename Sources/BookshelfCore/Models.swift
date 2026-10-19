@@ -101,7 +101,7 @@ public enum FileAccess {
         return "\(device):\(inode)"
     }
     public static func defaultDataDirectory() -> URL {
-        if let custom = ProcessInfo.processInfo.environment["BOOKSHELF_DATA_DIR"], !custom.isEmpty { return URL(fileURLWithPath: custom, isDirectory: true) }
-        return FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0].appendingPathComponent("Bookshelf", isDirectory: true)
+        if let custom = ProcessInfo.processInfo.environment["BOOKSIDE_DATA_DIR"], !custom.isEmpty { return URL(fileURLWithPath: custom, isDirectory: true) }
+        return FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0].appendingPathComponent("Bookside", isDirectory: true)
     }
 }

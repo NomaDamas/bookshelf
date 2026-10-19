@@ -6,12 +6,12 @@
 
 | Surface | Identity |
 | --- | --- |
-| GitHub | `NomaDamas/bookshelf` |
-| App bundle | `Bookshelf.app` |
-| Bundle identifier | `org.nomadamas.bookshelf` |
-| Swift package / core library | `Bookshelf` / `BookshelfCore` |
-| CLI / MCP server name | `bookshelf-cli` / `bookshelf` |
-| Deep links | `bookshelf://book/<id>?page=<number>` |
+| GitHub | `NomaDamas/bookside` |
+| App bundle | `Bookside.app` |
+| Bundle identifier | `org.nomadamas.bookside` |
+| Swift package / core library | `Bookside` / `BookshelfCore` |
+| CLI / MCP server name | `bookside-cli` / `bookside` |
+| Deep links | `bookside://book/<id>?page=<number>` |
 
 [`AppMetadata.json`](../Sources/BookshelfCore/Resources/AppMetadata.json) is the
 single product/version source. The app, CLI `--version`/`doctor`, and MCP server
@@ -62,9 +62,9 @@ On Apple Silicon, output is:
 
 ```text
 dist/release/
-  Bookshelf-0.1.0-macos-arm64.dmg
-  Bookshelf-0.1.0-macos-arm64.dmg.sha256
-  Bookshelf-0.1.0-macos-arm64.json
+  Bookside-0.1.0-macos-arm64.dmg
+  Bookside-0.1.0-macos-arm64.dmg.sha256
+  Bookside-0.1.0-macos-arm64.json
 ```
 
 Intel builds use `x86_64`. Each build packages the host architecture; these are
@@ -79,7 +79,7 @@ checks its version/commit; only use it when that build matches your working sour
 To verify a trusted candidate again:
 
 ```sh
-python3 scripts/release.py verify dist/release/Bookshelf-0.1.0-macos-arm64.dmg --arch arm64
+python3 scripts/release.py verify dist/release/Bookside-0.1.0-macos-arm64.dmg --arch arm64
 ```
 
 This executes code from the supplied app. Use it for your own or otherwise trusted
@@ -92,8 +92,8 @@ integrity but does not establish a Developer ID identity or Apple notarization.
 Downloaded previews may be blocked by Gatekeeper. The workflows create draft
 prereleases and describe this limitation in the generated notes.
 
-For a properly credentialed local release, set `BOOKSHELF_SIGNING_IDENTITY` to your
-full **Developer ID Application:** identity and `BOOKSHELF_NOTARY_PROFILE` to an
+For a properly credentialed local release, set `BOOKSIDE_SIGNING_IDENTITY` to your
+full **Developer ID Application:** identity and `BOOKSIDE_NOTARY_PROFILE` to an
 existing `notarytool` Keychain profile, then run:
 
 ```sh
@@ -144,7 +144,7 @@ and push an annotated tag. For the initial version:
 
 ```sh
 git fetch origin
-git tag -a v0.1.0 origin/main -m "Bookshelf 0.1.0"
+git tag -a v0.1.0 origin/main -m "Bookside 0.1.0"
 git push origin v0.1.0
 ```
 
@@ -157,8 +157,8 @@ before retrying publication.
 
 ## Homebrew distribution
 
-The [Bookshelf tap](https://github.com/NomaDamas/homebrew-bookshelf) owns
-`Casks/bookshelf.rb`. It downloads the published DMGs with architecture-specific
+The [Bookside tap](https://github.com/NomaDamas/homebrew-bookside) owns
+`Casks/bookside.rb`. It downloads the published DMGs with architecture-specific
 SHA-256 checksums; it does not rebuild the app or change its signing status.
 Do not duplicate the cask in this repository.
 
@@ -169,21 +169,21 @@ and the signing caveat against the release's manifests before merging the update
 
 Tap livecheck includes published numeric preview tags. It detects available
 versions; it does not publish a cask update automatically. Users receive a merged
-cask update through `brew update` and `brew upgrade --cask nomadamas/bookshelf/bookshelf`.
+cask update through `brew update` and `brew upgrade --cask nomadamas/bookside/bookside`.
 
 ## Install, update, and compatibility
 
-Open the DMG and drag `Bookshelf.app` to Applications, or use the local installer
+Open the DMG and drag `Bookside.app` to Applications, or use the local installer
 for `~/Applications`. Quit the old app first. Metadata/CLI verification does not
 prove an interactive Gatekeeper launch on another person's Mac.
 
 The new bundle ID succeeds the legacy `org.bookshelf.reader`. The library remains
-at `~/Library/Application Support/Bookshelf`, so notes and PDF identities do not
+at `~/Library/Application Support/Bookside`, so notes and PDF identities do not
 move. The app copies only a valid legacy appearance preference when no new choice
 exists. It leaves the old preference domain intact. The local installer recognizes
 both bundle IDs; it refuses to overwrite an unrelated app.
 
-`register-mcp.command` discovers `/Applications/Bookshelf.app` and the personal
-Applications folder. If both exist, set `BOOKSHELF_APP_PATH` to the intended bundle.
+`register-mcp.command` discovers `/Applications/Bookside.app` and the personal
+Applications folder. If both exist, set `BOOKSIDE_APP_PATH` to the intended bundle.
 Existing client registrations are still preserved; inspect their executable paths
 when changing installation location. See [CLI/MCP](03-cli-and-mcp.md).

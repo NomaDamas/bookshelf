@@ -1,9 +1,9 @@
 #!/bin/zsh
 set -euo pipefail
 cd "$(dirname "$0")/.."
-BOOKSHELF_INCLUDE_AGENT=1 ./scripts/build-app.sh
-preview="$PWD/dist/Bookshelf Pi.app"
-ditto "$PWD/dist/Bookshelf.app" "$preview"
+BOOKSIDE_INCLUDE_AGENT=1 ./scripts/build-app.sh
+preview="$PWD/dist/Bookside Pi.app"
+ditto "$PWD/dist/Bookside.app" "$preview"
 python3 - "$preview/Contents/Info.plist" <<'PY'
 import plistlib, sys
 from pathlib import Path
@@ -15,7 +15,7 @@ info.pop('CFBundleURLTypes', None)
 p.write_bytes(plistlib.dumps(info))
 PY
 codesign --force --deep --sign - "$preview"
-target="$HOME/Applications/Bookshelf Pi.app"
+target="$HOME/Applications/Bookside Pi.app"
 if [[ -e "$target" ]]; then
   identity="$(plutil -extract CFBundleIdentifier raw "$target/Contents/Info.plist")"
   expected="$(plutil -extract CFBundleIdentifier raw "$preview/Contents/Info.plist")"

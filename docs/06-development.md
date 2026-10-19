@@ -14,13 +14,13 @@ repository root on macOS with the same compatible Xcode toolchain used to build.
 The default is a release app bundle. For faster iteration:
 
 ```sh
-BOOKSHELF_BUILD_CONFIGURATION=debug ./scripts/build-app.sh
+BOOKSIDE_BUILD_CONFIGURATION=debug ./scripts/build-app.sh
 ```
 
-Both configurations write `dist/Bookshelf.app`; rebuild release before describing a
+Both configurations write `dist/Bookside.app`; rebuild release before describing a
 bundle as a release build. `swift build` alone does not assemble the `.app` resources,
 icon, metadata, notices, and signature. Never point development commands at a
-private library: use an absolute `BOOKSHELF_DATA_DIR` and synthetic PDFs.
+private library: use an absolute `BOOKSIDE_DATA_DIR` and synthetic PDFs.
 
 ## Core and app regression tests
 
@@ -45,11 +45,11 @@ and a discoverable `pdftotext`. It is optional for manual app review, but
 `check-ocr.py` requires successful automatic attachment. Run the checks **sequentially**:
 
 ```sh
-python3 scripts/check-ocr.py dist/Bookshelf.app/Contents/MacOS/bookshelf-cli
-python3 scripts/check-ocr-review.py dist/Bookshelf.app/Contents/MacOS/bookshelf-cli
-python3 scripts/check-mcp.py dist/Bookshelf.app/Contents/MacOS/bookshelf-cli
-python3 scripts/check-reading-mcp.py dist/Bookshelf.app/Contents/MacOS/bookshelf-cli
-python3 scripts/check-cancel.py dist/Bookshelf.app/Contents/MacOS/bookshelf-cli
+python3 scripts/check-ocr.py dist/Bookside.app/Contents/MacOS/bookside-cli
+python3 scripts/check-ocr-review.py dist/Bookside.app/Contents/MacOS/bookside-cli
+python3 scripts/check-mcp.py dist/Bookside.app/Contents/MacOS/bookside-cli
+python3 scripts/check-reading-mcp.py dist/Bookside.app/Contents/MacOS/bookside-cli
+python3 scripts/check-cancel.py dist/Bookside.app/Contents/MacOS/bookside-cli
 ```
 
 `check-ocr.py` generates a two-page raster fixture and writes
@@ -68,7 +68,7 @@ logs are written under `.runtime/`, which is ignored by Git. Do not run multiple
 copies of this integration sequence in the same checkout: summary filenames are shared.
 
 Known issue: under a macOS temporary checkout, `/var` and `/private/var` aliases
-can bypass candidate withholding and fail the review check. See [issue #2](https://github.com/NomaDamas/bookshelf/issues/2).
+can bypass candidate withholding and fail the review check. See [issue #2](https://github.com/NomaDamas/bookside/issues/2).
 The same check passes from a regular development directory. Use a non-aliased
 checkout for the standard verification path; do not interpret that pass as a fix
 for the temporary-path regression.
@@ -77,10 +77,10 @@ For changes to the replacement helper, run this with the **OCRmyPDF environment'
 Python executable**, which must contain `pikepdf` and Pillow:
 
 ```sh
-"$BOOKSHELF_OCR_PYTHON" scripts/check-ocr-preparation.py
+"$BOOKSIDE_OCR_PYTHON" scripts/check-ocr-preparation.py
 ```
 
-Set `BOOKSHELF_OCR_PYTHON` to that actual interpreter first; this example deliberately
+Set `BOOKSIDE_OCR_PYTHON` to that actual interpreter first; this example deliberately
 does not guess an environment path. The check covers nested invisible text while
 preserving visible/mixed text, vectors, and pixels.
 

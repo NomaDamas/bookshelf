@@ -24,33 +24,33 @@ func stderr(_ text: String) { FileHandle.standardError.write(Data((text + "\n").
         }
         if command == "help" || command == "--help" {
             print("""
-            Bookshelf / 서재 (macOS 14+)
-            bookshelf-cli --version
-            bookshelf-cli import <PDF-or-folder>
-            bookshelf-cli books [title]
-            bookshelf-cli read <book-id> <PDF-page>
-            bookshelf-cli search <book-id> <text> [--exact-spacing]
-            bookshelf-cli notes <book-id>
-            bookshelf-cli note-set <book-id> <text>
-            bookshelf-cli bookmark <book-id> <PDF-page>
-            bookshelf-cli position <book-id> <PDF-page>
-            bookshelf-cli inspect <book-id>
-            bookshelf-cli ocr <book-id> [--language kor|eng|jpn|und] [--output path] [--redo] [--review-only]
-            bookshelf-cli ocr-accept <result-json>
-            bookshelf-cli ocr-original <book-id>
-            bookshelf-cli export <book-id>
-            bookshelf-cli doctor
-            bookshelf-cli mcp
-            bookshelf-cli reading-mcp <book-id> <book|page|range> <first-page> <last-page> [provided-page provided-characters]
+            Bookside / 서재 (macOS 14+)
+            bookside-cli --version
+            bookside-cli import <PDF-or-folder>
+            bookside-cli books [title]
+            bookside-cli read <book-id> <PDF-page>
+            bookside-cli search <book-id> <text> [--exact-spacing]
+            bookside-cli notes <book-id>
+            bookside-cli note-set <book-id> <text>
+            bookside-cli bookmark <book-id> <PDF-page>
+            bookside-cli position <book-id> <PDF-page>
+            bookside-cli inspect <book-id>
+            bookside-cli ocr <book-id> [--language kor|eng|jpn|und] [--output path] [--redo] [--review-only]
+            bookside-cli ocr-accept <result-json>
+            bookside-cli ocr-original <book-id>
+            bookside-cli export <book-id>
+            bookside-cli doctor
+            bookside-cli mcp
+            bookside-cli reading-mcp <book-id> <book|page|range> <first-page> <last-page> [provided-page provided-characters]
 
-            Data location: BOOKSHELF_DATA_DIR or ~/Library/Application Support/Bookshelf
+            Data location: BOOKSIDE_DATA_DIR or ~/Library/Application Support/Bookside
             Search ignores OCR whitespace by default. --exact-spacing preserves word spacing.
             MCP exposes only reads. OCR and imports require explicit CLI/app actions.
             """)
             return
         }
         let store = try LibraryStore()
-        func argument(_ index: Int) throws -> String { guard args.indices.contains(index) else { throw ShelfError.message("필수 인자가 없습니다. bookshelf-cli --help를 확인해 주세요.") }; return args[index] }
+        func argument(_ index: Int) throws -> String { guard args.indices.contains(index) else { throw ShelfError.message("필수 인자가 없습니다. bookside-cli --help를 확인해 주세요.") }; return args[index] }
         func pageArgument(_ index: Int) throws -> Int { guard let page = Int(try argument(index)), page > 0 else { throw ShelfError.message("페이지는 양의 정수여야 합니다.") }; return page }
         switch command {
         case "import": print(try encoded(LibraryImporter.add(URL(fileURLWithPath: try argument(1)), to: store)))
@@ -61,7 +61,7 @@ func stderr(_ text: String) { FileHandle.standardError.write(Data((text + "\n").
             print(try encoded(result))
         case "read":
             let book = try store.book(argument(1)), page = try pageArgument(2)
-            print(try objectJSON(["book_id": book.id, "title": book.title, "page": page, "text": PDFService.readPage(book, page: page), "url": "bookshelf://book/\(book.id)?page=\(page)"]))
+            print(try objectJSON(["book_id": book.id, "title": book.title, "page": page, "text": PDFService.readPage(book, page: page), "url": "bookside://book/\(book.id)?page=\(page)"]))
         case "search":
             let options = Array(args.dropFirst(3))
             guard options.isEmpty || options == ["--exact-spacing"] else { throw ShelfError.message("검색 옵션은 --exact-spacing만 지원합니다.") }

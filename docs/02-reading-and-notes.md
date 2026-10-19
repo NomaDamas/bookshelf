@@ -133,7 +133,7 @@ reading/writing surfaces. Reduced transparency, increased contrast, and reduced
 motion have fallback paths; see [design and verification](../Resources/Design/DESIGN.md).
 
 In the ordinary build, **AI로 이어가기** copies a prompt identifying the current book and PDF page to the
-clipboard. Paste it into a configured client. It does not run a model in Bookshelf.
+clipboard. Paste it into a configured client. It does not run a model in Bookside.
 For tool access, follow [CLI and MCP setup](03-cli-and-mcp.md).
 
 The optional [learning preview](../Resources/Design/PI-AGENT.md) provides a separate AI
