@@ -86,7 +86,7 @@ import BookshelfCore
         let document = model.document
         model.toggleAIPanel()
         XCTAssertFalse(model.aiPanelVisible); XCTAssertTrue(model.sidebarVisible)
-        model.panelTab = "search"; model.toggleNotesPanel()
+        model.panelTab = "search"; model.sidebarVisible.toggle()
         XCTAssertFalse(model.sidebarVisible); XCTAssertTrue(model.isReadingBook)
         model.editNotebook("서재로 돌아가도 보존할 메모")
         model.showLibrary()

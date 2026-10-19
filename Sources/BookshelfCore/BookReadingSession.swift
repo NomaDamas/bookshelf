@@ -30,7 +30,6 @@ public struct BookReadingCoverage: Codable, Equatable, Sendable {
 
 /// One book and an immutable page boundary per request. PDF bytes are never modified.
 public actor BookReadingSession {
-    public static let toolNames = ["get_book_overview", "search_book", "read_pages", "get_reading_coverage"]
     private let book: Book
     private let pdf: PDFDocument
     private let scope: BookReadingScope
@@ -43,20 +42,22 @@ public actor BookReadingSession {
     private var empty = Set<Int>()
 
     public init(book: Book, scope: BookReadingScope, providedPage: Int? = nil, providedCharacters: Int = 0) throws {
-        self.book = book; pdf = try PDFService.document(at: book.url); self.scope = scope
+        let document = try PDFService.document(at: book.url)
         guard ["book", "page", "range"].contains(scope.mode), scope.startPage >= 1,
-              scope.endPage >= scope.startPage, scope.endPage <= pdf.pageCount,
-              scope.mode != "book" || (scope.startPage == 1 && scope.endPage == pdf.pageCount),
+              scope.endPage >= scope.startPage, scope.endPage <= document.pageCount,
+              scope.mode != "book" || (scope.startPage == 1 && scope.endPage == document.pageCount),
               scope.mode != "page" || scope.startPage == scope.endPage else {
             throw ShelfError.message("질문할 페이지 범위를 확인해 주세요.")
         }
+        // A nonisolated actor init may only write isolated state before every stored property is set.
         if let page = providedPage, scope.contains(page), providedCharacters > 0 {
-            let text = pdf.page(at: page - 1)?.string ?? ""
+            let text = document.page(at: page - 1)?.string ?? ""
             let count = min(text.count, min(providedCharacters, 10000))
             textCache[page] = text; readPrefix[page] = count
             if count > 0 { sources.insert(page) }
             if count == text.count && count > 0 { complete.insert(page) }
         }
+        self.book = book; pdf = document; self.scope = scope
     }
 
     public func call(_ tool: String, query: String? = nil, startPage: Int? = nil, endPage: Int? = nil, offset: Int? = nil) throws -> String {

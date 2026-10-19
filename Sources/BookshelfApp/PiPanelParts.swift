@@ -183,23 +183,3 @@ enum PiTurnWording {
         (writing ? "답변 쓰는 중, " : "생각하는 중, ") + duration(now.timeIntervalSince1970 - started)
     }
 }
-
-/// Compact secondary icon action on a turn's summary line. Every one carries a tooltip and a spoken label.
-struct PiActionButton: View {
-    let symbol: String
-    let label: String
-    let action: () -> Void
-    @State private var hovering = false
-    @Environment(\.isEnabled) private var isEnabled
-    var body: some View {
-        Button(action: action) {
-            Image(systemName: symbol).font(.system(size: 12, weight: .medium))
-                .frame(width: 26, height: 26)
-                .contentShape(RoundedRectangle(cornerRadius: ReaderTokens.radiusMedium))
-        }.buttonStyle(.plain).foregroundStyle(.secondary)
-            .background(hovering && isEnabled ? ReaderStyle.muted : .clear, in: RoundedRectangle(cornerRadius: ReaderTokens.radiusMedium, style: .continuous))
-            .opacity(isEnabled ? 1 : 0.35)
-            .onHover { hovering = $0 }
-            .help(label).accessibilityLabel(label)
-    }
-}
