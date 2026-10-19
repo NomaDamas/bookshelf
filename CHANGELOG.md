@@ -6,8 +6,16 @@ that its Git tag or GitHub Release has been published.
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-10-20
+
 ### Added
 
+- A left reader panel with page thumbnails, notes, excerpts and book search beside
+  the page, and configurable app shortcuts in **Settings > 단축키**.
+- In-app learning chat preview, available only from a separate source build
+  (`scripts/install-pi-preview.command`). It answers through the official Claude Code
+  or Codex executable, searches and cites the selected book, and keeps replies per book.
+  DMG and Homebrew builds do not include it.
 - `skills/bookside`, an agent skill for using the library through `bookside-cli`
   without MCP. Install it with `npx skills add NomaDamas/bookside --skill bookside`.
 
@@ -22,11 +30,25 @@ that its Git tag or GitHub Release has been published.
   over from `org.nomadamas.bookshelf`.
 - `register-mcp.command` replaces a pre-rename `bookshelf` entry that runs
   `bookshelf-cli`, and the local installer reports a remaining `Bookshelf.app`.
+- The Homebrew cask is now `nomadamas/bookside/bookside`. `brew upgrade` moves a
+  `bookshelf` cask install to it and installs `Bookside.app`; the library stays where it is.
 
 ### Deprecated
 
 - `BOOKSHELF_*` variables. They apply only when the matching `BOOKSIDE_*` variable
   is unset or empty.
+
+### Fixed
+
+- `bookside-cli --help` lists every accepted OCR language, including `chi_sim` and `chi_tra`.
+- Learning chat preview: finishing a request no longer crashes PDFKit from a worker
+  thread ([#20](https://github.com/NomaDamas/bookside/issues/20)).
+
+### Known limitations
+
+- Ad-hoc signed developer preview, not notarized by Apple.
+- Opening a book whose file was moved or deleted reports an iCloud download message
+  ([#18](https://github.com/NomaDamas/bookside/issues/18)).
 
 ## [0.1.0] - 2026-10-17
 
