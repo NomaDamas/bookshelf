@@ -26,6 +26,9 @@ import BookshelfCore
     @Published var readerFocusRequest = 0
     @Published var pageEntryRequest = 0
     @Published var searchFieldFocusPending = false
+    /// Mirrors the PDF view's scale so the toolbar can show the zoom percentage.
+    @Published var zoomScale: CGFloat = 1
+    @Published var zoomFits = true
     /// True while an editable text view has focus, so Option-arrow page commands give way to text editing.
     @Published var textInputActive = false
     @Published var libraryRevealRequest = 0
@@ -213,7 +216,13 @@ import BookshelfCore
         case .actualSize: pdfView.autoScales = false; pdfView.scaleFactor = 1
         case .fit: pdfView.autoScales = true
         }
+        zoomChanged(scale: pdfView.scaleFactor, fits: pdfView.autoScales)
     }
+    func zoomChanged(scale: CGFloat, fits: Bool) {
+        if zoomScale != scale { zoomScale = scale }
+        if zoomFits != fits { zoomFits = fits }
+    }
+    var zoomLabel: String { "\(Int((zoomScale * 100).rounded()))%" }
     func findInBook() {
         guard activeBook != nil else { return }
         openBookTool("search"); searchFieldFocusPending = true
