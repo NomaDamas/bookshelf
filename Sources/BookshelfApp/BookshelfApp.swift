@@ -53,7 +53,7 @@ import BookshelfCore
                 }
         }
         .defaultSize(width: 1380, height: 900)
-        .windowToolbarStyle(.unifiedCompact)
+        .windowToolbarStyle(.unifiedCompact(showsTitle: false))
         .commands {
             CommandGroup(replacing: .newItem) {
                 Button("PDF 추가…") { model.chooseFiles() }.keyboardShortcut("o")

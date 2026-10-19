@@ -17,9 +17,8 @@ struct ReadingShelfView: View {
                 Spacer()
                 LibrarySortMenu(model: model)
                 if model.activeBook != nil {
-                    Button { model.readingShelfVisible = false } label: {
-                        Label("펼친 책으로", systemImage: "arrow.uturn.backward")
-                    }.controlSize(.large).accessibilityLabel("펼친 책으로 돌아가기")
+                    Button("펼친 책으로") { model.readingShelfVisible = false }
+                        .controlSize(.large).accessibilityLabel("펼친 책으로 돌아가기")
                 }
             }.padding(28)
             ReaderHairline().padding(.horizontal, 28)
@@ -125,7 +124,7 @@ private struct ReadingBookCard: View {
             }.frame(height: 60, alignment: .top)
             ReaderHairline()
             HStack(spacing: 8) {
-                Button(action: open) { Label(openLabel, systemImage: "arrow.up.right").font(.system(size: 12, weight: .medium)) }
+                Button(action: open) { Label(openLabel, systemImage: "book.pages").font(.system(size: 12, weight: .medium)) }
                     .buttonStyle(.plain).accessibilityLabel("\(book.title) \(openLabel)")
                 Spacer(minLength: 4)
                 if !FileAccess.hasLocalData(book.url) {

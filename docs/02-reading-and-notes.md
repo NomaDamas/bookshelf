@@ -52,12 +52,16 @@ Option-Up and Option-Down keep their editing meaning and move the cursor instead
 
 Enter a page number and press Return to jump and keep reading with the keyboard.
 The first and last pages are clamped. PDF layout selection is saved between launches.
-**Help > Bookside 키보드 단축키** lists every key with your current settings; the keyboard
-button beside the page controls opens the same list.
+**Help > Bookside 키보드 단축키** lists every key with your current settings.
 
-The reading area keeps the current book title visible above the controls. Opening a book
-preserves the sidebar's visibility. The library marks the current row with its live page;
-“책장에서 보기” clears a library filter and scrolls to that book.
+The window toolbar holds the reader's controls in one row, as in Preview. On the left are
+the sidebar button and **서재**. In the middle is the book title; click it for the book menu
+with reading status, **책장에서 보기**, **Finder에서 보기**, OCR, **메모 내보내기…** and
+**AI로 이어가기**. On the right are 원문/텍스트, page layout, zoom (the percentage opens
+actual size and fit), find, and the Pi panel button. Below the page are only the bookmark
+button and page navigation. Opening a book preserves the sidebar's visibility. The library
+marks the current row with its live page; “책장에서 보기” clears a library filter and
+scrolls to that book.
 
 Default app shortcuts follow Preview and other macOS apps. Change them in
 **Settings > 단축키**.
@@ -147,7 +151,8 @@ result to jump to its PDF page.
 
 ## Appearance and AI handoff
 
-Settings offer system, light, and dark appearance. Native materials surround opaque
+Settings open from **Bookside > Settings…** (`Command-,`) in one window, which also opens
+when a panel needs a setting, such as Pi's sign-in. Settings offer system, light, and dark appearance. Native materials surround opaque
 reading/writing surfaces. Reduced transparency, increased contrast, and reduced
 motion have fallback paths; see [design and verification](../Resources/Design/DESIGN.md).
 

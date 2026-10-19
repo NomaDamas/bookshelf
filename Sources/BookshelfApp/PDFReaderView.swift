@@ -94,6 +94,7 @@ struct PDFReaderView: NSViewRepresentable {
             self.view = view
             tokens.append(NotificationCenter.default.addObserver(forName: .PDFViewPageChanged, object: view, queue: .main) { [weak self] _ in Task { @MainActor in self?.changedPage() } })
             tokens.append(NotificationCenter.default.addObserver(forName: .PDFViewSelectionChanged, object: view, queue: .main) { [weak self] _ in Task { @MainActor in self?.changedSelection() } })
+            tokens.append(NotificationCenter.default.addObserver(forName: .PDFViewScaleChanged, object: view, queue: .main) { [weak self] _ in Task { @MainActor in self?.changedScale() } })
         }
         deinit { tokens.forEach(NotificationCenter.default.removeObserver) }
         func detach() {
@@ -110,6 +111,10 @@ struct PDFReaderView: NSViewRepresentable {
                     self.model.pageChanged(index + 1)
                 }
             }
+        }
+        func changedScale() {
+            guard let view else { return }
+            model.zoomChanged(scale: view.scaleFactor, fits: view.autoScales)
         }
         func changedSelection() {
             guard let current = view?.document, current === model.document else { return }

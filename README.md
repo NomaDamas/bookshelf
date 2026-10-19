@@ -147,7 +147,7 @@ preserving existing `bookside` entries. Restart the clients and verify the tools
 For example: “Find my book, search for attention, and cite the PDF pages.”
 
 MCP can read your library and notes. Your client may send those results to its model
-provider, according to its configuration. The reader's **AI로 이어가기** button
+provider, according to its configuration. **AI로 이어가기** in the book title menu
 copies a context prompt to the clipboard. See the [MCP reference](docs/03-cli-and-mcp.md)
 and [data and privacy guide](docs/07-data-and-privacy.md).
 

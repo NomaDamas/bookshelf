@@ -24,6 +24,21 @@ that its Git tag or GitHub Release has been published.
   zoom commands are in **View**; search is in **Edit > 찾기**; saving and exporting notes
   are in **File**. Menu titles say whether a panel will be shown or hidden.
 
+- The reader keeps one row of controls above the page: the window toolbar. The sidebar
+  button stays first, followed by **서재**. Clicking the book title opens a menu with reading
+  status, **책장에서 보기**, Finder, OCR, export and **AI로 이어가기**, which replaces the
+  book header, its status menu and the ⋯ menu. View mode, page layout, zoom with a live
+  percentage, find and the Pi panel button sit on the right. The window title no longer
+  hides behind the add button.
+- The sidebar loses its duplicate title, back link, storage note and MCP link; below the page
+  only the bookmark button and page navigation remain. The keyboard reference lives in the
+  Help menu.
+- Settings open only as the app's Settings window (`Command-,`); the separate sheet and the
+  toolbar button are gone. The settings icon is the standard gear.
+- Icons have one meaning each: in-book page jumps use a page-number chip instead of an
+  outward arrow, and the undo arrow is no longer used for reading-status changes,
+  "펼친 책으로" or "원본 PDF 사용".
+
 ### Added
 
 - Zoom shortcuts (Command-Plus, Command-Minus, Command-0 for actual size and Command-9 to

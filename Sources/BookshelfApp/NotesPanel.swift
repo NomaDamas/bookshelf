@@ -4,17 +4,10 @@ import BookshelfCore
 struct NotesPanel: View {
     @ObservedObject var model: AppModel
     let book: Book
-    private var hasAgent: Bool { AgentRuntime.bridgeURL != nil }
     private var choices: [(String, String)] { [("페이지", "pages"), ("메모", "notes"), ("발췌", "quotes"), ("검색", "search")] }
 
     var body: some View {
         VStack(spacing: 0) {
-            VStack(alignment: .leading, spacing: 14) {
-                Button { model.showLibrary() } label: { Label("서재로 돌아가기", systemImage: "chevron.left") }
-                    .buttonStyle(.plain).font(.system(size: 12)).foregroundStyle(.secondary)
-                    .accessibilityIdentifier("reader-back-to-library")
-                Text(book.title).font(.system(size: 14, weight: .semibold)).lineLimit(2)
-            }.frame(maxWidth: .infinity, alignment: .leading).padding(18)
             ReaderPicker(choices: choices,
                          selection: $model.panelTab, label: "책 도구")
                 .frame(height: 28)
@@ -27,16 +20,6 @@ struct NotesPanel: View {
                 default: notebook
                 }
             }.frame(maxWidth: .infinity, maxHeight: .infinity)
-            ReaderHairline().padding(.horizontal, 16)
-            HStack(spacing: 4) {
-                if !hasAgent {
-                    Button { model.copyContext() } label: { Label("AI로 이어가기", systemImage: "arrow.up.right.square") }
-                        .buttonStyle(.plain).font(.system(size: 12)).help("현재 책과 메모를 외부 AI에 전달할 문맥으로 복사합니다.")
-                } else { Text("이 Mac에 저장됨").font(.system(size: 11)).foregroundStyle(.secondary) }
-                Spacer()
-                ReaderIconButton(symbol: "square.and.arrow.up", label: "메모 내보내기") { model.exportNotes() }
-                ReaderIconButton(symbol: "link", label: "CLI MCP 연결 안내") { model.showSettings = true }
-            }.padding(.leading, 20).padding(.trailing, 12).frame(height: ReaderStyle.footerHeight + 8)
         }.background(ReaderMaterial(material: .underWindowBackground))
     }
 
@@ -53,7 +36,6 @@ struct NotesPanel: View {
                         Text(model.saveStatus)
                     }.font(.system(size: 11)).foregroundStyle(model.saveStatus == "저장하지 못함" ? .orange : .secondary)
                 }
-                Text(book.title).font(.system(size: 12)).foregroundStyle(.secondary).lineLimit(2).lineSpacing(4)
             }.padding(18)
             ReaderHairline().padding(.horizontal, 18)
             ZStack(alignment: .topLeading) {
@@ -143,11 +125,7 @@ struct NotesPanel: View {
                     ForEach(model.searchResults) { hit in
                         Button { model.goToPage(hit.page) } label: {
                             VStack(alignment: .leading, spacing: 9) {
-                                HStack {
-                                    Text("PDF \(hit.page)쪽").monospacedDigit()
-                                    Spacer()
-                                    Image(systemName: "arrow.up.right")
-                                }.font(.system(size: 11, weight: .medium)).foregroundStyle(.secondary)
+                                PageChip(page: hit.page)
                                 Text(hit.text).font(.system(size: 13)).lineSpacing(5).lineLimit(7).foregroundStyle(.primary)
                             }.padding(14).frame(maxWidth: .infinity, alignment: .leading)
                                 .background(ReaderStyle.panel, in: RoundedRectangle(cornerRadius: ReaderTokens.radiusLarge, style: .continuous))
@@ -179,10 +157,8 @@ struct HighlightCard: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
-                Button { model.goToPage(highlight.page) } label: {
-                    Label("PDF \(highlight.page)쪽", systemImage: "arrow.up.right")
-                        .font(.system(size: 11, weight: .medium)).foregroundStyle(.secondary)
-                }.buttonStyle(.plain)
+                Button { model.goToPage(highlight.page) } label: { PageChip(page: highlight.page) }
+                    .buttonStyle(.plain).help("PDF \(highlight.page)쪽으로 이동")
                 Spacer()
                 ReaderIconButton(symbol: "trash", label: "발췌 메모 삭제") { confirmingDelete = true }
             }
@@ -196,5 +172,17 @@ struct HighlightCard: View {
             .confirmationDialog("이 발췌 메모를 삭제할까요?", isPresented: $confirmingDelete) {
                 Button("삭제", role: .destructive) { model.deleteHighlight(highlight) }
             }
+    }
+}
+
+/// A page number that moves within the same book. Arrows pointing out of the window are kept
+/// for leaving the app, so in-book jumps use this chip.
+struct PageChip: View {
+    let page: Int
+    var body: some View {
+        Text("\(page)쪽").font(.system(size: 11, weight: .medium)).monospacedDigit().foregroundStyle(.secondary)
+            .padding(.horizontal, 7).frame(height: 20)
+            .background(ReaderStyle.muted, in: Capsule())
+            .accessibilityLabel("PDF \(page)쪽")
     }
 }

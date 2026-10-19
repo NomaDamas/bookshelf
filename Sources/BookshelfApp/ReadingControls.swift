@@ -25,10 +25,10 @@ struct ReadingActions: View {
             Button("읽기 완료", systemImage: "checkmark.circle") { model.completeReading(book) }
         }
         if summary.status == .reading {
-            Button(summary.completedCount > 0 ? "이번 다시 읽기 취소" : "읽기 전으로 옮기기", systemImage: "arrow.uturn.backward") { model.shelveReading(book) }
+            Button(summary.completedCount > 0 ? "이번 다시 읽기 취소" : "읽기 전으로 옮기기") { model.shelveReading(book) }
         }
         if summary.status == .finished {
-            Button("최근 완료 기록 취소", systemImage: "arrow.uturn.backward") { model.undoReadingCompletion(book) }
+            Button("최근 완료 기록 취소") { model.undoReadingCompletion(book) }
         }
         Divider()
         Button("회독 기록 보기", systemImage: "clock") { model.showReadingHistory(book) }

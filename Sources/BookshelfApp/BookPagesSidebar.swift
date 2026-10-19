@@ -5,11 +5,6 @@ struct BookPagesSidebar: View {
     @ObservedObject var model: AppModel
     var body: some View {
         VStack(spacing: 0) {
-            HStack {
-                Text("페이지 \(model.page) / \(model.document?.pageCount ?? 0)").monospacedDigit()
-                Spacer()
-                Image(systemName: "rectangle.grid.1x2").accessibilityHidden(true)
-            }.font(.system(size: 11)).foregroundStyle(.secondary).padding(.horizontal, 18).padding(.vertical, 10)
             if model.document != nil { NativePageThumbnails(model: model) }
             else { ProgressView("페이지를 불러오는 중").frame(maxWidth: .infinity, maxHeight: .infinity) }
         }

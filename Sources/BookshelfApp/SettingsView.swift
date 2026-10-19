@@ -4,13 +4,12 @@ import BookshelfCore
 struct SettingsView: View {
     @ObservedObject var model: AppModel
     @AppStorage("readerAppearance") private var appearance = ReaderAppearance.system
-    @Environment(\.dismiss) private var dismiss
     private var ocrReady: Bool { OCRService.executable() != nil }
 
     var body: some View {
         VStack(spacing: 0) {
             HStack(spacing: 12) {
-                Image(systemName: "slider.horizontal.3")
+                Image(systemName: "gearshape")
                     .font(.system(size: 18)).foregroundStyle(.secondary)
                     .frame(width: 40, height: 40)
                     .background(ReaderStyle.muted, in: RoundedRectangle(cornerRadius: ReaderTokens.radiusLarge))
@@ -20,7 +19,6 @@ struct SettingsView: View {
                         .font(.system(size: 12)).foregroundStyle(.secondary)
                 }
                 Spacer()
-                Button("완료") { dismiss() }.keyboardShortcut(.defaultAction)
             }.padding(24)
             ReaderHairline()
             ReaderPicker(choices: [("일반", "general"), ("AI 연결", "ai"), ("단축키", "shortcuts")], selection: $model.settingsTab, label: "설정 분류")
@@ -57,7 +55,7 @@ struct SettingsView: View {
                                 Spacer()
                                 Link("설치 안내", destination: URL(string: "https://github.com/mkyt/OCRmyPDF-AppleOCR")!)
                             }.font(.system(size: 12))
-                            Text("책 옵션에서 새로 인식하거나 기존 OCR을 개선할 수 있습니다. 결과를 원문과 비교한 뒤 사용할 사본을 선택하세요.")
+                            Text("툴바의 책 제목 메뉴나 책 메뉴에서 새로 인식하거나 기존 OCR을 개선할 수 있습니다. 결과를 원문과 비교한 뒤 사용할 사본을 선택하세요.")
                                 .font(.system(size: 12)).foregroundStyle(.secondary).lineSpacing(4)
                         }
                     }
