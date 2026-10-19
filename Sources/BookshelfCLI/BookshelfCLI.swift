@@ -24,7 +24,7 @@ func stderr(_ text: String) { FileHandle.standardError.write(Data((text + "\n").
         }
         if command == "help" || command == "--help" {
             print("""
-            Bookside / 서재 (macOS 14+)
+            Bookside (macOS 14+)
             bookside-cli --version
             bookside-cli import <PDF-or-folder>
             bookside-cli books [title]
@@ -44,6 +44,7 @@ func stderr(_ text: String) { FileHandle.standardError.write(Data((text + "\n").
             bookside-cli reading-mcp <book-id> <book|page|range> <first-page> <last-page> [provided-page provided-characters]
 
             Data location: BOOKSIDE_DATA_DIR or ~/Library/Application Support/Bookside
+            (an existing Application Support/Bookshelf library is used in place)
             Search ignores OCR whitespace by default. --exact-spacing preserves word spacing.
             MCP exposes only reads. OCR and imports require explicit CLI/app actions.
             """)

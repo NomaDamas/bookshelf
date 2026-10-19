@@ -6,6 +6,7 @@
   "minimumMacOS": "14.0",
   "repository": "https://github.com/NomaDamas/bookside",
   "legacyBundleIdentifiers": [
+    "org.nomadamas.bookshelf",
     "org.bookshelf.reader"
   ]
 }

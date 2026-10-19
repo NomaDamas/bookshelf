@@ -41,7 +41,8 @@ def plist_bytes(data):
         "NSHumanReadableCopyright": "Bookside contributors. MIT License.",
         "CFBundleURLTypes": [{
             "CFBundleURLName": data["bundleIdentifier"] + ".book",
-            "CFBundleURLSchemes": ["bookside"],
+            # bookshelf:// links written before the rename keep opening books.
+            "CFBundleURLSchemes": ["bookside", "bookshelf"],
         }],
     }
     return plistlib.dumps(result, sort_keys=False)

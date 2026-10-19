@@ -24,3 +24,11 @@ fi
 ditto "$preview" "$target"
 codesign --verify --deep --strict "$target"
 print "Installed preview: $target"
+# The pre-rename preview lives at a different path, so this install never replaces it.
+legacy_preview="$HOME/Applications/Bookshelf Pi.app"
+if [[ -d "$legacy_preview" ]]; then
+  legacy_identity="$(plutil -extract CFBundleIdentifier raw "$legacy_preview/Contents/Info.plist" 2>/dev/null || true)"
+  if [[ "$legacy_identity" == org.nomadamas.bookshelf.pi || "$legacy_identity" == org.bookshelf.reader.pi ]]; then
+    print "The pre-rename preview is still at $legacy_preview. Quit it, then move it to the Trash."
+  fi
+fi

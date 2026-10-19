@@ -177,13 +177,19 @@ Open the DMG and drag `Bookside.app` to Applications, or use the local installer
 for `~/Applications`. Quit the old app first. Metadata/CLI verification does not
 prove an interactive Gatekeeper launch on another person's Mac.
 
-The new bundle ID succeeds the legacy `org.bookshelf.reader`. The library remains
-at `~/Library/Application Support/Bookside`, so notes and PDF identities do not
-move. The app copies only a valid legacy appearance preference when no new choice
-exists. It leaves the old preference domain intact. The local installer recognizes
-both bundle IDs; it refuses to overwrite an unrelated app.
+The bundle ID `org.nomadamas.bookside` succeeds the pre-rename
+`org.nomadamas.bookshelf` and the older `org.bookshelf.reader`. New libraries live
+at `~/Library/Application Support/Bookside`. While that folder does not exist and
+`Application Support/Bookshelf/library.sqlite3` does, Bookside keeps using the old
+folder in place, so notes and PDF identities do not move. The app copies only a
+valid legacy appearance preference when no new choice exists. It leaves the old
+preference domains intact. The local installer recognizes all three bundle IDs; it
+refuses to overwrite an unrelated app. Because the app name changed, installing
+`Bookside.app` does not replace `Bookshelf.app`; the local installer reports a
+remaining pre-rename copy so it can be removed after the library is confirmed.
 
 `register-mcp.command` discovers `/Applications/Bookside.app` and the personal
 Applications folder. If both exist, set `BOOKSIDE_APP_PATH` to the intended bundle.
-Existing client registrations are still preserved; inspect their executable paths
-when changing installation location. See [CLI/MCP](03-cli-and-mcp.md).
+Existing `bookside` registrations are preserved; inspect their executable paths
+when changing installation location. A pre-rename `bookshelf` entry that runs
+`bookshelf-cli` is removed after the `bookside` entry exists. See [CLI/MCP](03-cli-and-mcp.md).

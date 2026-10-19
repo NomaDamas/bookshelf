@@ -34,8 +34,13 @@ def product():
     return json.loads(METADATA.read_text(encoding="utf-8"))
 
 
+def setting(name, default=None):
+    # BOOKSHELF_* is the pre-rename prefix; it applies only when BOOKSIDE_* is unset.
+    return os.environ.get("BOOKSIDE_" + name) or os.environ.get("BOOKSHELF_" + name) or default
+
+
 def identity():
-    value = os.environ.get("BOOKSIDE_SIGNING_IDENTITY", "-")
+    value = setting("SIGNING_IDENTITY", "-")
     if value != "-" and not value.startswith("Developer ID Application:"):
         raise ValueError("Use a Developer ID Application identity, or '-' for an ad-hoc local build")
     return value
@@ -147,7 +152,7 @@ def verify_dmg(dmg, expected_arch=None):
 def package(output, skip_build=False, notarize=False):
     run("python3", ROOT / "scripts/app-metadata.py", "check")
     signing = identity()
-    profile = os.environ.get("BOOKSIDE_NOTARY_PROFILE")
+    profile = setting("NOTARY_PROFILE")
     if notarize and (signing == "-" or not profile):
         raise ValueError("Notarization requires Developer ID signing and BOOKSIDE_NOTARY_PROFILE")
     if not skip_build:
@@ -185,7 +190,8 @@ def package(output, skip_build=False, notarize=False):
         warning = "Developer ID signed; see release notes for notarization status." if signed else "Ad-hoc signed developer preview. Not notarized by Apple."
         (stage / "READ ME.txt").write_text(
             f"Bookside {data['version']}\n\nDrag Bookside.app to Applications.\n"
-            "Quit the old app before replacing it. Your library and notes remain in Application Support/Bookside.\n\n"
+            "Quit the old app first. Your library and notes stay in Application Support; a library\n"
+            "from Bookshelf is used in place, and Bookshelf.app can then be moved to the Trash.\n\n"
             + warning + "\nOCR dependencies are installed separately.\n"
             + data["repository"] + "/blob/main/docs/01-getting-started.md\n", encoding="utf-8")
         # Direct srcfolder -> UDZO creation produced out-of-range BLKX offsets on

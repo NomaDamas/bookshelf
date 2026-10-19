@@ -34,3 +34,17 @@ except BaseException:
     raise
 PYREPLACE
 print "Installed: $target"
+# The pre-rename app lives at a different path, so installing Bookside never replaces it.
+python3 - "$HOME/Applications/Bookshelf.app" <<'PYLEGACY'
+import json, plistlib, sys
+from pathlib import Path
+product = json.loads(Path("Sources/BookshelfCore/Resources/AppMetadata.json").read_text())
+legacy = Path(sys.argv[1])
+try:
+    identity = plistlib.loads((legacy / "Contents/Info.plist").read_bytes()).get("CFBundleIdentifier")
+except (OSError, plistlib.InvalidFileException):
+    sys.exit()
+if identity in product["legacyBundleIdentifiers"]:
+    print(f"The pre-rename app is still at {legacy}. Quit it, confirm Bookside shows your library,\n"
+          "then move the old app to the Trash and run scripts/register-mcp.command.")
+PYLEGACY

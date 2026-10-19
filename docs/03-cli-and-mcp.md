@@ -18,7 +18,8 @@ BOOKSIDE_CLI="$PWD/dist/Bookside.app/Contents/MacOS/bookside-cli"
 For the installed app, use
 `BOOKSIDE_CLI="$HOME/Applications/Bookside.app/Contents/MacOS/bookside-cli"`.
 This shell variable is just for these examples. `BOOKSIDE_DATA_DIR` selects the
-database; the default is `~/Library/Application Support/Bookside`. `doctor` reports
+database; the default is `~/Library/Application Support/Bookside`, or the pre-rename
+`Bookshelf` folder there when only that one holds a library. `doctor` reports
 that path, the discovered OCR executable, book count, and version.
 
 Commands print JSON to stdout except `help`/`--help` and `version`/`--version`

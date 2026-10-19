@@ -4,11 +4,13 @@ cd "$(dirname "$0")/.."
 if [[ -z "${DEVELOPER_DIR:-}" && -d /Applications/Xcode.app/Contents/Developer ]]; then
   export DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer
 fi
-configuration="${BOOKSIDE_BUILD_CONFIGURATION:-release}"
+# BOOKSHELF_* is the pre-rename prefix; it applies only when BOOKSIDE_* is unset.
+configuration="${BOOKSIDE_BUILD_CONFIGURATION:-${BOOKSHELF_BUILD_CONFIGURATION:-release}}"
+include_agent="${BOOKSIDE_INCLUDE_AGENT:-${BOOKSHELF_INCLUDE_AGENT:-0}}"
 mkdir -p .runtime dist
 python3 scripts/generate-reader-tokens.py --check
 python3 scripts/app-metadata.py check
-if [[ "${BOOKSIDE_INCLUDE_AGENT:-0}" == 1 ]]; then
+if [[ "$include_agent" == 1 ]]; then
   pnpm --dir Sources/BookshelfAgent install --frozen-lockfile --ignore-scripts
   pnpm --dir Sources/BookshelfAgent run build
 fi
@@ -22,7 +24,7 @@ mkdir -p "$bundle/Contents/MacOS" "$bundle/Contents/Resources/ThirdParty"
 cp "$binary_dir/Bookside" "$bundle/Contents/MacOS/Bookside"
 cp "$binary_dir/bookside-cli" "$bundle/Contents/MacOS/bookside-cli"
 cp -R "$binary_dir/Bookside_BookshelfCore.bundle" "$bundle/Contents/Resources/"
-if [[ "${BOOKSIDE_INCLUDE_AGENT:-0}" == 1 ]]; then
+if [[ "$include_agent" == 1 ]]; then
   mkdir -p "$bundle/Contents/Resources/Agent"
   cp dist/agent/bridge.mjs dist/agent/profile.json "$bundle/Contents/Resources/Agent/"
   cp dist/agent/renderer.html dist/agent/renderer.js "$bundle/Contents/Resources/Agent/"

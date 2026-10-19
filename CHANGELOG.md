@@ -4,6 +4,25 @@ Changes intended for users are recorded here. Version metadata lives in
 `Sources/BookshelfCore/Resources/AppMetadata.json`. A listed version is not proof
 that its Git tag or GitHub Release has been published.
 
+## [Unreleased]
+
+### Changed
+
+- Renamed the project to Bookside: `Bookside.app`, `bookside-cli`, bundle ID
+  `org.nomadamas.bookside`, `bookside://` links, the `bookside` MCP server name, and
+  the `NomaDamas/bookside` repository. Swift module names are unchanged for now.
+- An existing `~/Library/Application Support/Bookshelf` library is used in place
+  while no `Bookside` folder exists; nothing is moved or copied.
+- `bookshelf://book/...` links still open books, and the reader appearance carries
+  over from `org.nomadamas.bookshelf`.
+- `register-mcp.command` replaces a pre-rename `bookshelf` entry that runs
+  `bookshelf-cli`, and the local installer reports a remaining `Bookshelf.app`.
+
+### Deprecated
+
+- `BOOKSHELF_*` variables. They apply only when the matching `BOOKSIDE_*` variable
+  is unset or empty.
+
 ## [0.1.0] - 2026-10-17
 
 ### Added

@@ -34,6 +34,7 @@
 			<key>CFBundleURLSchemes</key>
 			<array>
 				<string>bookside</string>
+				<string>bookshelf</string>
 			</array>
 		</dict>
 	</array>

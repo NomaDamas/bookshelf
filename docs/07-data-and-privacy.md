@@ -7,7 +7,7 @@
 | Data | Location and behavior |
 | --- | --- |
 | Books and source text | PDFs stay at their chosen filesystem paths; the database is not a copy of your books. |
-| Library and notes | `~/Library/Application Support/Bookside/library.sqlite3` by default; SQLite WAL sidecars may exist. |
+| Library and notes | `~/Library/Application Support/Bookside/library.sqlite3` by default; SQLite WAL sidecars may exist. A pre-rename `Bookshelf/library.sqlite3` there is used in place while no `Bookside` folder exists. |
 | OCR copies | New PDF path selected in the app/CLI, normally beside the source. |
 | OCR logs/reports | `Logs/` under the data directory; reports can contain paths and extracted text. |
 | Appearance/window preferences | macOS app preferences, outside the selected library directory. |
@@ -37,6 +37,9 @@ Use your normal macOS account/device protections for sensitive material.
 | `BOOKSIDE_SIGNING_IDENTITY` | Build/packaging | Developer ID Application identity, or `-` for the default ad-hoc signature. |
 | `BOOKSIDE_NOTARY_PROFILE` | Packaging with `--notarize` | Name of an existing notarytool Keychain profile. |
 | `DEVELOPER_DIR` | Apple build tools | Select a compatible Xcode developer directory. |
+
+Each `BOOKSIDE_` variable above also accepts the pre-rename `BOOKSHELF_` prefix when
+the `BOOKSIDE_` variable is unset or empty.
 
 Use the same data directory in the app and MCP client if they should see the same
 books. Terminal exports do not reliably affect Finder-launched apps. See the
