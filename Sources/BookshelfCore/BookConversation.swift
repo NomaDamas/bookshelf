@@ -12,6 +12,11 @@ public struct BookChatMessage: Codable, Identifiable, Equatable, Sendable {
     public var usage: AgentContextUsage?
     public var model: String?
     public var attachments: [ChatAttachment]?
+    public var scope: BookReadingScope?
+    public var reading: BookReadingCoverage?
+    public var sourcePages: [Int] {
+        Array(Set(reading?.sourcePages ?? (scope?.contains(page) == false ? [] : [page]))).sorted()
+    }
     public var created: Double
     public init(role: String, text: String, backend: String, page: Int, state: String = "complete", harness: String? = nil, skill: String? = nil) {
         id = UUID().uuidString; self.role = role; self.text = text; self.backend = backend

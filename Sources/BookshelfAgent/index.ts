@@ -55,6 +55,31 @@ export function validateRequest(input: any): Request {
 			input.book.page < 1
 		)
 			throw new Error("책 페이지 정보를 확인해 주세요.");
+		if (input.reading !== undefined || input.book.scope !== undefined) {
+			const scope = input.book.scope;
+			if (
+				!input.reading ||
+				!isAbsolute(input.reading.command ?? "") ||
+				!isAbsolute(input.reading.directory ?? "") ||
+				!scope ||
+				!["book", "page", "range"].includes(scope.mode) ||
+				!Number.isInteger(scope.startPage) ||
+				!Number.isInteger(scope.endPage) ||
+				scope.startPage < 1 ||
+				scope.endPage < scope.startPage ||
+				scope.endPage > 100000 ||
+				typeof input.book.id !== "string" ||
+				!input.book.id.length ||
+				input.book.id.length > 200 ||
+				(input.book.providedCharacters !== undefined &&
+					(!Number.isInteger(input.book.providedCharacters) ||
+						input.book.providedCharacters < 0 ||
+						input.book.providedCharacters > 10000))
+			)
+				throw new Error(
+					"책 검색 연결과 질문 범위를 확인해 주세요. 앱을 다시 빌드하거나 설치해야 할 수 있습니다.",
+				);
+		}
 		systemInstructions(input.skill, input.backend);
 		if (
 			!Array.isArray(input.messages) ||
@@ -101,7 +126,11 @@ export async function handle(input: unknown, signal: AbortSignal, emit: Emit) {
 		emit({ type: "status", status });
 		return;
 	}
-	const instructions = systemInstructions(request.skill, request.backend);
+	const instructions = systemInstructions(
+		request.skill,
+		request.backend,
+		Boolean(request.reading),
+	);
 	const run = request.backend === "claude" ? claudeChat : codexChat;
 	const history = request.messages ?? [];
 	emit({

@@ -11,6 +11,7 @@ struct BookChatView: View {
     @State private var followTail = true
     @State private var confirmingClear = false
     @State private var editingQuestion: BookChatMessage?
+    @State private var choosingRange = false
     @FocusState private var composerFocused: Bool
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     private var currentText: String { model.document?.page(at: model.page - 1)?.string ?? "" }
@@ -45,7 +46,7 @@ struct BookChatView: View {
                         if chat.messages.isEmpty {
                             VStack(alignment: .leading, spacing: 12) {
                                 Text("읽다가 막힌 부분을 물어보세요.").font(.system(size: 16, weight: .medium))
-                                Text("현재 페이지와 선택한 문장을 바탕으로 설명합니다. 대화는 이 책에 저장됩니다.")
+                                Text("이 책에서 필요한 내용을 찾아 읽고 설명합니다. 현재 페이지와 선택 문장도 함께 참고합니다.")
                                     .font(.system(size: 13)).foregroundStyle(.secondary).lineSpacing(5)
                                 Button("이 페이지를 쉽게 설명해줘") { chat.draft = "이 페이지의 핵심 내용을 작은 예시와 함께 쉽게 설명해줘." }
                                     .buttonStyle(.bordered).controlSize(.small)
@@ -71,11 +72,20 @@ struct BookChatView: View {
                                 if let attachments = message.attachments {
                                     ForEach(attachments) { ChatAttachmentView(attachment: $0, directory: model.store.directory) }
                                 }
-                                if !message.text.isEmpty { ChatResponseView(text: message.text, streaming: chat.busy && message.id == chat.messages.last?.id) }
+                                if !message.text.isEmpty {
+                                    ChatResponseView(text: message.text, streaming: chat.busy && message.id == chat.messages.last?.id, sourcePages: Set(message.sourcePages)) { page in
+                                        guard model.activeBook?.id == book.id else { return }; model.goToPage(page)
+                                    }
+                                }
                                 if message.role == "assistant" && chat.busy && message.id == chat.messages.last?.id && (message.text.isEmpty || !chat.activityMessage.isEmpty) {
                                     HStack(spacing: 8) { ProgressView().controlSize(.small); Text(chat.activityMessage.isEmpty ? "답변을 준비하고 있습니다." : chat.activityMessage).font(.system(size: 12)).foregroundStyle(.secondary) }
                                 }
                                 if message.role == "assistant" && !message.text.isEmpty {
+                                    if let reading = message.reading {
+                                        ChatReadingSources(reading: reading) { page in
+                                            guard model.activeBook?.id == book.id else { return }; model.goToPage(page)
+                                        }
+                                    }
                                     HStack(spacing: 10) {
                                         Button("질문한 \(message.page)쪽") { model.goToPage(message.page) }
                                             .help("질문할 때 전달한 PDF 페이지로 이동합니다.")
@@ -88,7 +98,8 @@ struct BookChatView: View {
                                         if message.state == "complete" {
                                             Button("메모에 담기") {
                                                 guard model.activeBook?.id == book.id else { return }
-                                                model.editNotebook(model.notebookText + (model.notebookText.isEmpty ? "" : "\n\n") + "[AI 대화 / PDF \(message.page)쪽]\n" + message.text)
+                                                let sourceLabel = message.scope?.title ?? "PDF \(message.page)쪽"
+                                                model.editNotebook(model.notebookText + (model.notebookText.isEmpty ? "" : "\n\n") + "[AI 대화 / \(sourceLabel)]\n" + message.text)
                                                 model.sidebarVisible = true; model.panelTab = "notes"
                                             }
                                         }
@@ -138,7 +149,18 @@ struct BookChatView: View {
             }
             VStack(alignment: .leading, spacing: 10) {
                 HStack {
-                    Text("PDF \(model.page)쪽").monospacedDigit()
+                    Menu {
+                        Button("이 책 전체") { chat.scopeMode = "book" }
+                        Button("현재 페이지") { chat.scopeMode = "page" }
+                        Button("페이지 범위 지정…") { choosingRange = true }
+                    } label: { Text(chat.readingScope(page: model.page, pageCount: model.document?.pageCount ?? book.pageCount).title) }
+                        .menuStyle(.borderlessButton).fixedSize().accessibilityLabel("질문 범위").disabled(chat.busy)
+                        .accessibilityValue(chat.readingScope(page: model.page, pageCount: model.document?.pageCount ?? book.pageCount).title)
+                    Text("현재 \(model.page)쪽").monospacedDigit().lineLimit(1)
+                    Spacer()
+                    Toggle("노트 포함", isOn: $includeNotes).toggleStyle(.checkbox)
+                }.font(.system(size: 11)).foregroundStyle(.secondary)
+                HStack {
                     Menu {
                         Button("알아서 설명 (자동)") { chat.skill = "auto" }
                         Divider()
@@ -149,13 +171,12 @@ struct BookChatView: View {
                         .menuStyle(.borderlessButton).fixedSize().accessibilityLabel("설명 방식").disabled(chat.busy)
                         .help("자동 모드에서는 질문에 맞게 글, 표, 다이어그램을 고릅니다. Codex는 이미지도 생성할 수 있습니다.")
                     Spacer()
-                    Toggle("노트 포함", isOn: $includeNotes).toggleStyle(.checkbox)
                 }.font(.system(size: 11)).foregroundStyle(.secondary)
                 TextEditor(text: $chat.draft).font(.system(size: 14)).scrollContentBackground(.hidden)
                     .focused($composerFocused)
                     .frame(minHeight: 56, maxHeight: 100).padding(.vertical, 4)
                     .overlay(alignment: .topLeading) {
-                        if chat.draft.isEmpty { Text("이 페이지에서 궁금한 점을 물어보세요.").font(.system(size: 13)).foregroundStyle(.tertiary).padding(.leading, 5).padding(.top, 12).allowsHitTesting(false) }
+                        if chat.draft.isEmpty { Text("이 책에서 궁금한 점을 물어보세요.").font(.system(size: 13)).foregroundStyle(.tertiary).padding(.leading, 5).padding(.top, 12).allowsHitTesting(false) }
                     }
                     .accessibilityLabel("책에 질문").accessibilityIdentifier("book-chat-composer")
                 HStack {
@@ -175,7 +196,7 @@ struct BookChatView: View {
                         Button { send() } label: { Image(systemName: "arrow.up").font(.system(size: 13, weight: .semibold)).frame(width: 28, height: 28) }
                             .buttonStyle(.borderedProminent).clipShape(Circle()).accessibilityLabel("질문하기").help("질문하기 (\(model.shortcuts[.sendMessage].label))")
                             .keyboardShortcut(model.shortcuts[.sendMessage].value)
-                            .disabled(editingQuestion != nil || chat.draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || model.document == nil || !AgentRuntime.ready || chat.account?.connected != true)
+                            .disabled(editingQuestion != nil || choosingRange || chat.draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || model.document == nil || !AgentRuntime.ready || chat.account?.connected != true)
                     }
                 }
             }.padding(14)
@@ -193,7 +214,12 @@ struct BookChatView: View {
             .sheet(item: $editingQuestion) { message in
                 ChatQuestionEditor(message: message, shortcut: model.shortcuts[.sendMessage].value) { text in
                     guard model.activeBook?.id == book.id else { return }
-                    followTail = true; chat.reviseQuestion(message.id, text: text, context: context(page: message.page))
+                    followTail = true; chat.reviseQuestion(message.id, text: text, context: context(page: message.page, scope: message.scope))
+                }
+            }
+            .sheet(isPresented: $choosingRange) {
+                ChatPageRangeEditor(pageCount: model.document?.pageCount ?? book.pageCount, currentPage: model.page, selected: chat.pageRange) { range in
+                    chat.pageRange = range; chat.scopeMode = "range"
                 }
             }
             .task(id: book.id) {
@@ -203,18 +229,19 @@ struct BookChatView: View {
     }
     private func send() {
         if NSApp.currentEvent?.type == .keyDown, let editor = NSApp.keyWindow?.firstResponder as? NSTextView, editor.hasMarkedText() { return }
-        guard model.activeBook?.id == book.id, model.flushPendingSave() else { return }
+        guard !choosingRange, model.activeBook?.id == book.id, model.flushPendingSave() else { return }
         followTail = true; composerFocused = true
+        let scope = chat.readingScope(page: model.page, pageCount: model.document?.pageCount ?? book.pageCount)
         chat.send(context: AgentRequest.Context(id: book.id, title: book.title, page: model.page,
-                  text: currentText, notes: includeNotes ? model.notebookText : "", selection: model.selection.map(\.quote).joined(separator: "\n")))
+                  text: currentText, notes: includeNotes ? model.notebookText : "", selection: model.selection.filter { scope.contains($0.page) }.map(\.quote).joined(separator: "\n"), scope: scope))
     }
-    private func context(page: Int) -> AgentRequest.Context {
+    private func context(page: Int, scope: BookReadingScope? = nil) -> AgentRequest.Context {
         AgentRequest.Context(id: book.id, title: book.title, page: page, text: model.document?.page(at: page - 1)?.string ?? "",
-                             notes: includeNotes ? model.notebookText : "", selection: "")
+                             notes: includeNotes ? model.notebookText : "", selection: "", scope: scope ?? BookReadingScope(mode: "page", startPage: page, endPage: page))
     }
     private func retry() {
         guard model.activeBook?.id == book.id, let question = chat.lastQuestion, !chat.busy else { return }
-        followTail = true; chat.reviseQuestion(question.id, text: question.text, context: context(page: question.page))
+        followTail = true; chat.reviseQuestion(question.id, text: question.text, context: context(page: question.page, scope: question.scope))
     }
     private func copy(_ text: String) { NSPasteboard.general.clearContents(); NSPasteboard.general.setString(text, forType: .string) }
     private func openConnectionSettings() { model.settingsTab = "ai"; model.showSettings = true }
@@ -269,6 +296,7 @@ private struct LearningProfileView: View {
 
 struct ChatMarkdownText: View {
     let text: String
+    var sourcePages: Set<Int> = []
     private struct Block: Identifiable { let id: Int; let text: String; let table: [[String]]? }
     private var blocks: [Block] {
         let lines = text.components(separatedBy: "\n"); var result: [Block] = [], index = 0
@@ -311,6 +339,6 @@ struct ChatMarkdownText: View {
         }
     }
     private func inline(_ text: String) -> AttributedString {
-        (try? AttributedString(markdown: text, options: .init(interpretedSyntax: .inlineOnlyPreservingWhitespace))) ?? AttributedString(text)
+        (try? AttributedString(markdown: ChatCitations.linkedMarkdown(text, pages: sourcePages), options: .init(interpretedSyntax: .inlineOnlyPreservingWhitespace))) ?? AttributedString(text)
     }
 }

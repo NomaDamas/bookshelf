@@ -41,6 +41,7 @@ func stderr(_ text: String) { FileHandle.standardError.write(Data((text + "\n").
             bookshelf-cli export <book-id>
             bookshelf-cli doctor
             bookshelf-cli mcp
+            bookshelf-cli reading-mcp <book-id> <book|page|range> <first-page> <last-page> [provided-page provided-characters]
 
             Data location: BOOKSHELF_DATA_DIR or ~/Library/Application Support/Bookshelf
             Search ignores OCR whitespace by default. --exact-spacing preserves word spacing.
@@ -98,6 +99,13 @@ func stderr(_ text: String) { FileHandle.standardError.write(Data((text + "\n").
             print(try encoded(store.book(id)))
         case "doctor": print(try objectJSON(["data_directory": store.directory.path, "ocrmypdf": OCRService.executable()?.path ?? "not found", "book_count": store.books().count, "version": AppMetadata.current.version, "build_number": AppMetadata.current.buildNumber, "bundle_identifier": AppMetadata.current.bundleIdentifier]))
         case "mcp": try await runMCP(store: store)
+        case "reading-mcp":
+            guard args.count == 5 || args.count == 7 else { throw ShelfError.message("독서 연결 인자를 확인해 주세요.") }
+            let scope = try BookReadingScope(mode: argument(2), startPage: pageArgument(3), endPage: pageArgument(4))
+            let providedPage = args.count == 7 ? Int(args[5]) : nil
+            let providedCharacters = args.count == 7 ? (Int(args[6]) ?? -1) : 0
+            guard providedCharacters >= 0, providedCharacters <= 10000 else { throw ShelfError.message("현재 페이지 문맥을 확인해 주세요.") }
+            try await runBookReadingMCP(store: store, bookID: argument(1), scope: scope, providedPage: providedPage, providedCharacters: providedCharacters)
         default: throw ShelfError.message("알 수 없는 명령: \(command)")
         }
     }

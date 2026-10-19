@@ -1,4 +1,11 @@
 import { mkdir } from "node:fs/promises";
+import {
+	bookServer,
+	bookToolActivity,
+	bookToolNames,
+	emitBookReading,
+	isBookTool,
+} from "./book-tools.js";
 import { maxCodexEventBytes, saveGeneratedImage } from "./generated-image.js";
 import {
 	jsonLines,
@@ -9,7 +16,8 @@ import {
 import type { AccountStatus, Emit, Request } from "./types.js";
 import { codexUsage } from "./usage.js";
 
-export function codexArguments(): string[] {
+export function codexArguments(request?: Request): string[] {
+	const server = request ? bookServer(request) : undefined;
 	return [
 		"app-server",
 		"--stdio",
@@ -42,6 +50,26 @@ export function codexArguments(): string[] {
 		"skills.bundled.enabled=false",
 		"-c",
 		"tools.update_plan.enabled=false",
+		...(server
+			? [
+					"-c",
+					`mcp_servers.bookshelf.command=${JSON.stringify(server.command)}`,
+					"-c",
+					`mcp_servers.bookshelf.args=${JSON.stringify(server.args)}`,
+					"-c",
+					`mcp_servers.bookshelf.env.BOOKSHELF_DATA_DIR=${JSON.stringify(server.env.BOOKSHELF_DATA_DIR)}`,
+					"-c",
+					`mcp_servers.bookshelf.enabled_tools=${JSON.stringify(bookToolNames)}`,
+					"-c",
+					'mcp_servers.bookshelf.default_tools_approval_mode="auto"',
+					"-c",
+					"mcp_servers.bookshelf.required=true",
+					"-c",
+					"mcp_servers.bookshelf.startup_timeout_sec=30",
+					"-c",
+					"mcp_servers.bookshelf.tool_timeout_sec=120",
+				]
+			: []),
 	];
 }
 
@@ -65,7 +93,7 @@ class CodexConnection {
 		if (!request.codexPath) throw new Error("Codex CLI를 먼저 설치해 주세요.");
 		this.child = startChild(
 			request.codexPath,
-			codexArguments(),
+			codexArguments(request),
 			request.workspace,
 			{ ...runtimeEnvironment(), CODEX_HOME: request.codexHome },
 		);
@@ -280,7 +308,7 @@ export async function codexChat(
 			model: selected.model ?? selected.id,
 			baseInstructions: instructions,
 			developerInstructions:
-				"Use the supplied reference text. Choose the explanation format yourself unless the user specifies one. Only the official image_gen.imagegen tool is permitted, for new images from descriptions. Do not read local files or reference local image paths. The app displays completed generated images automatically.",
+				"Use supplied text and successful bookshelf tool results as evidence. Choose the explanation format yourself unless the user specifies one. Only explicitly configured bookshelf read-only tools and official image_gen.imagegen are permitted. Use book tools when more pages are needed. Do not read arbitrary files or reference local image paths. The app displays generated images automatically.",
 			cwd: request.workspace,
 			sandbox: "read-only",
 			approvalPolicy: "never",
@@ -339,6 +367,10 @@ export async function codexChat(
 				}
 				if (
 					method === "item/started" &&
+					!(
+						params.item?.type === "mcpToolCall" &&
+						isBookTool(params.item?.server, params.item?.tool, request)
+					) &&
 					![
 						"agentMessage",
 						"reasoning",
@@ -354,6 +386,24 @@ export async function codexChat(
 					);
 					client.close();
 					return;
+				}
+				if (
+					params.item?.type === "mcpToolCall" &&
+					isBookTool(params.item.server, params.item.tool, request)
+				) {
+					if (method === "item/started")
+						emit({
+							type: "activity",
+							message: bookToolActivity(
+								params.item.tool,
+								params.item.arguments,
+							),
+						});
+					if (method === "item/completed") {
+						if (params.item.status === "completed" && !params.item.error)
+							emitBookReading(params.item.result?.content, request, emit);
+						emit({ type: "activity", message: "" });
+					}
 				}
 				if (
 					method === "item/started" &&

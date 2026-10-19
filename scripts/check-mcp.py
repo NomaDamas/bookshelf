@@ -41,7 +41,7 @@ def send(method, params=None, notification=False):
     raise TimeoutError(method)
 
 try:
-    init = send('initialize', {'protocolVersion': '2025-11-25', 'capabilities': {}, 'clientInfo': {'name': 'bookshelf-integration-check', 'version': '1'}})
+    init = send('initialize', {'protocolVersion': '2025-11-25', 'capabilities': {'experimental': {'codex/auth-change': {}}, 'elicitation': {'form': {}, 'url': {}}}, 'clientInfo': {'name': 'bookshelf-integration-check', 'version': '1'}})
     send('notifications/initialized', notification=True)
     tools = send('tools/list')['tools']
     assert len(tools) == 5
@@ -70,7 +70,7 @@ try:
     assert responses['get_reading_context']['page'] == 2
     invalid = send('tools/call', {'name': 'read_page', 'arguments': {'book_id': book_id, 'page': 0}})
     assert invalid.get('isError')
-    report = {'protocol': init['protocolVersion'], 'tools': [t['name'] for t in tools], 'all_read_only': True, 'all_calls_passed': True, 'invalid_page_rejected': True, 'ocr_whitespace_search': True, 'exact_spacing_option': True, 'invalid_search_option_rejected': True}
+    report = {'protocol': init['protocolVersion'], 'tools': [t['name'] for t in tools], 'all_read_only': True, 'all_calls_passed': True, 'invalid_page_rejected': True, 'ocr_whitespace_search': True, 'exact_spacing_option': True, 'invalid_search_option_rejected': True, 'object_experimental_capability_ignored': True}
     (root / '.runtime/mcp-check-result.json').write_text(json.dumps(report, indent=2), encoding='utf-8')
     print(json.dumps(report, indent=2))
 finally:

@@ -21,6 +21,7 @@ public struct AgentEvent: Decodable, Sendable {
     public var usage: AgentContextUsage?
     public var models: [AgentModelChoice]?
     public var attachment: ChatAttachment?
+    public var reading: BookReadingCoverage?
 }
 public struct AgentModelChoice: Codable, Identifiable, Equatable, Sendable {
     public let id: String
@@ -39,10 +40,20 @@ public struct AgentRequest: Encodable, Sendable {
         public var text: String
         public var notes: String
         public var selection: String
-        public init(id: String, title: String, page: Int, text: String, notes: String, selection: String) {
-            self.id = id; self.title = title; self.page = page; self.text = String(text.prefix(10000))
-            self.notes = String(notes.prefix(4000)); self.selection = String(selection.prefix(3000))
+        public var scope: BookReadingScope?
+        public var providedCharacters: Int
+        public var textTruncated: Bool
+        public init(id: String, title: String, page: Int, text: String, notes: String, selection: String, scope: BookReadingScope? = nil) {
+            self.id = id; self.title = title; self.page = page; self.scope = scope
+            self.text = scope?.contains(page) == false ? "" : String(text.prefix(10000))
+            providedCharacters = self.text.count
+            textTruncated = scope?.contains(page) == false ? false : text.count > 10000
+            self.notes = String(notes.prefix(4000)); self.selection = scope?.contains(page) == false ? "" : String(selection.prefix(3000))
         }
+    }
+    public struct ReadingConfiguration: Encodable, Sendable {
+        public var command: String
+        public var directory: String
     }
     public var action: String
     public var clientVersion: String
@@ -58,6 +69,7 @@ public struct AgentRequest: Encodable, Sendable {
     public var question: String?
     public var messages: [Message]
     public var book: Context?
+    public var reading: ReadingConfiguration?
     public init(action: String, backend: ChatBackend, directory: URL, usePi: Bool = true, skill: String = "auto",
                 question: String? = nil, messages: [Message] = [], book: Context? = nil, model: String? = nil) {
         self.action = action; self.clientVersion = AppMetadata.current.version; self.backend = backend; self.usePi = usePi; self.skill = skill
@@ -67,6 +79,9 @@ public struct AgentRequest: Encodable, Sendable {
         assetDirectory = directory.appendingPathComponent("ChatAssets", isDirectory: true).path
         claudePath = AgentRuntime.findExecutable("claude")?.path; codexPath = AgentRuntime.findExecutable("codex")?.path
         self.question = question; self.messages = messages; self.book = book
+        if action == "chat", book?.scope != nil {
+            reading = ReadingConfiguration(command: AgentRuntime.readingCLI?.path ?? "", directory: directory.path)
+        }
         self.model = model?.isEmpty == false ? model : nil
     }
 }
@@ -82,6 +97,10 @@ public enum AgentRuntime {
         return bundled.flatMap { FileManager.default.fileExists(atPath: $0.path) ? $0 : nil }
     }
     public static var ready: Bool { findExecutable("node") != nil && bridgeURL != nil }
+    public static var readingCLI: URL? {
+        let url = Bundle.main.executableURL?.deletingLastPathComponent().appendingPathComponent("bookshelf-cli")
+        return url.flatMap { FileManager.default.isExecutableFile(atPath: $0.path) ? $0 : nil }
+    }
 }
 
 /// One request per process. The app owns history; provider credentials never cross this protocol.

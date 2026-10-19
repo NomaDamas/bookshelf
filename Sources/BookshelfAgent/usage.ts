@@ -14,7 +14,7 @@ export function claudeUsage(
 	record: any,
 	lastMessage?: any,
 ): ContextUsage | undefined {
-	// A fresh, tool-free request has one primary model. Do not sum other model windows.
+	// Use the latest model response, not a sum of all retrieval rounds in the turn.
 	const entries = Object.entries(record.modelUsage ?? {}) as [string, any][];
 	const preferred =
 		entries.find(([name]) => name === lastMessage?.model) ??
@@ -38,7 +38,10 @@ export function claudeUsage(
 				count(data.cacheReadInputTokens) +
 				count(data.cacheCreationInputTokens),
 		outputTokens: count(
-			record.usage?.output_tokens ?? data?.outputTokens ?? usage?.output_tokens,
+			lastMessage?.usage?.output_tokens ??
+				record.usage?.output_tokens ??
+				data?.outputTokens ??
+				usage?.output_tokens,
 		),
 		contextWindow: count(data?.contextWindow) || undefined,
 		cachedInputTokens: count(

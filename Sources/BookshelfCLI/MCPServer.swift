@@ -53,6 +53,6 @@ func runMCP(store: LibraryStore) async throws {
             return .init(content: [.text(text: result, annotations: nil, _meta: nil)], isError: false)
         } catch { return .init(content: [.text(text: error.localizedDescription, annotations: nil, _meta: nil)], isError: true) }
     }
-    try await server.start(transport: StdioTransport())
+    try await server.start(transport: CompatibleMCPTransport())
     await server.waitUntilCompleted()
 }

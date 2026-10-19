@@ -1,5 +1,6 @@
 import { copyFile, mkdir, writeFile } from "node:fs/promises";
 import {
+	bookReadingInstructions,
 	learningInstructions,
 	learningSkills,
 	runtimeInstructions,
@@ -16,6 +17,7 @@ await writeFile(
 			systemPrompt: learningInstructions,
 			skills: learningSkills,
 			runtimes: runtimeInstructions,
+			bookReading: bookReadingInstructions,
 		},
 		null,
 		2,

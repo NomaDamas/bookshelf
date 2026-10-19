@@ -14,6 +14,7 @@ export type Request = {
 	codexPath?: string;
 	question?: string;
 	messages?: ChatMessage[];
+	reading?: { command: string; directory: string };
 	book?: {
 		id: string;
 		title: string;
@@ -21,6 +22,12 @@ export type Request = {
 		text: string;
 		notes: string;
 		selection: string;
+		providedCharacters?: number;
+		scope?: {
+			mode: "book" | "page" | "range";
+			startPage: number;
+			endPage: number;
+		};
 	};
 };
 export type AccountStatus = {

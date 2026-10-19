@@ -114,7 +114,9 @@ for toolchain selection, updates, and an isolated sample library.
 The experiment on this branch adds a dedicated AI panel beside a Preview-style reading
 workspace. Page thumbnails, notes, excerpts and search live on the left. Pi manages the
 conversation through official Claude Code/Codex executors, with model selection and
-English learning instructions. Questions use the current page, selection and optional notes.
+English learning instructions. Questions can search and read the selected book, using the
+current page as the reading location. Current-page and explicit page-range scopes are available.
+Replies show verified source-page links and how much of the permitted range was read.
 The default automatic mode chooses text, tables or visual explanations for the question.
 Codex can also generate images through its official image tool and keep them in the chat.
 

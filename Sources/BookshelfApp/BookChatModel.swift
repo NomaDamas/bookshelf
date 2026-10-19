@@ -10,6 +10,15 @@ import BookshelfCore
     @Published private(set) var usePi = true
     @Published var skill = "auto"
     @Published private(set) var activityMessage = ""
+    @Published var scopeMode = "book"
+    @Published var pageRange: ClosedRange<Int>?
+    func readingScope(page: Int, pageCount: Int) -> BookReadingScope {
+        if scopeMode == "page" { return BookReadingScope(mode: "page", startPage: page, endPage: page) }
+        if scopeMode == "range", let pageRange, pageRange.upperBound <= pageCount {
+            return BookReadingScope(mode: "range", startPage: pageRange.lowerBound, endPage: pageRange.upperBound)
+        }
+        return BookReadingScope(mode: "book", startPage: 1, endPage: max(1, pageCount))
+    }
     @Published private(set) var busy = false
     @Published private(set) var operation = ""
     @Published private(set) var accounts: [ChatBackend: AgentAccountStatus] = [:]
@@ -49,6 +58,7 @@ import BookshelfCore
         do {
             let saved = try store.conversation(bookID: id)
             bookID = id; messages = saved.messages; revision = saved.revision; draft = drafts[id] ?? ""
+            scopeMode = "book"; pageRange = nil
             canUndoEdit = (try? store.canUndoConversationEdit(bookID: id)) ?? false
             errorMessage = nil; return true
         } catch { errorMessage = error.localizedDescription; return false }
@@ -91,13 +101,22 @@ import BookshelfCore
         let question = draft.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !question.isEmpty else { return }
         guard question.utf16.count <= 10000 else { errorMessage = "질문은 10000자 이내로 입력해 주세요."; return }
-        let history = messages.filter { $0.state == "complete" && !$0.text.isEmpty && $0.backend != "local" }.suffix(12).map { AgentRequest.Message(role: $0.role, text: String($0.text.prefix(6000))) }
-        messages.append(BookChatMessage(role: "user", text: question, backend: backend.rawValue, page: context.page, harness: usePi ? "pi" : "direct", skill: skill))
+        let history = messages.filter {
+            $0.state == "complete" && !$0.text.isEmpty && $0.backend != "local" &&
+            (context.scope == nil || context.scope?.mode == "book" || $0.scope == context.scope)
+        }.suffix(12).map { AgentRequest.Message(role: $0.role, text: String($0.text.prefix(6000))) }
+        var user = BookChatMessage(role: "user", text: question, backend: backend.rawValue, page: context.page, harness: usePi ? "pi" : "direct", skill: skill)
+        user.scope = context.scope; messages.append(user)
         hasUnsavedChanges = true
         guard persist() else { return }
         draft = ""
         var answer = BookChatMessage(role: "assistant", text: "", backend: backend.rawValue, page: context.page, state: "interrupted", harness: usePi ? "pi" : "direct", skill: skill)
         answer.model = selectedModel.isEmpty ? nil : selectedModel
+        answer.scope = context.scope
+        if let scope = context.scope {
+            let provided = context.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? [] : [context.page]
+            answer.reading = BookReadingCoverage(bookID: context.id, scope: scope, readPages: context.textTruncated ? [] : provided, sourcePages: provided)
+        }
         messages.append(answer); assistantID = answer.id; receivedAnswer = false; hasUnsavedChanges = true
         start(AgentRequest(action: "chat", backend: backend, directory: store.directory, usePi: usePi, skill: skill,
                            question: question, messages: history, book: context, model: selectedModel))
@@ -203,6 +222,16 @@ import BookshelfCore
         case "status": if let status = event.status { accounts[backend] = status }
         case "models": if let options = event.models { models[backend] = options }
         case "activity": activityMessage = event.message ?? ""
+        case "reading":
+            guard let reading = event.reading, reading.bookID == bookID,
+                  let index = messages.firstIndex(where: { $0.id == assistantID }), reading.scope == messages[index].scope,
+                  (reading.readPages + reading.sourcePages + reading.emptyPages).allSatisfy({ reading.scope.contains($0) }) else { return }
+            let old = messages[index].reading
+            messages[index].reading = BookReadingCoverage(bookID: reading.bookID, scope: reading.scope,
+                readPages: Array(Set((old?.readPages ?? []) + reading.readPages)).sorted(),
+                sourcePages: Array(Set((old?.sourcePages ?? []) + reading.sourcePages)).sorted(),
+                emptyPages: Array(Set((old?.emptyPages ?? []) + reading.emptyPages)).sorted())
+            hasUnsavedChanges = true
         case "attachment":
             guard backend == .codex, let attachment = event.attachment, attachment.kind == "image",
                   let index = messages.firstIndex(where: { $0.id == assistantID }),

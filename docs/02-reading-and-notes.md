@@ -144,3 +144,19 @@ You can still select a specific explanation format. Codex can generate images th
 official image tool; generated images stay with the conversation and can be enlarged,
 copied or saved. Image generation requires the app's official ChatGPT sign-in and remains
 subject to account availability and limits.
+
+The default question scope is **이 책 전체** (this book). The current page identifies what
+you are looking at; the agent can search the book and read other relevant pages. Use the
+**질문 범위** menu to choose **현재 페이지** or **페이지 범위 지정…**. A selected range
+uses 1-based PDF indices and is enforced by the read-only server. Switching books resets
+the selection to the whole new book. Retrying or editing a question keeps its original range.
+Conversations created before range metadata existed keep their original single PDF page
+when retried. Copying an answer into the notebook records its question scope alongside
+the answer's page citations.
+
+While retrieving evidence, the panel shows search, outline and page-reading activity.
+Source chips and verified `[p. N]` links navigate within the active PDF. The coverage line
+counts pages whose full text was received, excluding search-only excerpts. Pages without
+extractable text are reported separately. An outline is not proof of reading every chapter:
+whole-book and chapter summaries must follow page continuations and report unread gaps.
+Long books may require more time and provider context; the request can be stopped.

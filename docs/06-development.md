@@ -48,6 +48,7 @@ and a discoverable `pdftotext`. It is optional for manual app review, but
 python3 scripts/check-ocr.py dist/Bookshelf.app/Contents/MacOS/bookshelf-cli
 python3 scripts/check-ocr-review.py dist/Bookshelf.app/Contents/MacOS/bookshelf-cli
 python3 scripts/check-mcp.py dist/Bookshelf.app/Contents/MacOS/bookshelf-cli
+python3 scripts/check-reading-mcp.py dist/Bookshelf.app/Contents/MacOS/bookshelf-cli
 python3 scripts/check-cancel.py dist/Bookshelf.app/Contents/MacOS/bookshelf-cli
 ```
 
@@ -57,6 +58,8 @@ fixture/database**, even when you supply a different CLI path. Run OCR first; do
 not clean `.runtime/` between those checks. The MCP check launches a real stdio
 client and verifies all five tools, search modes, and invalid arguments. It sends
 no model requests and uses no credentials.
+`check-reading-mcp.py` uses the same fixture to verify the four in-app reading tools,
+page-boundary enforcement, blocked book switching, coverage and Codex's initialization shape.
 
 The review check exercises candidate acceptance, identity, rescan behavior, and
 source protection. The cancellation check creates a larger synthetic fixture,

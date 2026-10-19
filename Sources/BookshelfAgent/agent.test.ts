@@ -38,7 +38,7 @@ test("Every bundled system instruction is English while response language remain
 	expect(validateRequest({ ...base, skill: undefined }).skill).toBe("auto");
 	expect(systemInstructions("auto", "codex")).toContain("image_gen.imagegen");
 	expect(systemInstructions("auto", "claude")).toContain(
-		"no execution or image-generation tools",
+		"no image-generation tool",
 	);
 });
 

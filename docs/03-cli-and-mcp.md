@@ -50,6 +50,7 @@ are **1-based PDF page indices**, which may differ from printed page numbers.
 | `ocr-accept <result-json>` | Attach a reviewed, unchanged candidate to the existing book. |
 | `ocr-original <book-id>` | Select the original again, preserving notes and OCR copies. |
 | `mcp` | Run the stdio MCP server until the client disconnects. |
+| `reading-mcp <book-id> <book\|page\|range> <first-page> <last-page> [provided-page provided-characters]` | App-owned read-only session limited to one book and an immutable PDF page range; no global registration is needed. |
 
 ### Read and export
 
@@ -153,6 +154,24 @@ Example tool arguments:
 
 Search is keyword search. Normalization does not correct characters, rewrite quotes,
 or add semantic retrieval. See [search behavior](02-reading-and-notes.md#searching-ocr-text).
+
+### In-app book reading tools
+
+The optional learning preview starts `reading-mcp` with the app's selected book/range.
+This is separate from the five-tool external library server. It exposes only:
+
+| Tool | Behavior |
+| --- | --- |
+| `get_book_overview` | PDF page count, permitted range and embedded outline with chapter boundaries. |
+| `search_book` | Whitespace-tolerant keyword search within the range; up to 12 original excerpts and a continuation page. |
+| `read_pages` | Up to 10 pages / 24,000 characters per call, with `nextPage` and `nextOffset` for complete retrieval. |
+| `get_reading_coverage` | Fully read pages, excerpt source pages and pages without extractable text for this request. |
+
+These tool schemas have no `book_id` or file-path argument. The server rejects out-of-range
+pages and extra arguments. Both servers use a narrow initialization adapter for Swift MCP
+SDK 0.12.1: object-valued experimental client extensions (such as Codex `codex/auth-change`)
+are ignored because this local server does not implement them. Standard capabilities and
+all non-initialization messages are preserved.
 
 ## Deep links and the trust boundary
 

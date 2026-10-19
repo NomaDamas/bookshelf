@@ -3,6 +3,38 @@ import BookshelfCore
 @testable import BookshelfApp
 
 @MainActor final class BookChatModelTests: XCTestCase {
+    func testReadingScopeAndSourcesSurviveReopenAndIgnoreStaleCoverage() async throws {
+        guard let node = AgentRuntime.findExecutable("node") else { throw XCTSkip("Node.js not installed") }
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let store = try LibraryStore(directory: root.appendingPathComponent("data"))
+        let file = root.appendingPathComponent("Book.pdf"); try Data("authored".utf8).write(to: file)
+        let book = try store.register(source: file, ocr: nil, root: root)
+        var prior = BookChatMessage(role: "assistant", text: "Old evidence from page 1", backend: "claude", page: 1)
+        prior.scope = .init(mode: "book", startPage: 1, endPage: 6)
+        _ = try store.saveConversation(bookID: book.id, messages: [prior], expectedRevision: 0)
+        let script = root.appendingPathComponent("reading.mjs")
+        try """
+        let input='';process.stdin.on('data',c=>input+=c);process.stdin.on('end',()=>{
+          const r=JSON.parse(input);if(r.book.text||r.messages.length||r.book.scope.startPage!==3)process.exit(3);
+          const emit=e=>console.log(JSON.stringify(e));
+          for(const [bookID,pages] of [[r.book.id,[4]],[r.book.id,[3]],['another-book',[5]]])emit({type:'reading',reading:{bookID,scope:r.book.scope,readPages:pages,sourcePages:pages,emptyPages:[]}});
+          emit({type:'answer',text:'Verified [p. 3] and [p. 4]'});emit({type:'done'});
+        });
+        """.write(to: script, atomically: true, encoding: .utf8)
+        let chat = BookChatModel(store: store, bridgeFactory: { AgentBridge(executable: node, script: script) })
+        XCTAssertTrue(chat.selectBook(book.id)); XCTAssertEqual(chat.scopeMode, "book")
+        chat.draft = "Find evidence within this range"
+        let scope = BookReadingScope(mode: "range", startPage: 3, endPage: 5)
+        chat.send(context: AgentRequest.Context(id: book.id, title: book.title, page: 1, text: "Outside the selected range", notes: "", selection: "", scope: scope))
+        for _ in 0..<200 where chat.busy { try await Task.sleep(for: .milliseconds(10)) }
+        XCTAssertNil(chat.errorMessage); XCTAssertEqual(chat.messages.last?.scope, scope)
+        XCTAssertEqual(chat.messages.last?.reading?.readPages, [3,4]); XCTAssertEqual(chat.messages.last?.sourcePages, [3,4])
+        let restored = BookChatModel(store: try LibraryStore(directory: store.directory))
+        XCTAssertTrue(restored.selectBook(book.id)); XCTAssertEqual(restored.messages.last?.sourcePages, [3,4])
+        XCTAssertEqual(restored.messages.last?.scope, scope)
+    }
     func testAutoModeReceivesGeneratedImageAndReopensItAfterUndo() async throws {
         guard let node = AgentRuntime.findExecutable("node") else { throw XCTSkip("Node.js not installed") }
         let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)

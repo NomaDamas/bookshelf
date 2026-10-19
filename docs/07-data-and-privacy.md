@@ -97,7 +97,13 @@ issue reports, screenshots, or pull requests.
 
 The optional [learning-chat preview](../Resources/Design/PI-AGENT.md) sends the current
 page, selected passage, recent conversation and optionally the notebook through the selected
-official executor when the user submits a question. Pi does not receive provider tokens.
+official executor when the user submits a question. In whole-book mode, the executor may
+also receive text from other pages in that book through the four scoped reading tools.
+The native app fixes the book and page boundary before starting the request; the model
+cannot select a different book or filesystem path. Narrowing the range removes the visible
+page text/selection when it lies outside that range and includes only prior conversations
+from the same restricted scope. Optional user notes remain separate reference material.
+Pi does not receive provider tokens.
 Model requests are governed by that user's provider account and usage settings. Conversation
 history remains local; no automatic long-term profile or cross-book memory is generated.
 

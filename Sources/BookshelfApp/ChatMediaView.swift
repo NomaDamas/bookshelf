@@ -6,6 +6,8 @@ import BookshelfCore
 struct ChatResponseView: View {
     let text: String
     var streaming = false
+    var sourcePages: Set<Int> = []
+    var selectPage: ((Int) -> Void)?
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             ForEach(ChatContent.blocks(text)) { block in
@@ -16,11 +18,12 @@ struct ChatResponseView: View {
                     else { code(block.source, title: "시각 자료의 닫는 코드 표시를 확인해 주세요.") }
                 case "code": code(block.source, title: block.label)
                 case "image", "audio", "video": RemoteChatMedia(source: block.source, title: block.label, kind: block.kind)
-                default: ChatMarkdownText(text: block.source).textSelection(.enabled)
+                default: ChatMarkdownText(text: block.source, sourcePages: sourcePages).textSelection(.enabled)
                 }
             }
         }.environment(\.openURL, OpenURLAction { url in
-            ["https", "http"].contains(url.scheme?.lowercased() ?? "") ? .systemAction : .discarded
+            if let page = ChatCitations.page(in: url, allowed: sourcePages) { selectPage?(page); return .handled }
+            return ["https", "http"].contains(url.scheme?.lowercased() ?? "") ? .systemAction : .discarded
         })
     }
     private func code(_ value: String, title: String) -> some View {

@@ -1,7 +1,14 @@
 import {
+	bookServer,
+	bookToolActivity,
+	claudeBookTools,
+	emitBookReading,
+} from "./book-tools.js";
+import {
 	collect,
 	jsonLines,
 	redact,
+	runtimeEnvironment,
 	startChild,
 	stopChild,
 } from "./process.js";
@@ -52,10 +59,23 @@ export async function claudeStatus(
 export function claudeArguments(
 	instructions: string,
 	model?: string,
+	request?: Request,
 ): string[] {
+	const server = request ? bookServer(request) : undefined;
 	return [
 		...(model ? ["--model", model] : []),
-		"--safe-mode",
+		...(server
+			? [
+					"--setting-sources",
+					"",
+					"--settings",
+					JSON.stringify({ disableAllHooks: true }),
+					"--mcp-config",
+					JSON.stringify({ mcpServers: { bookshelf: server } }),
+					"--allowedTools",
+					...claudeBookTools,
+				]
+			: ["--safe-mode", "--disallowedTools", "mcp__*"]),
 		"--restricted",
 		"--disable-slash-commands",
 		"--print",
@@ -66,8 +86,6 @@ export function claudeArguments(
 		"--no-session-persistence",
 		"--tools",
 		"",
-		"--disallowedTools",
-		"mcp__*",
 		"--strict-mcp-config",
 		"--permission-mode",
 		"dontAsk",
@@ -91,21 +109,32 @@ export async function claudeChat(
 	return new Promise((resolve, reject) => {
 		const child = startChild(
 			request.claudePath!,
-			claudeArguments(instructions, request.model),
+			claudeArguments(instructions, request.model, request),
 			request.workspace,
+			{
+				...runtimeEnvironment(),
+				CLAUDE_CODE_DISABLE_CLAUDE_MDS: "1",
+				CLAUDE_CODE_DISABLE_AUTO_MEMORY: "1",
+				CLAUDE_CODE_DISABLE_ATTACHMENTS: "1",
+			},
 		);
 		let text = "",
 			result: string | undefined,
 			error: Error | undefined;
 		let lastMessage: any;
+		const readingCalls = new Map<string, string>();
+		const expectedTools = request.reading ? claudeBookTools : [];
 		const cancel = () => {
 			error = new Error("답변 생성을 중단했습니다.");
 			stopChild(child);
 		};
-		const timer = setTimeout(() => {
-			error = new Error("답변 시간이 초과됐습니다. 다시 시도할 수 있습니다.");
-			stopChild(child);
-		}, 150000);
+		const timer = setTimeout(
+			() => {
+				error = new Error("답변 시간이 초과됐습니다. 다시 시도할 수 있습니다.");
+				stopChild(child);
+			},
+			request.reading ? 600000 : 150000,
+		);
 		signal.addEventListener("abort", cancel, { once: true });
 		if (signal.aborted) cancel();
 		jsonLines(
@@ -114,8 +143,15 @@ export async function claudeChat(
 				if (record.type === "system" && record.subtype === "init") {
 					const tools = record.tools ?? [];
 					if (
-						tools.length ||
-						(record.mcp_servers ?? []).length ||
+						tools.some((name: string) => !expectedTools.includes(name)) ||
+						(record.mcp_servers ?? []).some(
+							(server: any) => !request.reading || server.name !== "bookshelf",
+						) ||
+						(request.reading &&
+							expectedTools.some((name) => !tools.includes(name))) ||
+						(record.plugins ?? []).some(
+							(plugin: any) => plugin.path !== "builtin",
+						) ||
 						(record.skills ?? []).length
 					) {
 						error = new Error(
@@ -130,7 +166,51 @@ export async function claudeChat(
 						skills: record.skills ?? [],
 					});
 				}
+				for (const block of record.message?.content ?? []) {
+					if (record.type === "assistant" && block.type === "tool_use") {
+						if (!expectedTools.includes(block.name)) {
+							error = new Error("허용되지 않은 도구 요청을 중단했습니다.");
+							stopChild(child);
+							return;
+						}
+						const name = block.name.replace("mcp__bookshelf__", "");
+						readingCalls.set(block.id, name);
+						emit({
+							type: "activity",
+							message: bookToolActivity(name, block.input),
+						});
+					}
+					if (
+						record.type === "user" &&
+						block.type === "tool_result" &&
+						readingCalls.has(block.tool_use_id)
+					) {
+						if (!block.is_error)
+							emitBookReading(
+								typeof block.content === "string"
+									? [{ type: "text", text: block.content }]
+									: block.content,
+								request,
+								emit,
+							);
+						readingCalls.delete(block.tool_use_id);
+						emit({ type: "activity", message: "" });
+					}
+				}
 				const event = record.type === "stream_event" ? record.event : undefined;
+				if (event?.type === "message_start") lastMessage = event.message;
+				if (
+					event?.type === "message_delta" &&
+					lastMessage &&
+					typeof event.usage?.output_tokens === "number"
+				)
+					lastMessage = {
+						...lastMessage,
+						usage: {
+							...lastMessage.usage,
+							output_tokens: event.usage.output_tokens,
+						},
+					};
 				if (
 					event?.type === "content_block_delta" &&
 					event.delta?.type === "text_delta"
@@ -139,8 +219,22 @@ export async function claudeChat(
 					text += delta;
 					emit({ type: "delta", text: delta });
 				}
-				if (record.type === "assistant" && record.message?.usage)
-					lastMessage = record.message;
+				if (record.type === "assistant" && record.message?.usage) {
+					const previousOutput =
+						lastMessage?.id && lastMessage.id === record.message.id
+							? (lastMessage.usage?.output_tokens ?? 0)
+							: 0;
+					lastMessage = {
+						...record.message,
+						usage: {
+							...record.message.usage,
+							output_tokens: Math.max(
+								previousOutput,
+								record.message.usage.output_tokens ?? 0,
+							),
+						},
+					};
+				}
 				if (record.type === "result") {
 					const usage = claudeUsage(record, lastMessage);
 					if (usage) emit({ type: "usage", usage });
