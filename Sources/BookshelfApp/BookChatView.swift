@@ -181,7 +181,7 @@ struct BookChatView: View {
                             .help("질문할 때 보던 \(message.page)쪽으로 이동합니다.")
                         Spacer(minLength: 4)
                         if message.attachments?.isEmpty ?? true {
-                            PiActionButton(symbol: "pencil", label: "질문 수정") { beginEdit(message) }
+                            ReaderIconButton(symbol: "pencil", label: "질문 수정", compact: true) { beginEdit(message) }
                                 .disabled(chat.busy || editingID != nil)
                         }
                     }.font(.system(size: 11)).padding(.top, -3)
@@ -265,13 +265,13 @@ struct BookChatView: View {
                     .help(message.harness == "pi" ? "Pi가 이 실행기로 답했습니다." : "Pi 계층 없이 실행기에 직접 요청했습니다.")
             }
             HStack(spacing: 2) {
-                if hasText { PiActionButton(symbol: "doc.on.doc", label: "답변 복사") { copy(message.text) } }
+                if hasText { ReaderIconButton(symbol: "doc.on.doc", label: "답변 복사", compact: true) { copy(message.text) } }
                 if isLast {
-                    PiActionButton(symbol: "arrow.clockwise", label: message.state == "complete" ? "다시 생성" : "다시 시도", action: retry)
+                    ReaderIconButton(symbol: "arrow.clockwise", label: message.state == "complete" ? "다시 생성" : "다시 시도", compact: true, action: retry)
                         .disabled(!canRetry)
                 }
                 if hasText && message.state == "complete" {
-                    PiActionButton(symbol: "note.text.badge.plus", label: "메모에 담기") { saveToNotes(message) }
+                    ReaderIconButton(symbol: "note.text.badge.plus", label: "메모에 담기", compact: true) { saveToNotes(message) }
                 }
             }.fixedSize().padding(.trailing, -5)
         }.accessibilityElement(children: .contain).accessibilityIdentifier("pi-turn-summary")

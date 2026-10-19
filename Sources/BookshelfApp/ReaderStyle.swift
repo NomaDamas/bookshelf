@@ -80,6 +80,8 @@ struct ReaderIconButton: View {
     let symbol: String
     let label: String
     var selected = false
+    /// Smaller, muted variant for secondary actions on a Pi turn's summary line.
+    var compact = false
     let action: () -> Void
     @State private var hovering = false
     @Environment(\.isEnabled) private var isEnabled
@@ -87,9 +89,9 @@ struct ReaderIconButton: View {
     var body: some View {
         Button(action: action) {
             Image(systemName: symbol)
-                .font(.system(size: ReaderTokens.controlFont, weight: .medium))
-                .foregroundStyle(selected ? ReaderStyle.accent : Color.primary)
-                .frame(width: ReaderTokens.controlSize, height: ReaderTokens.controlSize)
+                .font(.system(size: compact ? 12 : ReaderTokens.controlFont, weight: .medium))
+                .foregroundStyle(selected ? ReaderStyle.accent : compact ? Color.secondary : Color.primary)
+                .frame(width: compact ? 26 : ReaderTokens.controlSize, height: compact ? 26 : ReaderTokens.controlSize)
                 .contentShape(RoundedRectangle(cornerRadius: ReaderTokens.radiusMedium))
         }
         .buttonStyle(.plain)
