@@ -35,7 +35,7 @@ func stderr(_ text: String) { FileHandle.standardError.write(Data((text + "\n").
             bookside-cli bookmark <book-id> <PDF-page>
             bookside-cli position <book-id> <PDF-page>
             bookside-cli inspect <book-id>
-            bookside-cli ocr <book-id> [--language kor|eng|jpn|und] [--output path] [--redo] [--review-only]
+            bookside-cli ocr <book-id> [--language kor|eng|jpn|chi_sim|chi_tra|und] [--output path] [--redo] [--review-only]
             bookside-cli ocr-accept <result-json>
             bookside-cli ocr-original <book-id>
             bookside-cli export <book-id>
