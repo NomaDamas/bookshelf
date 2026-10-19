@@ -16,22 +16,17 @@ Bookside includes a native chat panel. It uses Pi agent core for conversation st
 - Generate illustrations through Codex's official image tool, see progress in chat, and reopen, enlarge, copy or save the resulting PNG. Claude can produce tables, Mermaid, SVG and HTML; it does not expose a bitmap-generation tool in this integration.
 - Search/read progress, verified page citations and complete-page coverage stay with each response. Clicking a source opens that PDF page. Retry/edit uses the original range.
 
-The experiment does not add whole-library semantic retrieval, audio synthesis, arbitrary external skills or autonomous file-editing tools. HTML can run inline interaction code inside an isolated offline preview. The existing external MCP server stays read-only.
+The chat does not add whole-library semantic retrieval, audio synthesis, arbitrary external skills or autonomous file-editing tools. HTML can run inline interaction code inside an isolated offline preview. The existing external MCP server stays read-only.
 
 ## Reading workspace and controls
 
-Opening a PDF switches the left sidebar to pages, notes, excerpts and search. The document
-stays in the center and the dedicated AI panel stays on the right. Both panels can collapse
-through native AppKit split-view animation. The toolbar's **서재** button remains available
-when the left sidebar is hidden.
-
-The layout follows the Preview document/sidebar structure. Surfaces, composer density and
-motion easing reuse the existing Aside source study; see [design](DESIGN.md). Settings are
-split into General, Pi and Shortcuts. The Pi tab owns official account login/status, model
-selection and the advanced switch that sends requests to the executor without Pi. Signing
-in to an executor there does not change the engine the current conversation uses. The
-shortcut recorder rejects duplicates and keys that macOS or fixed menus use, saves choices
-to the local database, and can clear a shortcut or restore one or all defaults.
+The panel sits to the right of the document and collapses through native AppKit split-view
+animation. The reading guide describes the rest of the [workspace](../../docs/02-reading-and-notes.md#the-workspace)
+and the [shortcut settings](../../docs/02-reading-and-notes.md#reading-controls); surfaces, composer density
+and motion easing follow [design](DESIGN.md). **Settings > Pi** owns official account
+login/status, model selection and the advanced switch that sends requests to the executor
+without Pi. Signing in to an executor there does not change the engine the current
+conversation uses.
 
 The panel is called Pi in its header, settings and notices. Frequent controls stay visible;
 occasional ones move to the header's ⋯ menu:
@@ -166,7 +161,7 @@ Provider limits and any account-level extra-usage settings remain controlled by 
 
 ## Build and install
 
-Requirements in addition to the native build: Node.js 22.19 or later at runtime, pnpm and Bun for building the bridge, plus the official Claude Code and/or Codex executables. Tested local executors: Claude Code 2.1.303 and Codex 0.163.0. Older versions may lack the isolation flags.
+The chat needs Node.js 22.19 or later at runtime and the official Claude Code and/or Codex executables. pnpm and Bun build the bridge as part of every [source build](../../docs/01-getting-started.md#source-build-requirements). Tested local executors: Claude Code 2.1.303 and Codex 0.163.0. Older versions may lack the isolation flags.
 
 Every build bundles the bridge, including the release DMGs and the Homebrew cask:
 

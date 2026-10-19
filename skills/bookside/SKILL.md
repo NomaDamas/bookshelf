@@ -43,7 +43,7 @@ Run the first command with a timeout, such as `perl -e 'alarm 20; exec @ARGV' bo
     - Pages are 1-based PDF page indices, which can differ from the printed page numbers. A page past the end fails and the message gives the valid range.
     - `pageCount: 0` with `textPages: -1` means the book has not been inspected; `read` and `search` still work. When you need the page count, `bookside-cli inspect <id>` returns it with the number of pages that have text, and saves both counts.
     - Empty text on most pages means the PDF has no text layer. Say so and offer OCR instead of guessing the content.
-4. Read notes with `bookside-cli notes <id>`: the notebook, every highlight with its comment, and bookmarks. `bookside-cli export <id>` prints the same as Markdown.
+4. Read notes with `bookside-cli notes <id>`: the notebook, every highlight with its comment, and bookmarks. `bookside-cli export <id>` prints the notebook and highlights as Markdown, without bookmarks.
 
 Cite library text as the book title plus PDF page, and keep the user's comments separate from quoted text. Each `read` result has a `url` like `bookside://book/<id>?page=<n>`; `open "<url>"` shows that page in the app.
 

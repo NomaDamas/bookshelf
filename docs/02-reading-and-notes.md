@@ -22,7 +22,7 @@ All page numbers are 1-based PDF indices, not printed book-page labels.
 - Select source text, then use **책 > 선택 문장 발췌** (`Control-Command-H`) to save a
   quotation. Add your own comment in **발췌**. PDF selections can retain page coordinates.
 - Use `Command-D` to toggle the current page's bookmark.
-- Use **메모 내보내기…** or the share button to export notebook text and quoted
+- Use **메모 내보내기…** in the 파일 menu or the book title menu to export notebook text and quoted
   passages/comments as Markdown. Bookmarks and full database metadata are not included.
 
 If saving fails, keep the draft open. **다시 저장** retries; **내 내용 복사 후 다시
@@ -156,23 +156,15 @@ when a panel needs a setting, such as Pi's sign-in. Settings offer system, light
 reading/writing surfaces. Reduced transparency, increased contrast, and reduced
 motion have fallback paths; see [design and verification](../Resources/Design/DESIGN.md).
 
-The **Pi** panel beside the page runs the [learning chat](../Resources/Design/PI-AGENT.md).
-Its header holds only the title, the current page and a ⋯ menu (the book title is in the toolbar): undo, copy the conversation, clear it
-(with confirmation), context usage, the learning instructions and connection settings.
-Account sign-in, model choice and the advanced direct-request switch live in
-**Settings > Pi**. When Node.js is missing or the selected account is not connected, the
-panel shows a notice whose **연결하기** button opens that tab, and a line under the question
-field says why sending is off. The conversation reads as a transcript: each question line,
-the pages the agent searched and read (for example **책 읽기 (27~29쪽)** with **3쪽 읽음**),
-the answer, and a line with the time taken and the executor/model. It supports visual
-previews, audio playback, in-place question editing, retry and reversible removal. Starting prompts such as
-**이 페이지 쉽게 설명해줘** fill the question field; nothing is sent until you send it.
-The default **자동** mode chooses prose, tables or visual explanations for the question.
-You can still select a specific explanation format. Codex can generate images through its
-official image tool; generated images stay with the conversation and can be enlarged,
-copied or saved. Image generation requires the app's official ChatGPT sign-in and remains
-subject to account availability and limits. To use the library from another AI client,
-follow [CLI and MCP setup](03-cli-and-mcp.md).
+The **Pi** panel beside the page runs the learning chat. Account sign-in, model choice
+and the advanced direct-request switch live in **Settings > Pi**. When Node.js is missing
+or the selected account is not connected, the panel's **연결하기** button opens that tab.
+Starting prompts such as **이 페이지 쉽게 설명해줘** fill the question field; nothing is
+sent until you send it. The default **자동** mode chooses prose, tables or visual
+explanations for the question, and Codex can generate images through its official image
+tool after the app's own ChatGPT sign-in. The panel's header menu, composer, transcript and
+media are described in [Pi learning chat](../Resources/Design/PI-AGENT.md#reading-workspace-and-controls).
+To use the library from another AI client, follow [CLI and MCP setup](03-cli-and-mcp.md).
 
 The default question scope is **이 책 전체** (this book). The current page identifies what
 you are looking at; the agent can search the book and read other relevant pages. Use the

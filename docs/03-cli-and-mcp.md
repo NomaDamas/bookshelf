@@ -90,7 +90,8 @@ After installing the app in `~/Applications/Bookside.app` or `/Applications/Book
 ```
 
 The helper calls each available client's official registration command and keeps
-existing `bookside` entries unchanged. If both installation locations exist, set
+existing `bookside` entries unchanged. Once the `bookside` entry exists, it removes a
+pre-rename `bookshelf` entry only when that entry runs `bookshelf-cli`. If both installation locations exist, set
 `BOOKSIDE_APP_PATH` to the desired absolute app path. Missing apps or supported
 clients produce an error. Its final message alone does not prove a
 client was installed, a registration was added, or a connection succeeded.
@@ -179,10 +180,6 @@ all non-initialization messages are preserved.
 Page results include `bookside://book/<book-id>?page=<number>`. The app must be
 registered with macOS and use the same library for the ID to resolve.
 
-MCP cannot import, change notes, start OCR, or delete files. Its database connection
-can initialize the schema and SQLite bookkeeping; “read-only” describes the tool
-capabilities, not an OS-enforced read-only process or filesystem sandbox.
-
-Treat document text/notes as untrusted reference material. Cite by title and PDF
-page, and distinguish comments from quotations. A client can transmit results to
-its model provider. See [privacy](07-data-and-privacy.md#mcp-and-external-models).
+MCP cannot import, change notes, start OCR, or delete files. What “read-only” does not
+guarantee, how to treat document text, and what a client can send to its model provider
+are described in [privacy](07-data-and-privacy.md#mcp-and-external-models).

@@ -21,7 +21,7 @@ bookside-cli ocr <id> --review-only > <new-result>.json
 
 - `--language` defaults to `kor`. Use `eng`, `jpn`, `chi_sim`, `chi_tra` or `und` to match the book.
 - Add `--redo` when the PDF already has a poor text layer that should be replaced. Without it, only pages missing text are recognized.
-- Output goes to the next free `<title>_ocr.pdf` beside the source. `--output <new.pdf>` picks another path; existing files are refused.
+- Output goes to the next free `<stem>_ocr.pdf`, then `<stem>_2_ocr.pdf`, beside the source, where `<stem>` is the source file name without `.pdf` or a trailing `_ocr`. `--output <new.pdf>` picks another path; existing files are refused.
 - Progress goes to stderr. Large books take minutes, so run it in the background and report when it finishes.
 - Use a new result file name for each run; the JSON is what `ocr-accept` reads.
 

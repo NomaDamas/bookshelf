@@ -37,6 +37,15 @@ checks. App-model tests cover document reuse/invalidation, reading-shelf members
 pending note saves, and stale PDF-view events. These are not end-to-end native UI tests.
 No OCR engine or AI credentials are needed for `swift test`.
 
+The learning chat bridge in `Sources/BookshelfAgent` has its own TypeScript check and
+Bun tests. They need Node.js, pnpm and Bun, but no provider account:
+
+```sh
+pnpm --dir Sources/BookshelfAgent install --frozen-lockfile --ignore-scripts
+pnpm --dir Sources/BookshelfAgent run typecheck
+pnpm --dir Sources/BookshelfAgent test
+```
+
 ## OCR and MCP integration checks
 
 First install the [OCR dependencies](04-ocr.md#install-the-optional-engine) and
@@ -93,6 +102,7 @@ preserving visible/mixed text, vectors, and pixels.
 | OCR service/helper | Core tests plus real OCR, review, cancellation, and helper preparation checks. |
 | MCP | Protocol check after its OCR prerequisite; verify the advertised tool schema. |
 | UI/focus/reader state | App tests plus a native app run; quit/relaunch for persistence changes. |
+| Learning chat bridge | Bridge typecheck and Bun tests above; panel changes also need the UI checks. |
 | Design tokens | Regenerate Swift constants, check drift, build, inspect light/dark and compact UI. |
 
 ## Screenshots and UI verification

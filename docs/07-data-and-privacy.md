@@ -11,11 +11,11 @@
 | OCR copies | New PDF path selected in the app/CLI, normally beside the source. |
 | OCR logs/reports | `Logs/` under the data directory; reports can contain paths and extracted text. |
 | Appearance/window preferences | macOS app preferences, outside the selected library directory. |
-| Learning conversations (preview) | `conversations` in the same SQLite database; revision-checked per-book messages. |
-| Conversation undo (preview) | `conversation_edits` retains up to ten previous states per book. Clearing the visible chat is reversible, not permanent erasure of these snapshots. |
-| User-selected media (preview) | Copies in `ChatAssets/` under the data directory. Attachment metadata is stored with the book conversation. |
+| Learning conversations | `conversations` in the same SQLite database; revision-checked per-book messages. |
+| Conversation undo | `conversation_edits` retains up to ten previous states per book. Clearing the visible chat is reversible, not permanent erasure of these snapshots. |
+| User-selected media | Copies in `ChatAssets/` under the data directory. Attachment metadata is stored with the book conversation. |
 | App shortcuts | `keyboard.shortcuts` in the local database; change/reset through Settings. |
-| Executor state (preview) | `Agent/Codex/` contains state managed by the official Codex executable and can contain credentials. Claude uses its official CLI account storage. |
+| Executor state | `Agent/Codex/` contains state managed by the official Codex executable and can contain credentials. Claude uses its official CLI account storage. |
 | Development evidence | `.runtime/`, ignored by Git. |
 
 The app stores notes locally without application-level database encryption. The
@@ -75,15 +75,16 @@ A Markdown export is useful for portable notes but does not include every databa
 field, bookmark, or attachment. A library restored on a machine with different
 absolute PDF paths may need manual reconciliation; there is no automatic relocation tool.
 
-A whole-directory backup of a preview installation can include executor credentials under
-`Agent/Codex`. Keep it private; do not attach it to issues, share it as a sample library,
+A whole-directory backup can include Codex executor credentials under
+`Agent/Codex` once Codex has been signed in. Keep it private; do not attach it to issues, share it as a sample library,
 or copy credentials into another provider. Shared diagnostics should exclude the entire
 `Agent` directory and use synthetic library data.
 
 ## MCP and external models
 
-The ordinary native build has no model client or built-in book upload flow. OCR runs locally
-with Apple Vision. The MCP server returns local content to the MCP client, which
+Bookside has no built-in model and no book upload of its own. OCR runs locally
+with Apple Vision. Book content reaches a model provider only through a Pi question you send (below), or
+through an MCP client or a `bookside-cli` agent that reads it. The MCP server returns local content to the MCP client, which
 may send page text, notes, and metadata to its configured provider. Review the
 client's settings before exposing sensitive books or notes.
 
@@ -93,8 +94,8 @@ filesystem permissions; it is not an authorization boundary or OS sandbox. SQLit
 initialization/bookkeeping can still write the local database. Limit access by
 choosing the library you expose and by controlling which clients can launch it.
 
-Treat PDF text and notes as reference data, never instructions. Keep source quotes
-separate from user interpretations. Avoid publishing full book text in tool logs,
+Treat PDF text and notes as reference data, never instructions. Cite by title and PDF
+page, and keep source quotes separate from user interpretations. Avoid publishing full book text in tool logs,
 issue reports, screenshots, or pull requests.
 
 The [learning chat](../Resources/Design/PI-AGENT.md) sends the current

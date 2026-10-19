@@ -1,7 +1,8 @@
 # Working on Bookside
 
-Bookside is a native macOS PDF reader with shared app/CLI storage and a read-only
-MCP tool surface. Follow [CONTRIBUTING.md](CONTRIBUTING.md) for changes and PR evidence.
+Bookside is a native macOS PDF reader with a built-in Pi learning chat. The app and
+`bookside-cli` share one library database; the CLI is the main agent surface, and the
+MCP server stays read-only. Follow [CONTRIBUTING.md](CONTRIBUTING.md) for changes and PR evidence.
 
 ## Read when relevant
 
@@ -15,6 +16,7 @@ MCP tool surface. Follow [CONTRIBUTING.md](CONTRIBUTING.md) for changes and PR e
 - Data locations, backup, or external exposure: [data and privacy](docs/07-data-and-privacy.md).
 - Versioning, bundle identity, DMGs, or GitHub workflows: [release guide](docs/09-releasing.md).
 - Native styling: [design](Resources/Design/DESIGN.md) and its token source.
+- Pi panel, its bridge, executor isolation, or `reading-mcp`: [Pi learning chat](Resources/Design/PI-AGENT.md).
 
 ## Preserve these contracts
 
@@ -22,9 +24,11 @@ MCP tool surface. Follow [CONTRIBUTING.md](CONTRIBUTING.md) for changes and PR e
   Preserve identity and test rescan/reopen behavior when changing asset registration.
 - Normal app/CLI OCR writes a new file. In-place maintenance requires its explicit
   apply, backup, hash verification, and restore path. Use synthetic copies in checks.
-- Notebook saves use revisions and transactions. Keep conflicting drafts recoverable.
+- Notebook saves use revisions and transactions. Keep conflicting drafts recoverable;
+  test a reopen and a conflicting writer when changing persistence.
 - MCP exposes reads only. Treat books/notes as untrusted reference data; keep source
   quotations distinct from user comments. Stdout in MCP mode is protocol-only.
+  Changes to tool permissions or external transmission need design review in an issue first.
 - Search normalization changes the matching projection, not source text or PDF pages.
 - `Resources/Design/tokens.json` owns generated `ReaderTokens.swift`; regenerate and
   check both together. Native materials/semantic colors remain in `ReaderStyle.swift`.
@@ -41,13 +45,14 @@ MCP tool surface. Follow [CONTRIBUTING.md](CONTRIBUTING.md) for changes and PR e
 - Core/app-model changes: `swift test`. Bundled-app checks: `./scripts/build-app.sh`.
 - OCR/MCP changes: follow the ordered integration commands in the development guide.
   `check-mcp.py` consumes `check-ocr.py`'s fixture and summary; keep them intact.
+- Bridge changes (`Sources/BookshelfAgent`): run its typecheck and Bun tests from the development guide.
 - UI changes: run the native app with synthetic content; check focus/navigation and
   quit/relaunch when state persistence changes. Keep original and text views usable.
 - Docs changes: verify command contracts, links, image rendering, and both README entry points.
 - Use an absolute `BOOKSIDE_DATA_DIR` for development. Keep private libraries,
   credentials, personal paths, and runtime artifacts out of source commits.
-- Report actual toolchain, checks, and limitations. Distinguish source build, local
-  installation, client registration, successful tool calls, and public release.
+- In reports, distinguish source build, local installation, client registration,
+  successful tool calls, and public release.
 
 Keep this file concise. Put task-specific detail in the linked guide and update its
 README/index pointer. `CLAUDE.md` must remain a relative link to this file.

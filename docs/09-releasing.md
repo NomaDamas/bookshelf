@@ -30,7 +30,7 @@ python3 scripts/app-metadata.py check
 For a future version, choose the appropriate number and run, for example:
 
 ```sh
-python3 scripts/app-metadata.py set 0.1.1
+python3 scripts/app-metadata.py set 0.2.1
 ```
 
 The setter refuses equal/older versions and regenerates the plist. Review both
@@ -188,8 +188,5 @@ refuses to overwrite an unrelated app. Because the app name changed, installing
 `Bookside.app` does not replace `Bookshelf.app`; the local installer reports a
 remaining pre-rename copy so it can be removed after the library is confirmed.
 
-`register-mcp.command` discovers `/Applications/Bookside.app` and the personal
-Applications folder. If both exist, set `BOOKSIDE_APP_PATH` to the intended bundle.
-Existing `bookside` registrations are preserved; inspect their executable paths
-when changing installation location. A pre-rename `bookshelf` entry that runs
-`bookshelf-cli` is removed after the `bookside` entry exists. See [CLI/MCP](03-cli-and-mcp.md).
+When you change the installation location, inspect existing MCP registrations; the
+registration helper's discovery and pre-rename handling are in [CLI/MCP](03-cli-and-mcp.md#register-mcp).

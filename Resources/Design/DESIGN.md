@@ -1,6 +1,6 @@
 # Bookside native workspace
 
-Bookside reuses the visual grammar of [Aside / Glass workspace](https://github.com/seungwonme/ui-references/tree/main/references/aside-glass), a source study of Aside 1.0.928.1. This is a SwiftUI/AppKit implementation in the existing reader. The web prototype remains a separate worktree.
+Bookside reuses the visual grammar of [Aside / Glass workspace](https://github.com/seungwonme/ui-references/tree/main/references/aside-glass), a source study of Aside 1.0.928.1. This is a SwiftUI/AppKit implementation in the existing reader. The historical web prototype is not part of this app; see [architecture](../../docs/05-architecture.md#generated-assets-and-native-design).
 
 ## Source and adaptation
 
@@ -28,7 +28,7 @@ The forest wallpaper, experimental Liquid Glass shader layers, Aside logo and bu
 - Reading status uses three shelves: 읽기 전, 읽는 중 and 읽은 책. Read-through counts and dates stay with each book. Red count badges are reserved for saved note items; they hide zero and cap the display at 99+. Shelf and sidebar sorting share one persisted selection.
 - The reader has one inset surface. Its toolbar and footer use the same shared heights. The document remains the largest area; hiding either side panel preserves the reading context.
 - Notes use an opaque writing surface inside the left material sidebar. Save status and bookmarks stay near the editor. Search, excerpts and PDFKit thumbnails share that location. The Pi panel is always on the right.
-- The Pi panel reads as a transcript: a one-line header with the title and current page (the book title is in the window toolbar); each question as a `❯` line; the agent's tool steps with their result lines; assistant prose on the panel canvas; and a muted summary line per turn. Turns are separated by space and type weight, not bubbles or borders; rich visuals keep their own quiet surfaces. The composer has a top row for question scope, notes and explanation profile, then the input, then a bottom row for 자료 열기, executor/model selection and send/stop; a line under the input says why sending is off. Edit, retry, clear and undo remain discoverable controls.
+- The Pi panel reads as a transcript on the panel canvas. Turns are separated by space and type weight, not bubbles or borders; rich visuals keep their own quiet surfaces. The header, composer rows and transcript lines are specified in [Pi learning chat](PI-AGENT.md#reading-workspace-and-controls).
 - Settings use grouped surfaces and native pickers. Appearance can follow the system or use light/dark mode, persisted in app preferences.
 - OCR review is the new screen used to check reuse beyond the reference: equal source/result panes, plain metrics, native page controls, explicit acceptance. Return in a field does not accept a PDF; acceptance remains Command-Return.
 
