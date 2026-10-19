@@ -6,6 +6,11 @@ that its Git tag or GitHub Release has been published.
 
 ## [Unreleased]
 
+### Added
+
+- `skills/bookside`, an agent skill for using the library through `bookside-cli`
+  without MCP. Install it with `npx skills add NomaDamas/bookside --skill bookside`.
+
 ### Changed
 
 - Renamed the project to Bookside: `Bookside.app`, `bookside-cli`, bundle ID
