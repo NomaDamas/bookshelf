@@ -14,6 +14,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 APP = ROOT / "dist/Bookside.app"
+SYMBOLS = ROOT / "dist/dSYMs"
 METADATA = ROOT / "Sources/BookshelfCore/Resources/AppMetadata.json"
 
 
@@ -106,6 +107,19 @@ def verify_bundle(bundle, expected_arch=None):
             "bundleIdentifier": info["CFBundleIdentifier"], "architectures": architectures}
 
 
+def uuids(path):
+    lines = run("xcrun", "dwarfdump", "--uuid", path, capture=True).decode().splitlines()
+    return {line.split()[1] for line in lines if line.startswith("UUID:")}
+
+
+def verify_symbols(bundle):
+    """Shipped executables are stripped; their dSYMs must match for crash symbolication."""
+    for binary in ("Bookside", "bookside-cli"):
+        dsym = SYMBOLS / f"{binary}.dSYM"
+        if not dsym.is_dir() or uuids(dsym) != uuids(bundle / "Contents/MacOS" / binary):
+            raise ValueError(f"{dsym.name} is missing or does not match the app; rebuild it")
+
+
 def verify_resource_isolation(bundle):
     """A copied app must fail without its own resources, even on its build machine."""
     resources = bundle / "Contents/Resources/Bookside_BookshelfCore.bundle"
@@ -177,12 +191,14 @@ def package(output, skip_build=False, notarize=False):
     signed = "Authority=Developer ID Application:" in signature
     if signed != (signing != "-"):
         raise ValueError("Bundle signature differs from the requested signing mode; rebuild it")
+    verify_symbols(APP)
     stem = f"Bookside-{data['version']}-macos-{arch}"
     output.mkdir(parents=True, exist_ok=True)
     dmg = output / (stem + ".dmg")
     record = output / (stem + ".json")
     checksum = output / (stem + ".dmg.sha256")
-    if any(p.exists() for p in (dmg, record, checksum)):
+    symbols = output / (stem + ".dSYMs.zip")
+    if any(p.exists() for p in (dmg, record, checksum, symbols)):
         raise ValueError("Release outputs already exist; choose a fresh --output directory")
     with tempfile.TemporaryDirectory(prefix="bookside-package-") as temporary:
         stage = Path(temporary) / "image"
@@ -199,10 +215,11 @@ def package(output, skip_build=False, notarize=False):
             + data["repository"] + "/blob/main/docs/01-getting-started.md\n", encoding="utf-8")
         # Direct srcfolder -> UDZO creation produced out-of-range BLKX offsets on
         # macOS arm64 CI. Finish the filesystem image before serial compression.
+        # LZMA (ULMO) needs macOS 10.15, below the app's minimum, and is smaller than zlib.
         uncompressed = Path(temporary) / "uncompressed.dmg"
         run("hdiutil", "create", "-volname", f"Bookside {data['version']}", "-srcfolder", stage,
             "-format", "UDRW", "-fs", "HFS+", uncompressed)
-        run("hdiutil", "convert", uncompressed, "-format", "UDZO", "-tasks", "1", "-o", dmg)
+        run("hdiutil", "convert", uncompressed, "-format", "ULMO", "-tasks", "1", "-o", dmg)
     if signed:
         run("codesign", "--sign", signing, "--timestamp", dmg)
     if notarize:
@@ -210,12 +227,14 @@ def package(output, skip_build=False, notarize=False):
         run("xcrun", "stapler", "staple", dmg)
         run("xcrun", "stapler", "validate", dmg)
     verify_dmg(dmg, arch)
+    run("ditto", "-c", "-k", "--norsrc", "--noextattr", "--keepParent", SYMBOLS, symbols)
     checksum.write_text(hashlib.sha256(dmg.read_bytes()).hexdigest() + "  " + dmg.name + "\n", encoding="utf-8")
     record.write_text(json.dumps({
         **data, "architecture": arch, "sourceRevision": revision,
         "sourceDirty": info.get("BooksideSourceDirty", True),
         "signing": "developer-id" if signed else "ad-hoc", "notarized": notarize,
         "artifact": dmg.name, "sha256": hashlib.sha256(dmg.read_bytes()).hexdigest(),
+        "symbols": symbols.name,
     }, indent=2) + "\n", encoding="utf-8")
     print(f"Verified release artifacts: {output}")
 

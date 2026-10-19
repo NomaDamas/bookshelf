@@ -49,8 +49,9 @@ The command builds release configuration, checks the app's version/identity and
 signature, packages it, mounts the DMG read-only, copies its app to a temporary
 installation, and executes the copied CLI with an isolated data directory.
 Packaging first completes an uncompressed filesystem image, then converts it to
-UDZO with one compression worker. Direct folder-to-UDZO creation produced invalid
-block offsets on Apple Silicon CI; the final image must still pass `hdiutil verify`.
+LZMA-compressed ULMO with one compression worker (macOS 10.15 or later can open it).
+Direct folder-to-UDZO creation produced invalid block offsets on Apple Silicon CI;
+the final image must still pass `hdiutil verify`.
 It also checks the `/Applications` drag-and-drop shortcut and required notices.
 A negative probe temporarily withholds the copied app's resource bundle and requires
 CLI failure, then restores it and verifies the signature again. This prevents a
@@ -65,16 +66,20 @@ dist/release/
   Bookside-0.1.0-macos-arm64.dmg
   Bookside-0.1.0-macos-arm64.dmg.sha256
   Bookside-0.1.0-macos-arm64.json
+  Bookside-0.1.0-macos-arm64.dSYMs.zip
 ```
 
 Intel builds use `x86_64`. Each build packages the host architecture; these are
 separate native artifacts, not a universal binary. The JSON records the source
-revision, dirty-source flag, minimum macOS, signature mode, and notarization status.
+revision, dirty-source flag, minimum macOS, signature mode, notarization status, and
+the symbols file. The app's executables are stripped; the `.dSYMs.zip` holds their
+debug symbols for crash reports and is not needed to install or run the app.
 A local build from edited source is marked dirty and is not an exact tagged release.
 
 The packager refuses to overwrite existing outputs. Use a new `--output` directory
 for another candidate. `--skip-build` reuses an already-built release bundle and
-checks its version/commit; only use it when that build matches your working source.
+checks its version/commit and that `dist/dSYMs` matches its executables; only use it
+when that build matches your working source.
 
 To verify a trusted candidate again:
 
@@ -118,9 +123,12 @@ path is not proof that a candidate was notarized; check its JSON and actual tick
 ## CI and tag-triggered drafts
 
 [`ci.yml`](../.github/workflows/ci.yml) runs on pull requests, pushes to `main`, and
-manual dispatch. Apple Silicon (`macos-26`) and Intel (`macos-26-intel`) jobs run
-metadata/token checks, XCTest, release builds, DMG creation, and copied-CLI verification.
-They upload short-lived workflow artifacts. OCR integration and native GUI interaction
+manual dispatch. On Apple Silicon (`macos-26`) and Intel (`macos-26-intel`), a test job
+runs metadata/token checks and XCTest while a separate packaging job runs the release
+build, DMG creation, and copied-CLI verification, so both finish in parallel. A Linux job
+runs the bridge typecheck and tests. Jobs cache dependency sources (SwiftPM checkouts and
+the pnpm store) but never build products, so every build starts clean. Packaging jobs
+upload short-lived workflow artifacts. OCR integration and native GUI interaction
 are separate local checks; passing these jobs does not prove either one.
 If packaging fails after creating a DMG, CI retains it for one day as a
 `Failed-DMG-diagnostic-*` artifact. These files are for diagnosis, not distribution;
@@ -131,7 +139,7 @@ retaining them does not change the failed check to a pass.
 1. Require the tag to equal the metadata version and point to the checked-out commit.
 2. Require that commit to belong to `origin/main` history and the checkout to be clean.
 3. Test and package both architectures.
-4. Upload each DMG, checksum, and metadata file.
+4. Upload each DMG, checksum, metadata file, and symbols zip.
 5. Create a **draft prerelease**, using the matching changelog section. An existing
    release causes a failure instead of silently replacing its assets.
 

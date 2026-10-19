@@ -15,15 +15,22 @@ for tool in node pnpm bun; do
 done
 pnpm --dir Sources/BookshelfAgent install --frozen-lockfile --ignore-scripts
 pnpm --dir Sources/BookshelfAgent run build
-swift build -c "$configuration" --product Bookside
-swift build -c "$configuration" --product bookside-cli
+# One invocation builds both executables, so the CLI's MCP dependency compiles alongside the app.
+swift build -c "$configuration"
 binary_dir="$(swift build -c "$configuration" --show-bin-path)"
 build_stage="$(mktemp -d "$PWD/dist/.build-stage.XXXXXX")"
 trap 'python3 -c "import shutil,sys; shutil.rmtree(sys.argv[1])" "$build_stage"' EXIT
 bundle="$build_stage/Bookside.app"
 mkdir -p "$bundle/Contents/MacOS" "$bundle/Contents/Resources/ThirdParty"
-cp "$binary_dir/Bookside" "$bundle/Contents/MacOS/Bookside"
-cp "$binary_dir/bookside-cli" "$bundle/Contents/MacOS/bookside-cli"
+for product in Bookside bookside-cli; do
+  if [[ "$configuration" == release ]]; then
+    # Symbols are most of each executable; keep them in dSYMs beside the app for crash symbolication.
+    xcrun dsymutil "$binary_dir/$product" -o "$build_stage/dSYMs/$product.dSYM"
+    xcrun strip -o "$bundle/Contents/MacOS/$product" "$binary_dir/$product"
+  else
+    cp "$binary_dir/$product" "$bundle/Contents/MacOS/$product"
+  fi
+done
 cp -R "$binary_dir/Bookside_BookshelfCore.bundle" "$bundle/Contents/Resources/"
 mkdir -p "$bundle/Contents/Resources/Agent"
 cp dist/agent/bridge.mjs dist/agent/profile.json "$bundle/Contents/Resources/Agent/"
@@ -44,17 +51,23 @@ swift scripts/generate-icon.swift .runtime/AppIcon.iconset
 iconutil -c icns .runtime/AppIcon.iconset -o "$bundle/Contents/Resources/AppIcon.icns"
 python3 scripts/copy-licenses.py "$bundle/Contents/Resources/ThirdParty"
 python3 scripts/release.py sign-app "$bundle"
-python3 - "$bundle" "$PWD/dist/Bookside.app" "$build_stage" <<'PYINSTALL'
-import shutil, sys
+python3 - "$build_stage" "$PWD/dist" <<'PYINSTALL'
+import sys
 from pathlib import Path
-source, target, stage = map(Path, sys.argv[1:])
-if target.exists():
-    target.rename(stage / "previous-build.app")
+stage, dist = map(Path, sys.argv[1:])
+# Debug builds have no dSYMs; moving the old ones aside keeps them from pairing with a new app.
+moved = []
 try:
-    source.rename(target)
+    for name in ("Bookside.app", "dSYMs"):
+        if (dist / name).exists():
+            (dist / name).rename(stage / ("previous-" + name))
+            moved.append(name)
+        if (stage / name).exists():
+            (stage / name).rename(dist / name)
 except BaseException:
-    if (stage / "previous-build.app").exists() and not target.exists():
-        (stage / "previous-build.app").rename(target)
+    for name in moved:
+        if not (dist / name).exists():
+            (stage / ("previous-" + name)).rename(dist / name)
     raise
 PYINSTALL
 print "Built: $PWD/dist/Bookside.app"
