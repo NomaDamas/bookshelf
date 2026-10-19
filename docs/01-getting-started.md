@@ -116,7 +116,8 @@ cd bookside
 
 The build creates `dist/Bookside.app`, checks generated design tokens, copies the
 OCR helper and dependency notices, and verifies an ad-hoc signature. The bundle
-contains `Bookside` and `bookside-cli` in `Contents/MacOS/`.
+contains `Bookside` and `bookside-cli` in `Contents/MacOS/`. A release build also
+writes the executables' debug symbols to `dist/dSYMs/`.
 
 If `DEVELOPER_DIR` is unset, the build script prefers
 `/Applications/Xcode.app/Contents/Developer` when it exists; otherwise the selected

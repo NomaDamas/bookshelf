@@ -18,8 +18,10 @@ BOOKSIDE_BUILD_CONFIGURATION=debug ./scripts/build-app.sh
 ```
 
 Both configurations write `dist/Bookside.app`; rebuild release before describing a
-bundle as a release build. `swift build` alone does not assemble the `.app` resources,
-icon, metadata, notices, and signature. Never point development commands at a
+bundle as a release build. A release build strips the bundled executables and writes
+their symbols to `dist/dSYMs/`; a debug build keeps symbols in the executables.
+`swift build` alone does not assemble the `.app` resources, icon, metadata, notices,
+and signature. Never point development commands at a
 private library: use an absolute `BOOKSIDE_DATA_DIR` and synthetic PDFs.
 
 ## Core and app regression tests
@@ -136,8 +138,8 @@ The JSON is canonical; commit both it and generated Swift after a token change.
 The generator command writes the Swift file, while `--check` only checks drift.
 For module responsibilities, see [architecture](05-architecture.md).
 
-The [macOS CI workflow](../.github/workflows/ci.yml) verifies builds, XCTest, and
-DMG/CLI execution on Apple Silicon and Intel. OCR and interactive native UI checks
+The [CI workflow](../.github/workflows/ci.yml) runs XCTest and, in parallel, the release
+build with DMG/CLI execution on Apple Silicon and Intel, plus the bridge checks on Linux. OCR and interactive native UI checks
 remain separate. A local passing run is evidence for that machine/toolchain. Include commands,
 results, and any untested paths in your pull request. No version bump or public binary
 release is implied by a documentation change. Follow [releasing](09-releasing.md)
