@@ -112,10 +112,15 @@ public enum OCRQualityCheck {
         var report = OCRQuality(pageCount: after.pageCount, textPages: 0, substantialTextPages: 0, spacingSuspectPages: [], improvedSpacingPages: [],
             textLossPages: [], textGrowthPages: [], changedTextPages: [], extractorDisagreementPages: [], renderedPages: [], renderingChecks: [], popplerChecked: external != nil)
         var textPages: [Int] = []
+        // Fresh copies every few pages keep text layouts of both PDFs from accumulating (see PDFService.pagesPerDocument).
+        var texts = (before: before, after: after)
         for index in 0..<after.pageCount {
             try checkCancellation()
+            if index > 0 && index % PDFService.pagesPerDocument == 0 {
+                texts = (try PDFService.reopen(source, pageCount: before.pageCount), try PDFService.reopen(output, pageCount: after.pageCount))
+            }
             autoreleasepool {
-                let a = before.page(at: index)?.string ?? "", b = after.page(at: index)?.string ?? ""
+                let a = texts.before.page(at: index)?.string ?? "", b = texts.after.page(at: index)?.string ?? ""
                 let old = compact(a), new = compact(b), number = index + 1
                 if !new.isEmpty { report.textPages += 1 }
                 if new.count >= 30 { textPages.append(number); report.substantialTextPages += 1 }
