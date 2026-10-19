@@ -4,8 +4,8 @@
 
 **Read your PDFs. Keep your thoughts beside them. Bring the context to your AI client.**
 
-Bookside is a native macOS PDF reader with per-book notebooks, local OCR, and a
-read-only MCP server for clients such as Claude Code and Codex. Your PDFs stay in
+Bookside is a native macOS PDF reader with per-book notebooks, local OCR, a built-in
+learning chat, and a CLI plus read-only MCP server for agents such as Claude Code and Codex. Your PDFs stay in
 their folders; notes, bookmarks, and reading progress live in a local SQLite database.
 
 [한국어](README.ko.md) | [Get started](docs/01-getting-started.md) |
@@ -27,8 +27,9 @@ The interface currently uses Korean labels; the guides explain the relevant cont
   extra spaces and line breaks by default, with an exact-spacing option.
 - **Recognize scanned pages locally.** Optional OCRmyPDF + AppleOCR creates a new
   PDF using Apple Vision. Review it before connecting it to the same book and notes.
-- **Ask your own AI client.** Five read-only MCP tools expose books, pages,
-  search results, notes, and saved reading context. Model calls happen in the client.
+- **Ask your own AI client.** `bookside-cli` and its agent skill give agents books, pages,
+  search results, and notes; five read-only MCP tools also expose the saved reading context.
+  Model calls happen in the client.
 - **Use a native workspace.** SwiftUI/AppKit, light and dark appearance, resizable
   side panels, and system accessibility preferences.
 
@@ -123,12 +124,10 @@ Codex can also generate images through its official image tool and keep them in 
 
 The conversation reads as a transcript: each question, the pages the agent searched and
 read, the answer, and how long the reply took with which executor and model.
-The panel renders Mermaid, SVG and isolated HTML and plays user-selected audio/media. Its
-header keeps only the title, the current page and a ⋯ menu for undo, copying or clearing the conversation,
-context usage, the learning instructions and connection settings. Questions can be edited in
-place and retried; conversation edits and clearing can be undone. If Node.js or an account
-connection is missing, the panel says so and links to **Settings > Pi**, which manages
-accounts, models and the direct-request option. **Settings > 단축키** changes app shortcuts.
+The panel renders Mermaid, SVG and isolated HTML and plays user-selected audio/media.
+Questions can be edited in place and retried; conversation edits and clearing can be undone.
+If Node.js or an account connection is missing, the panel says so and links to
+**Settings > Pi**, which manages accounts, models and the direct-request option.
 Replies stay with each book.
 
 The chat needs Node.js 22.19 or later and the official Claude Code or Codex executable.
@@ -141,7 +140,13 @@ official account flow; provider availability and limits still apply.
 
 ## Optional: connect an AI client
 
-After installing the app, run this helper from a cloned repository:
+Agents that run shell commands can use the library through `bookside-cli`. Install the bundled
+[`bookside` skill](skills/bookside/SKILL.md) with `npx skills add NomaDamas/bookside --skill bookside`
+(or `bunx`). It covers finding books, searching and reading pages, and changing
+notes, bookmarks or OCR copies only when you ask.
+
+Clients that use MCP can connect to the read-only server instead. After installing the
+app, run this helper from a cloned repository:
 
 ```sh
 ./scripts/register-mcp.command
@@ -151,15 +156,10 @@ This registers the installed CLI with available Codex and Claude Code clients,
 preserving existing `bookside` entries. Restart the clients and verify the tools.
 For example: “Find my book, search for attention, and cite the PDF pages.”
 
-MCP can read your library and notes. Your client may send those results to its model
+The CLI and MCP can read your library and notes. Your agent may send those results to its model
 provider, according to its configuration. **AI로 이어가기** in the book title menu
-copies a context prompt to the clipboard. See the [MCP reference](docs/03-cli-and-mcp.md)
+copies a context prompt to the clipboard. See the [CLI and MCP reference](docs/03-cli-and-mcp.md)
 and [data and privacy guide](docs/07-data-and-privacy.md).
-
-Agents that run shell commands can use the CLI without MCP. Install the bundled
-[`bookside` skill](skills/bookside/SKILL.md) with `npx skills add NomaDamas/bookside --skill bookside`
-(or `bunx`). It covers finding books, searching and reading pages, and changing
-notes, bookmarks or OCR copies only when you ask.
 
 ## Documentation
 

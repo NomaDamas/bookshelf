@@ -20,20 +20,17 @@ used independently.
 ## Participate
 
 - [Contributing](../CONTRIBUTING.md): bug reports, feature proposals, and pull requests.
-- [Agent instructions](../AGENTS.md): repository contracts for coding agents.
+- [Agent instructions](../AGENTS.md): repository contracts for every change, and coding-agent pointers.
 - [Security](../SECURITY.md): disclosure route and supported scope.
 - [License](../LICENSE): MIT terms.
 
 ## Design and evidence
 
 - [Native design](../Resources/Design/DESIGN.md): reference provenance and native adaptations.
+- [Pi learning chat](../Resources/Design/PI-AGENT.md): the chat panel, account boundaries, dependencies and observed verification.
 - [Design tokens](../Resources/Design/tokens.json): dimension and opacity source of truth.
 - [Performance](../Resources/Design/PERFORMANCE.md): a scoped, local loading benchmark.
 - [Native verification](../Resources/Design/verification.md): dated checks and screenshots.
 
 Evidence documents describe the runs recorded in them. They do not imply every
 platform or interaction has been retested for each subsequent commit.
-
-
-[Pi learning chat](../Resources/Design/PI-AGENT.md) covers the native chat panel,
-account boundaries, dependencies and observed verification.

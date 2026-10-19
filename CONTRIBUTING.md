@@ -14,8 +14,7 @@ to build the app or run its core tests.
    OCR, or the app/CLI boundary.
 
 The [development guide](docs/06-development.md) defines the test prerequisites and
-checks for each type of change. Core tests do not need OCR. The MCP integration
-check requires the fixture/state produced by `check-ocr.py` first.
+checks for each type of change.
 
 ## Report a bug
 
@@ -41,18 +40,11 @@ an implemented feature such as EPUB support or cross-device note sync.
 
 ## Implementation contracts
 
-- Keep book identity stable across OCR attachment, supported renames, and rescans.
-- Preserve original PDF bytes in normal reading/OCR flows. Advanced in-place
-  maintenance has separate explicit apply, backup, hash, and restore contracts.
-- Preserve notebook revisions and transaction/conflict behavior. Test a reopen
-  and a conflicting writer when changing persistence.
-- Keep MCP read-only at the tool level; treat document text as untrusted data.
-  Changes to permissions or external transmission need explicit design review.
-- Preserve original excerpts and page references when changing search.
-- Follow the native SwiftUI/AppKit/PDFKit structure. UI behavior requires a real
-  native run, including quit/relaunch for saved state.
-- Edit design tokens in `Resources/Design/tokens.json` and regenerate their Swift
-  constants; do not hand-edit the generated copy.
+The contracts every change must preserve, such as stable book identity, original PDF
+bytes, notebook revisions, and read-only MCP tools, are listed once in
+[AGENTS.md](AGENTS.md#preserve-these-contracts) for human and agent contributors alike.
+Follow the native SwiftUI/AppKit/PDFKit structure; UI behavior requires a real native
+run, including quit/relaunch for saved state.
 
 ## Submit a pull request
 

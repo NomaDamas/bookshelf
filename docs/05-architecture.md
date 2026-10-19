@@ -33,6 +33,7 @@ flowchart LR
 | `Sources/BookshelfApp/ReaderDocumentLoader.swift` | Version-aware document and inspection caching. |
 | `Sources/BookshelfApp/PDFReaderView.swift` | AppKit/PDFKit bridge, selection, annotations, focus and keyboard handling. |
 | `Sources/BookshelfCLI/` | Command parsing and official Swift MCP SDK tool handlers. |
+| `Sources/BookshelfAgent/` | TypeScript learning-chat bridge: Pi agent core, official Claude Code/Codex adapters, instructions and renderer. |
 | `Sources/CSQLite/` | System SQLite module bridge. |
 | `Resources/`, `scripts/` | Bundle metadata, design sources, build/install helpers, verification and maintenance. |
 | `skills/bookside/` | Installable agent skill for using the library through `bookside-cli`. |
@@ -106,11 +107,10 @@ implementation serves UI, CLI, and MCP; exact spacing is an explicit option.
 
 ## Generated assets and native design
 
-Edit [`tokens.json`](../Resources/Design/tokens.json), then run
-`python3 scripts/generate-reader-tokens.py`. `ReaderTokens.swift` is generated;
-the build rejects drift. Semantic colors/materials belong to `ReaderStyle.swift`.
-[Design notes](../Resources/Design/DESIGN.md) record the Aside/Glass reference and
-intentional native differences.
+[Design notes](../Resources/Design/DESIGN.md#tokens-and-ownership) define which file owns
+tokens, generated constants and semantic colors, and record the Aside/Glass reference
+and intentional native differences. The token commands are in
+[development](06-development.md#generated-tokens-and-source-layout).
 
 The historical web prototype is preserved at commit `57ad734` on
 `feat/reader-ui-prototype`. It is not the native app's source or a web deployment.

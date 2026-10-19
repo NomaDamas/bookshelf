@@ -82,7 +82,8 @@ bundled `prepare-ocr-replacement.py` helper to clear render-mode-3 invisible tex
 from supported page/Form streams in a separate prepared copy. This prevents old
 nested OCR text from being retained alongside new text.
 
-Output defaults to the first free `title_ocr.pdf`, then `title_2_ocr.pdf`, and so on.
+Output defaults to the first free `name_ocr.pdf`, then `name_2_ocr.pdf`, and so on, where
+`name` is the source file name without `.pdf` or a trailing `_ocr`.
 Cancellation interrupts the worker and removes private partial/prepared output.
 A completed but unaccepted candidate is kept for review. Logs and result reports
 live in `Logs/` under the selected Bookside data directory.
