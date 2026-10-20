@@ -86,6 +86,9 @@ public struct AgentRequest: Encodable, Sendable {
     }
 }
 public enum AgentRuntime {
+    /// SwiftUI bodies ask for Node on every streamed delta, so they read one remembered PATH walk.
+    /// Rechecking the connection refreshes it, which finds a Node.js installed while the app runs.
+    public static let node = ExecutableLookup { findExecutable("node") }
     public static func findExecutable(_ name: String) -> URL? {
         let home = FileManager.default.homeDirectoryForCurrentUser
         let directories = (ProcessInfo.processInfo.environment["PATH"] ?? "").split(separator: ":").map(String.init)
@@ -96,11 +99,25 @@ public enum AgentRuntime {
         let bundled = Bundle.main.resourceURL?.appendingPathComponent("Agent/bridge.mjs")
         return bundled.flatMap { FileManager.default.fileExists(atPath: $0.path) ? $0 : nil }
     }
-    public static var ready: Bool { findExecutable("node") != nil && bridgeURL != nil }
+    public static var ready: Bool { node.url != nil && bridgeURL != nil }
     public static var readingCLI: URL? {
         let url = Bundle.main.executableURL?.deletingLastPathComponent().appendingPathComponent("bookside-cli")
         return url.flatMap { FileManager.default.isExecutableFile(atPath: $0.path) ? $0 : nil }
     }
+}
+
+/// Keeps one executable lookup, including "not found", until `refresh()`.
+public final class ExecutableLookup: @unchecked Sendable {
+    private let lock = NSLock()
+    private let find: @Sendable () -> URL?
+    private var found: URL??
+    public init(_ find: @escaping @Sendable () -> URL?) { self.find = find }
+    public var url: URL? {
+        lock.lock(); defer { lock.unlock() }
+        if let found { return found }
+        let url = find(); found = .some(url); return url
+    }
+    public func refresh() { lock.lock(); found = nil; lock.unlock() }
 }
 
 /// Wait without pumping a worker run loop, which can deliver PDFKit UI timers off-main.

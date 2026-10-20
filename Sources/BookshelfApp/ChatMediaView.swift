@@ -3,11 +3,16 @@ import AVKit
 import Combine
 import BookshelfCore
 
-struct ChatResponseView: View {
+/// Equatable so a streamed delta re-parses only the reply whose text changed. `selectPage` is left out:
+/// SwiftUI cannot compare closures, and a reply's view stays with the book its message belongs to.
+struct ChatResponseView: View, Equatable {
     let text: String
     var streaming = false
     var sourcePages: Set<Int> = []
     var selectPage: ((Int) -> Void)?
+    static func == (lhs: Self, rhs: Self) -> Bool {
+        lhs.text == rhs.text && lhs.streaming == rhs.streaming && lhs.sourcePages == rhs.sourcePages
+    }
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             ForEach(ChatContent.blocks(text)) { block in

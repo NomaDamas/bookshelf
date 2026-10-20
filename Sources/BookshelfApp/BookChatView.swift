@@ -22,7 +22,7 @@ struct BookChatView: View {
     private var pageCount: Int { model.document?.pageCount ?? book.pageCount }
     private var scope: BookReadingScope { chat.readingScope(page: model.page, pageCount: pageCount) }
     private var composerBlock: PiComposerBlock? {
-        PiComposerBlock.evaluate(nodeFound: AgentRuntime.findExecutable("node") != nil, bridgeFound: AgentRuntime.bridgeURL != nil,
+        PiComposerBlock.evaluate(nodeFound: AgentRuntime.node.url != nil, bridgeFound: AgentRuntime.bridgeURL != nil,
                                  backend: chat.backend, connected: chat.account?.connected,
                                  checking: chat.checkingStatus || !chat.checkedBackends.contains(chat.backend),
                                  operation: chat.operation, documentReady: model.document != nil,
@@ -139,7 +139,7 @@ struct BookChatView: View {
     }
 
     private func connectionNotice(_ block: PiComposerBlock) -> some View {
-        PiConnectionNotice(block: block, connect: openConnectionSettings, recheck: { chat.checkConnection() })
+        PiConnectionNotice(block: block, connect: openConnectionSettings, recheck: { AgentRuntime.node.refresh(); chat.checkConnection() })
     }
 
     private var showsFollowUps: Bool {
@@ -230,6 +230,7 @@ struct BookChatView: View {
             }
             if !message.text.isEmpty {
                 ChatResponseView(text: message.text, streaming: streaming, sourcePages: Set(message.sourcePages)) { page in openPage(page) }
+                    .equatable()
             }
             if !streaming, let reading = message.reading, !message.text.isEmpty {
                 ChatReadingSources(reading: reading) { page in openPage(page) }
