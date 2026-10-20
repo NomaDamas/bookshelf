@@ -213,6 +213,14 @@ import BookshelfCore
         XCTAssertEqual(PiExplanation(skill: "auto").title, "자동"); XCTAssertEqual(PiExplanation(skill: "unknown"), .auto)
         XCTAssertEqual(PiExplanation.allCases.map(\.title), ["자동", "쉽게 설명", "비교표", "시각 자료"])
     }
+    func testOnlyTheReplyThatChangedIsRebuiltWhileAnotherStreams() {
+        let finished = ChatResponseView(text: "답 [p. 3]", streaming: false, sourcePages: [3]) { _ in }
+        XCTAssertEqual(finished, ChatResponseView(text: "답 [p. 3]", streaming: false, sourcePages: [3]) { _ in XCTFail() },
+                       "A new page-selection closure alone must not re-parse a finished reply")
+        XCTAssertNotEqual(finished, ChatResponseView(text: "답 [p. 3] 이어서", streaming: false, sourcePages: [3]), "Each streamed delta must reach the reply")
+        XCTAssertNotEqual(finished, ChatResponseView(text: "답 [p. 3]", streaming: true, sourcePages: [3]))
+        XCTAssertNotEqual(finished, ChatResponseView(text: "답 [p. 3]", streaming: false, sourcePages: [3, 4]), "Citation links follow the sources read")
+    }
     func testConversationCopyNamesTheExecutorAndModel() throws {
         let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)

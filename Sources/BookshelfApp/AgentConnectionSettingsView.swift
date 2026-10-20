@@ -76,7 +76,8 @@ struct AgentConnectionSettingsView: View {
                 if !AgentRuntime.ready { Text("Node.js와 공식 실행기를 설치해야 연결할 수 있습니다.").font(.caption).foregroundStyle(.secondary) }
                 Spacer()
                 if chat.checkingStatus { ProgressView().controlSize(.small) }
-                Button("연결 상태 확인") { Task { await chat.refreshConnections() } }.controlSize(.small).disabled(chat.busy || chat.checkingStatus)
+                // Rechecking also looks for Node.js again, so an install made while the app runs shows up.
+                Button("연결 상태 확인") { AgentRuntime.node.refresh(); Task { await chat.refreshConnections() } }.controlSize(.small).disabled(chat.busy || chat.checkingStatus)
             }
             ReaderHairline()
             Toggle(isOn: Binding(get: { !chat.usePi }, set: { chat.setPi(!$0) })) {
@@ -85,6 +86,6 @@ struct AgentConnectionSettingsView: View {
                     Text("답변을 비교할 때 쓰는 고급 설정입니다. 끄면 Pi가 대화를 관리합니다.").font(.system(size: 11)).foregroundStyle(.secondary)
                 }
             }.toggleStyle(.switch).disabled(chat.busy)
-        }.task { await chat.refreshConnections() }
+        }.task { AgentRuntime.node.refresh(); await chat.refreshConnections() }
     }
 }

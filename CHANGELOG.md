@@ -70,6 +70,11 @@ that its Git tag or GitHub Release has been published.
   to 2.5 MB. Release executables are stripped, the bundled Pi bridge is minified, and the
   DMG uses LZMA compression. Each release also lists a `.dSYMs.zip` with debug symbols for
   crash reports; installing does not need it.
+- A streaming Pi reply uses about a third less main-thread CPU: 1.9 s instead of 2.8 s per
+  turn, averaged over the first four turns of a conversation. Earlier replies are no longer
+  parsed again for each new piece of text, and the panel no longer searches `PATH` for
+  Node.js on every update. A Node.js installed while Bookside runs is found when you open
+  **Settings > Pi** or press **연결 상태 확인** or **다시 확인**.
 
 ### Added
 

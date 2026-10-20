@@ -93,6 +93,19 @@ final class AgentBridgeTests: XCTestCase {
         XCTAssertEqual(events.map(\.type), ["answer", "done"])
         XCTAssertEqual(events.first?.text, "테스트 책 설명")
     }
+    func testNodeLookupIsRememberedUntilARecheckFindsTheNewInstall() throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let node = root.appendingPathComponent("node")
+        let lookup = ExecutableLookup { FileManager.default.isExecutableFile(atPath: node.path) ? node : nil }
+        XCTAssertNil(lookup.url)
+        try "#!/bin/sh\n".write(to: node, atomically: true, encoding: .utf8)
+        try FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: node.path)
+        XCTAssertNil(lookup.url, "Re-evaluating a view must not walk PATH again")
+        lookup.refresh()
+        XCTAssertEqual(lookup.url, node, "Rechecking the connection must find Node.js installed while the app runs")
+    }
 }
 
 private final class TimerProbe: @unchecked Sendable {
