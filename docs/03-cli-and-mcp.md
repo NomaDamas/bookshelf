@@ -50,6 +50,9 @@ are **1-based PDF page indices**, which may differ from printed page numbers.
 | `ocr <book-id> [options]` | Create a separate OCR copy; options below. |
 | `ocr-accept <result-json>` | Attach a reviewed, unchanged candidate to the existing book. |
 | `ocr-original <book-id>` | Select the original again, preserving notes and OCR copies. |
+| `structure <book-id> --pages <first>-<last> [--resume]` | Recognize tables and formulas on those pages as review candidates for the current PDF file; see [structure layer](04-ocr.md#tables-and-formulas-structure-layer). |
+| `structure-accept <book-id> --pages <first>-<last>` | Accept the reviewed candidates in that range; only accepted pages reach Pi. |
+| `structure-status <book-id> [--pages <first>-<last>]` | Report states, other file versions and the discovered engine; `--pages` adds Markdown and blocks for review. |
 | `mcp` | Run the stdio MCP server until the client disconnects. |
 | `reading-mcp <book-id> <book\|page\|range> <first-page> <last-page> [provided-page provided-characters]` | App-owned read-only session limited to one book and an immutable PDF page range; no global registration is needed. |
 
@@ -80,6 +83,16 @@ export. Exported notes are not a complete database backup.
 Default CLI OCR may attach a result that passes quality checks. A result needing
 review is retained but not automatically attached. For controlled review, use the
 [review-only workflow](04-ocr.md#cli-review-workflow).
+
+### Structure layer output
+
+`structure` prints `counts` (`processed`, `candidate`, `needsReview`, `failed`,
+`skipped`, `keptAccepted`), the page lists behind them, `needsReview` with each
+page's reasons, the engine and model versions, `logPath`, `serverLogPath` and
+`fileSHA256`. Progress goes to stderr; Ctrl-C stops the run and keeps finished
+pages for `--resume`. `structure-accept` prints `accepted`, `alreadyAccepted`,
+`needsReview` (never accepted) and `missing`. All three commands use the active PDF
+file of the book, so results of another file version are not changed or shown.
 
 ## Register MCP
 
@@ -166,7 +179,7 @@ This is separate from the five-tool external library server. It exposes only:
 | --- | --- |
 | `get_book_overview` | PDF page count, permitted range and embedded outline with chapter boundaries. |
 | `search_book` | Whitespace-tolerant keyword search within the range; up to 12 original excerpts and a continuation page. |
-| `read_pages` | Up to 10 pages / 24,000 characters per call, with `nextPage` and `nextOffset` for complete retrieval. |
+| `read_pages` | Up to 10 pages / 24,000 characters per call, with `nextPage` and `nextOffset` for complete retrieval. Each page has `source`: `structure` for an accepted structure page (Markdown with tables and LaTeX, in place of the text layer) or `text_layer`. |
 | `get_reading_coverage` | Fully read pages, excerpt source pages and pages without extractable text for this request. |
 
 These tool schemas have no `book_id` or file-path argument. The server rejects out-of-range
@@ -180,6 +193,6 @@ all non-initialization messages are preserved.
 Page results include `bookside://book/<book-id>?page=<number>`. The app must be
 registered with macOS and use the same library for the ID to resolve.
 
-MCP cannot import, change notes, start OCR, or delete files. What “read-only” does not
+MCP cannot import, change notes, start OCR or structure recognition, accept results, or delete files. What “read-only” does not
 guarantee, how to treat document text, and what a client can send to its model provider
 are described in [privacy](07-data-and-privacy.md#mcp-and-external-models).

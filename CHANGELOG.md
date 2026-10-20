@@ -94,6 +94,13 @@ that its Git tag or GitHub Release has been published.
   until it finds the missing idea. **내 설명 점검** (**내 설명 점검받기**) compares your own
   explanation with the book's pages and points out one gap per turn, quoting the page.
 - Pi keeps the conversation's language when you answer with a letter, a number or a few words.
+- `bookside-cli structure` recognizes tables and formulas on the pages you choose with a
+  local PaddleOCR-VL-1.6 engine and keeps each page as Markdown with HTML tables and LaTeX
+  for review. `structure-status` shows the results and `structure-accept` records your
+  approval. Pi reads an accepted page from that Markdown, so it can answer from tables and
+  formulas that the text layer misses. The engine is an optional install; see
+  [docs/04-ocr.md](docs/04-ocr.md#tables-and-formulas-structure-layer). A review screen in the
+  app is planned in #44.
 - On the first page of a chapter in a book with an embedded outline, the Pi panel offers
   **이 장 예습 질문 받기**. Pi asks two or three questions about the pages ahead without giving
   the answers away, and you can write a guess under each. When you reach the page that

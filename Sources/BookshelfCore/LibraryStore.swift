@@ -62,9 +62,9 @@ public final class LibraryStore: @unchecked Sendable {
             started_at REAL, completed_at REAL NOT NULL
         );
         CREATE INDEX IF NOT EXISTS reading_completions_book ON reading_completions(book_id, completed_at);
-        PRAGMA user_version=1;
         """)
         try migrateReadingMembership()
+        try migrateSchema()
         try? FileManager.default.setAttributes([.posixPermissions: 0o600], ofItemAtPath: databaseURL.path)
     }
     deinit { sqlite3_close(db) }
@@ -295,6 +295,26 @@ public final class LibraryStore: @unchecked Sendable {
         }
     }
 
+    /// Version 2 adds the per-file structure layer as a new table; no existing table changes.
+    /// Builds before it set user_version=1 on every open and ignore the table, so they keep
+    /// reading and writing the library, and this step runs again idempotently afterwards.
+    private func migrateSchema() throws {
+        try readingTransaction {
+            let version = Int(try query("PRAGMA user_version").first?["user_version"] ?? "0") ?? 0
+            try exec("""
+            CREATE TABLE IF NOT EXISTS structure_pages (
+                book_id TEXT NOT NULL REFERENCES books(id), file_sha256 TEXT NOT NULL,
+                page INTEGER NOT NULL CHECK(page>0),
+                state TEXT NOT NULL CHECK(state IN ('candidate','accepted','needs_review')),
+                markdown TEXT NOT NULL, blocks TEXT NOT NULL, info TEXT NOT NULL,
+                created REAL NOT NULL, decided REAL,
+                PRIMARY KEY(book_id, file_sha256, page)
+            );
+            """)
+            if version < 2 { try exec("PRAGMA user_version=2") }
+        }
+    }
+
     public func readingSummaries(bookID: String? = nil) throws -> [String: ReadingSummary] {
         let rows = try query("""
         SELECT b.id,COALESCE(r.status,'unread') AS status,r.started_at,COALESCE(r.updated_at,0) AS updated_at,
@@ -385,5 +405,70 @@ public final class LibraryStore: @unchecked Sendable {
             var count = NoteCount(); count.notebook = Int(row["notebook"]!) ?? 0; count.excerpts = Int(row["excerpts"]!) ?? 0
             return (row["id"]!, count)
         })
+    }
+}
+
+/// Structure layer rows. Every read and write names the file version, so results of one PDF
+/// version never appear for another.
+extension LibraryStore {
+    private struct StructureInfo: Codable {
+        var engine: StructureEngineInfo
+        var geometry: StructureGeometry
+        var reasons: [String]
+        var seconds: Double
+    }
+    private func decodeStructure(_ row: [String: String]) throws -> StructurePage {
+        let decoder = JSONDecoder()
+        let info = try decoder.decode(StructureInfo.self, from: Data(row["info"]!.utf8))
+        return StructurePage(bookID: row["book_id"]!, fileSHA256: row["file_sha256"]!, page: Int(row["page"]!)!, state: StructureState(rawValue: row["state"]!) ?? .needsReview,
+                             markdown: row["markdown"]!, blocks: try decoder.decode([StructureBlock].self, from: Data(row["blocks"]!.utf8)), engine: info.engine,
+                             geometry: info.geometry, reasons: info.reasons, seconds: info.seconds, created: Double(row["created"]!) ?? 0, decided: row["decided"].flatMap(Double.init))
+    }
+    /// Stores a new candidate or needs_review page. Returns false when the page is already accepted:
+    /// acceptance is the reader's decision, so a later run never replaces it.
+    @discardableResult public func saveStructurePage(_ page: StructurePage) throws -> Bool {
+        guard page.state != .accepted else { throw ShelfError.message("구조 인식 결과는 검토한 뒤에만 승인할 수 있습니다.") }
+        let encoder = JSONEncoder(); encoder.outputFormatting = [.sortedKeys]
+        let blocks = String(decoding: try encoder.encode(page.blocks), as: UTF8.self)
+        let info = String(decoding: try encoder.encode(StructureInfo(engine: page.engine, geometry: page.geometry, reasons: page.reasons, seconds: page.seconds)), as: UTF8.self)
+        return try readingTransaction {
+            _ = try book(page.bookID)
+            if try query("SELECT state FROM structure_pages WHERE book_id=? AND file_sha256=? AND page=?", [page.bookID, page.fileSHA256, String(page.page)]).first?["state"] == StructureState.accepted.rawValue { return false }
+            _ = try query("""
+            INSERT INTO structure_pages(book_id,file_sha256,page,state,markdown,blocks,info,created,decided) VALUES(?,?,?,?,?,?,?,?,NULL)
+            ON CONFLICT(book_id,file_sha256,page) DO UPDATE SET state=excluded.state,markdown=excluded.markdown,blocks=excluded.blocks,info=excluded.info,created=excluded.created,decided=NULL
+            """, [page.bookID, page.fileSHA256, String(page.page), page.state.rawValue, page.markdown, blocks, info, String(page.created)])
+            return true
+        }
+    }
+    public func structurePages(bookID: String, fileSHA256: String, range: ClosedRange<Int>? = nil) throws -> [StructurePage] {
+        let bounds = range.map { [String($0.lowerBound), String($0.upperBound)] } ?? ["1", String(Int32.max)]
+        return try query("SELECT * FROM structure_pages WHERE book_id=? AND file_sha256=? AND page BETWEEN ? AND ? ORDER BY page", [bookID, fileSHA256] + bounds).map(decodeStructure)
+    }
+    /// Accepts candidates in the range. needs_review pages stay as they are until they are recomputed.
+    public func acceptStructure(bookID: String, fileSHA256: String, range: ClosedRange<Int>) throws -> [Int] {
+        try readingTransaction {
+            let args = [bookID, fileSHA256, String(range.lowerBound), String(range.upperBound)]
+            let pages = try query("SELECT page FROM structure_pages WHERE book_id=? AND file_sha256=? AND page BETWEEN ? AND ? AND state='candidate' ORDER BY page", args).compactMap { Int($0["page"]!) }
+            _ = try query("UPDATE structure_pages SET state='accepted',decided=? WHERE book_id=? AND file_sha256=? AND page BETWEEN ? AND ? AND state='candidate'", [String(Date().timeIntervalSince1970)] + args)
+            return pages
+        }
+    }
+    public func hasAcceptedStructure(bookID: String) throws -> Bool {
+        !(try query("SELECT 1 FROM structure_pages WHERE book_id=? AND state='accepted' LIMIT 1", [bookID])).isEmpty
+    }
+    public func acceptedStructureMarkdown(bookID: String, fileSHA256: String) throws -> [Int: String] {
+        Dictionary(uniqueKeysWithValues: try query("SELECT page,markdown FROM structure_pages WHERE book_id=? AND file_sha256=? AND state='accepted'", [bookID, fileSHA256]).map { (Int($0["page"]!)!, $0["markdown"]!) })
+    }
+    public func structureVersions(bookID: String) throws -> [StructureVersionSummary] {
+        try query("SELECT file_sha256,COUNT(*) AS pages,SUM(state='accepted') AS accepted FROM structure_pages WHERE book_id=? GROUP BY file_sha256 ORDER BY MAX(created) DESC", [bookID]).map {
+            StructureVersionSummary(fileSHA256: $0["file_sha256"]!, pages: Int($0["pages"]!) ?? 0, accepted: Int($0["accepted"] ?? "0") ?? 0)
+        }
+    }
+    /// Removes unaccepted rows written by a run whose source changed underneath it.
+    func deleteStructurePages(bookID: String, fileSHA256: String, pages: [Int]) throws {
+        try readingTransaction {
+            for page in pages { _ = try query("DELETE FROM structure_pages WHERE book_id=? AND file_sha256=? AND page=? AND state<>'accepted'", [bookID, fileSHA256, String(page)]) }
+        }
     }
 }

@@ -132,3 +132,140 @@ executable path; resolving its symlink to a base interpreter loses its packages.
 Run the real [synthetic OCR checks](06-development.md#ocr-and-mcp-integration-checks)
 to verify the installed dependency combination. Avoid testing repairs on a private
 library while diagnosing an installation.
+
+## Tables and formulas (structure layer)
+
+The text layer above stays the source for search and selection. The optional
+structure layer adds, for each page, Markdown with HTML tables and LaTeX formulas
+plus the position of every layout block. PaddleOCR-VL-1.6 with the PP-DocLayoutV3
+layout model produces it on this Mac. A result belongs to one PDF file version and
+reaches Pi only after you accept it. The app review screen is planned in
+[issue #44](https://github.com/NomaDamas/bookside/issues/44); until then the CLI runs,
+shows and accepts results.
+
+### Install the structure engine
+
+The engine needs Apple Silicon. Install the PaddleOCR pipeline and the mlx-vlm server
+as two uv tools:
+
+```sh
+uv tool install --python 3.12 "paddleocr[doc-parser]==3.7.0" --with "paddlepaddle==3.3.1"
+uv tool install --python 3.12 "mlx-vlm==0.7.6"
+```
+
+These commands and versions were verified on an M5 Pro with macOS 26.6. The first
+run downloads `PaddlePaddle/PaddleOCR-VL-1.6` (1.8 GB) into the Hugging Face cache
+and PP-DocLayoutV3 (126 MB) plus a 10 MB font into `~/.paddlex`. While it runs,
+the server takes about 4.5 GB of memory and the pipeline about 1.1 GB.
+
+Discovery checks `BOOKSIDE_STRUCTURE_PYTHON` (the Python of the PaddleOCR
+environment), then the interpreter of a `paddleocr` launcher in `PATH`,
+`~/.local/bin`, `/opt/homebrew/bin` or `/usr/local/bin`. It checks
+`BOOKSIDE_MLX_VLM_SERVER`, then `mlx_vlm.server` in the same places.
+`BOOKSIDE_STRUCTURE_MODEL` replaces the model name, for example to try a 4-bit
+build. `structure-status` reports what was found.
+
+### Run, review and accept
+
+```sh
+"$BOOKSIDE_CLI" structure "$BOOK_ID" --pages 12-30 > structure-run.json
+"$BOOKSIDE_CLI" structure-status "$BOOK_ID" --pages 12-30 > structure-review.json
+"$BOOKSIDE_CLI" structure-accept "$BOOK_ID" --pages 12-30
+```
+
+- `structure` starts its own mlx-vlm server on a free localhost port, sends one
+  recognition request at a time, and stops the server when it ends. Progress goes
+  to stderr. Logs are in `Logs/` under the data directory.
+- Each finished page is stored at once as a `candidate`. After Ctrl-C or a failure,
+  the finished pages stay stored, and `--resume` skips every page that already has
+  a result.
+- Without `--resume`, candidate and `needs_review` pages in the range are
+  recomputed. Accepted pages are never replaced.
+- A page that trips a guard (see the pitfalls below) is stored as `needs_review`
+  with its reasons. `structure-accept` never accepts it; run `structure` on it again.
+- `structure-status --pages` prints the Markdown and blocks to review. Compare them
+  with the page image before you accept. Like `ocr-accept`, `structure-accept` is
+  your review decision; it does not check the content itself.
+
+### What is stored
+
+Results are keyed by book ID, the SHA-256 of the active PDF file and the page.
+Accepting an OCR copy or choosing the original changes the active file, so the
+other version's results stop showing. `structure-status` lists them under
+`otherVersions`, and switching back shows them again.
+
+| Field | Content |
+| --- | --- |
+| `state` | `candidate`, `accepted` or `needs_review`. |
+| `markdown` | Page Markdown. Tables are HTML without Paddle's inline styles, and a line break inside a cell is `<br>`. Display formulas are `$$...$$` with their formula number as `\tag{...}`. Footnotes and side notes follow a `---` line. Figures are `[figure]`. |
+| `blocks` | Every layout block in reading order: `type` (the Paddle label), `bbox`, and `markdown` (tables), `latex` (formulas) or `text`. Running headers, footers and page numbers appear only here. |
+| `bbox` | `[x, y, width, height]` in PDF points from the lower-left corner of the crop box, in unrotated page space. Add `geometry.cropBox` x and y to get PDFKit page coordinates. |
+| `engine`, `geometry` | Engine, model, layout model, PaddleOCR and mlx-vlm versions, concurrency, render DPI, crop box, rotation and image size. |
+
+Pages are rendered at 200 DPI, with the longer side capped at 2,400 pixels.
+
+### How Pi reads it
+
+`read_pages` returns an accepted page's structure Markdown in place of its text
+layer and marks it `source: "structure"`; other pages are `source: "text_layer"`.
+Candidates and `needs_review` pages never reach Pi. On the 40 measured pages, the
+stored Markdown was 1.12 times as long as the text layer (prose 0.96, tables 1.49,
+formulas 1.40). Sending both would be 2.12 times as long and would fit about half
+as many pages in one 24,000-character call. The Markdown keeps footnotes and
+formula numbers; it drops only running headers, footers and page numbers, which
+answers do not need because citations use PDF page indices. `search_book` still
+searches the text layer.
+
+### Measured on this Mac
+
+40 pages from a personal library were measured on an M5 Pro with 48 GB (macOS 26.6.2):
+Korean scanned prose, tables and formulas (10 pages each) and 10 born-digital
+Korean pages whose embedded text is the ground truth.
+
+| Engine (sequential requests) | Prose CER (digital, median) | Table grids exact | Formula pages parsed (KaTeX) | s/page median (contended) | Peak memory |
+| --- | --- | --- | --- | --- | --- |
+| **PaddleOCR-VL-1.6 + PP-DocLayoutV3** (mlx-vlm 0.7.6 server) | **0.25%** | **21/21** | 76/79 | 17.5 (range 7.1-31.3) | server 4.5 GB + client 1.1 GB |
+| Apple Vision `RecognizeDocumentsRequest` | 1.15% | 20/21 | no formulas | 0.6 | 0.24 GB |
+| GLM-OCR (mlx-vlm) | 10.24% (Korean final consonants misread) | 18/21 | 101/101 | 19.9 | server 5.2 GB + client 1.6 GB |
+
+Other sessions loaded the machine during the timing, so the seconds are an upper
+bound. A quiet stretch gave about 6 s per page for Paddle. A 300-page book takes
+30 to 90 minutes. Starting the server and loading the pipeline takes about 9 s; the
+first run after installing took about 2 minutes, with the model already downloaded.
+
+### Pitfalls
+
+- mlx-vlm 0.7.6 corrupts output under concurrent requests: pages are cut at the
+  token limit, repeat text or lose text. The PaddleOCR SDK default is concurrent,
+  so Bookside fixes `vl_rec_max_concurrency=1`. Two sequential runs gave identical
+  output on 40 of 40 pages. Do not run two `structure` commands at once; each one
+  starts its own server.
+- Output depends on the rendered pixels. Bookside renders with pdfium; the
+  measurement above rendered with MuPDF. On three born-digital pages run again
+  through the CLI, every block matched except one dense table, whose cell values
+  were the same but whose line breaks inside cells were gone.
+- Guards mark a page `needs_review`: text in which a 4-120 character unit repeats
+  five or more times over at least 200 characters, a request that the server log
+  reports as stopped at the token limit, or a formula with unbalanced braces or
+  unmatched `\begin`/`\end`. On the 40 measured pages they flagged one page, where
+  three matrices were misread. Repeated matrix entries such as `\boxed{0}` are content
+  and are not flagged.
+- Paddle writes a line break inside a table cell as the two characters `\n`.
+  Bookside turns it into `<br>` between two ordinary characters outside math. It
+  keeps a `\n` next to a quote, backtick or backslash, because a programming
+  book's table may show the escape sequence itself.
+- Paddle leaves formula numbers, footnotes, headers and footers out of its Markdown.
+  Bookside puts formula numbers and footnotes back and keeps all of them as blocks.
+- Paddle's line-level `spotting` boxes drift on some pages, so Bookside does not
+  use them. Positions inside text come from the Apple Vision text layer.
+- The 4-bit model has not been measured. Measure it before making it the default.
+- If the CLI is force-killed, the helper notices at its next page and stops its
+  server. If the helper itself is force-killed, the server keeps running; find it
+  with `pgrep -fl mlx_vlm.server`.
+
+| Symptom | Next check |
+| --- | --- |
+| Engine not found | Run `structure-status` and check its `engine` paths; set the two variables above. |
+| Server does not become ready | Check the server log named in the error; the first run downloads the model. |
+| Many `needs_review` pages | Read the reasons in `structure-status`; check that nothing else sends requests to mlx-vlm. |
+| Results disappeared | Check `otherVersions`: a different PDF version is active. |
