@@ -3,8 +3,8 @@ import PDFKit
 import BookshelfCore
 import Darwin
 
-/// File replacement, in-place edits and OCR version switches invalidate both
-/// document and inspection caches without hashing hundreds of megabytes.
+/// File replacement, in-place edits and OCR version switches make the open
+/// document and the inspection cache stale without hashing hundreds of megabytes.
 struct PDFFileVersion: Codable, Equatable, Sendable {
     let path: String
     let device: Int32
@@ -35,27 +35,13 @@ struct OpenedPDF {
     let pageCount: Int
 }
 
-@MainActor final class ReaderDocumentLoader {
-    private var entries: [String: OpenedPDF] = [:]
-    private var recent: [String] = []
-    private let byteLimit: Int64 = 512 * 1024 * 1024
-    private var memoryPressure: DispatchSourceMemoryPressure?
-
-    init() {
-        let pressure = DispatchSource.makeMemoryPressureSource(eventMask: [.warning, .critical], queue: .main)
-        pressure.setEventHandler { [weak self] in Task { @MainActor in self?.removeAll() } }
-        pressure.resume(); memoryPressure = pressure
-    }
-    deinit { memoryPressure?.cancel() }
-
-    func cached(_ url: URL) -> OpenedPDF? {
-        guard let version = try? PDFFileVersion(url), let entry = entries[version.path], entry.version == version else { return nil }
-        recent.removeAll { $0 == version.path }; recent.append(version.path)
-        return entry
-    }
-    func load(_ url: URL) async throws -> OpenedPDF {
+/// Opens a reading document off the main thread. Only the active book keeps its document (`AppModel.document`):
+/// CoreGraphics keeps the fonts it loads for every rendered page inside the `PDFDocument` (about 1.4 MB per page
+/// for OCRmyPDF output) and has no public way to drop them, so documents reused across book switches held that
+/// memory. Returning to a book opens its file again, which costs about 1 ms plus the first page render.
+@MainActor enum ReaderDocumentLoader {
+    static func load(_ url: URL) async throws -> OpenedPDF {
         try Task.checkCancellation()
-        if let entry = cached(url) { return entry }
         let opened = try await Task.detached(priority: .userInitiated) {
             let version = try PDFFileVersion(url)
             let pdf = try PDFService.document(at: url)
@@ -64,17 +50,8 @@ struct OpenedPDF {
             return OpenedPDF(document: pdf, version: version, pageCount: pageCount)
         }.value
         try Task.checkCancellation()
-        entries.removeValue(forKey: opened.version.path)
-        recent.removeAll { $0 == opened.version.path }
-        if opened.version.bytes <= byteLimit {
-            entries[opened.version.path] = opened; recent.append(opened.version.path)
-            while recent.count > 2 || entries.values.reduce(Int64(0), { $0 + $1.version.bytes }) > byteLimit {
-                entries.removeValue(forKey: recent.removeFirst())
-            }
-        }
         return opened
     }
-    func removeAll() { entries.removeAll(); recent.removeAll() }
 }
 
 struct CachedPDFInspection: Codable {

@@ -29,6 +29,7 @@ import BookshelfCore
         XCTAssertFalse(model.isOpening)
         return try XCTUnwrap(model.document)
     }
+    /// The active book's PDF stays open while it is current, so selecting it again keeps the document and page.
     func testSelectingBookKeepsSidebarAndReusesCurrentDocument() async throws {
         let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
@@ -45,7 +46,11 @@ import BookshelfCore
         XCTAssertTrue(first === again, "Selecting the current book must not parse and rebuild its PDF")
         XCTAssertEqual(model.page, 2)
     }
-    func testSwitchingBooksReusesUnchangedPDFButReloadsReplacedFile() async throws {
+    /// Only the active book keeps its PDF (#35). CoreGraphics keeps the fonts of every rendered page inside the
+    /// `PDFDocument` and has no public way to drop them, so reusing the previous book's document after a switch
+    /// kept about 1.4 MB per scrolled thumbnail page of a scanned book. Returning to a book opens it again.
+    /// A removed reader view can outlive SwiftUI (seen in the app), so it must not keep the document either.
+    func testSwitchingBooksReleasesPreviousPDF() async throws {
         let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(at: directory) }
@@ -53,14 +58,37 @@ import BookshelfCore
         let a = try store.register(source: fixture(directory, name: "a.pdf"), ocr: nil, root: directory)
         let b = try store.register(source: fixture(directory, name: "b.pdf"), ocr: nil, root: directory)
         let model = AppModel(store: store)
-        let first = try await open(a, in: model)
+        weak var previous = try await open(a, in: model)
+        XCTAssertNotNil(previous)
+        let removedView = ReaderPDFView(); removedView.document = previous
+        let coordinator = PDFReaderView.Coordinator(model: model); coordinator.attach(removedView)
+        PDFReaderView.dismantleNSView(removedView, coordinator: coordinator)
         _ = try await open(b, in: model)
-        let cached = try await open(a, in: model)
-        XCTAssertTrue(first === cached)
+        XCTAssertNil(previous, "Switching books must release the previous book's PDF")
+        XCTAssertNil(removedView.document)
+        let reopened = try await open(a, in: model)
+        XCTAssertEqual(reopened.pageCount, 3)
+    }
+    func testCurrentBookReloadsReplacedFileAndSwitchedVersion() async throws {
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let store = try LibraryStore(directory: directory.appendingPathComponent("data"))
+        let a = try store.register(source: fixture(directory, name: "a.pdf"), ocr: nil, root: directory)
+        let model = AppModel(store: store)
+        let first = try await open(a, in: model)
         _ = try fixture(directory, name: "a.pdf", pages: 5)
         let replaced = try await open(a, in: model)
-        XCTAssertFalse(replaced === cached, "Replacing a PDF at the same path must invalidate cached data")
+        XCTAssertFalse(replaced === first, "Replacing the current book's PDF at the same path must reload it")
         XCTAssertEqual(replaced.pageCount, 5)
+        let source = try fixture(directory, name: "c.pdf"), ocr = try fixture(directory, name: "c_ocr.pdf", pages: 4)
+        let c = try store.register(source: source, ocr: ocr, root: directory)
+        let ocrVersion = try await open(c, in: model)
+        XCTAssertEqual(ocrVersion.pageCount, 4)
+        try store.useOriginal(bookID: c.id)
+        let original = try await open(try store.book(c.id), in: model)
+        XCTAssertFalse(original === ocrVersion, "Switching the active PDF version must reload the book")
+        XCTAssertEqual(original.pageCount, 3)
     }
     func testCachedDocumentDoesNotRestoreDeletedHighlights() async throws {
         let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)

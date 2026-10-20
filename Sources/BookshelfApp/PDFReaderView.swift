@@ -46,6 +46,8 @@ struct PDFReaderView: NSViewRepresentable {
         if coordinator.model.pdfView === view { coordinator.model.pdfView = nil }
         view.navigate = nil
         coordinator.detach()
+        // A removed view can stay alive after SwiftUI drops it; it must not keep its book's PDF open (#35).
+        view.document = nil
     }
     func makeNSView(context: Context) -> ReaderPDFView {
         let view = ReaderPDFView()

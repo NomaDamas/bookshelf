@@ -30,7 +30,7 @@ flowchart LR
 | `Sources/BookshelfCore/TextSearchQuery.swift` | Search projection and mapping matches back to original text. |
 | `Sources/BookshelfCore/OCRService.swift`, `OCRQuality.swift` | Process lifecycle, output protection, checks, hashes, review/attachment. |
 | `Sources/BookshelfApp/AppModel.swift` | Main-actor UI state, pending saves, selection, search, OCR review, reading shelf. |
-| `Sources/BookshelfApp/ReaderDocumentLoader.swift` | Version-aware document and inspection caching. |
+| `Sources/BookshelfApp/ReaderDocumentLoader.swift` | File-version keys, off-main document opening, and the inspection cache. |
 | `Sources/BookshelfApp/PDFReaderView.swift` | AppKit/PDFKit bridge, selection, annotations, focus and keyboard handling. |
 | `Sources/BookshelfCLI/` | Command parsing and official Swift MCP SDK tool handlers. |
 | `Sources/BookshelfAgent/` | TypeScript learning-chat bridge: Pi agent core, official Claude Code/Codex adapters, instructions and renderer. |
@@ -93,10 +93,15 @@ attachment is allowed only when checks do not require review. See the
 ## Loading and search
 
 The sidebar creates visible rows lazily and serializes cover generation. The
-reader retains up to two unchanged PDFs within a 512 MiB source-size budget; this
-is not a total RAM limit. File-version keys include path, identity, size, and fine
-grained modification/change times. Replacement and OCR switches invalidate caches.
-Whole-document inspection is cancellable between pages and cached for that version.
+reader keeps only the active book's `PDFDocument`. Selecting that book again keeps
+the document and page; switching to another book or file version releases it before
+the next one opens. CoreGraphics keeps the fonts it loads for each rendered page
+inside the document, with no public way to drop them, so a document retained after
+a switch kept that memory. Returning to a book opens its file again.
+File-version keys include path, identity, size, and fine grained modification/change
+times. Replacement and OCR switches reload the document and invalidate the
+inspection cache. Whole-document inspection is cancellable between pages and cached
+for that version.
 
 [Performance measurements](../Resources/Design/PERFORMANCE.md) distinguish document
 connection timing from GPU rendering and iCloud download time.

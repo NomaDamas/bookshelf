@@ -68,7 +68,6 @@ import BookshelfCore
     private var openTask: Task<Void, Never>?
     private var searchTask: Task<Void, Never>?
     private var inspectionTask: Task<Void, Never>?
-    private let documents = ReaderDocumentLoader()
     private var documentVersion: PDFFileVersion?
     private var ocrService: OCRService?
 
@@ -287,6 +286,7 @@ import BookshelfCore
         let version = try? PDFFileVersion(book.url)
         let keepDocument = activeBook?.id == book.id && document != nil && version != nil && version == documentVersion
         activeBook = book; selection = []; searchResults = []; searchQuery = ""; isSearching = false; isInspecting = false
+        // Another book or file version releases the open document before the next one loads (#35).
         if !keepDocument { document = nil; documentVersion = nil; page = max(book.lastPage, 1); requestedPage = page }
         do {
             let n = try store.notebook(bookID: book.id)
@@ -303,7 +303,7 @@ import BookshelfCore
         isOpening = true
         openTask = Task {
             do {
-                let opened = try await documents.load(book.url)
+                let opened = try await ReaderDocumentLoader.load(book.url)
                 guard !Task.isCancelled, activeBook?.id == book.id else { return }
                 let latest = try store.book(book.id)
                 guard latest.activePath == book.activePath else { selectBook(latest); return }
