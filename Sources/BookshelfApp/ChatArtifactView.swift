@@ -19,22 +19,22 @@ struct ChatArtifactView: View {
         VStack(alignment: .leading, spacing: 0) {
             HStack(spacing: 10) {
                 Label(kind == "mermaid" ? "다이어그램" : kind == "svg" ? "그림" : "인터랙티브 자료", systemImage: "rectangle.3.group")
-                    .font(.system(size: 11, weight: .medium))
+                    .font(.system(size: ReaderTokens.detailFont, weight: .medium))
                 Spacer()
                 Button(showSource ? "미리보기" : "코드") { showSource.toggle() }.buttonStyle(.borderless)
                 Button { expanded = true } label: { Image(systemName: "arrow.up.left.and.arrow.down.right") }
                     .buttonStyle(.borderless).accessibilityLabel("시각 자료 크게 보기").help("시각 자료 크게 보기")
-            }.font(.system(size: 11)).foregroundStyle(.secondary).padding(10)
+            }.font(.system(size: ReaderTokens.detailFont)).foregroundStyle(.secondary).padding(10)
             ReaderHairline()
             if showSource {
-                ScrollView([.horizontal, .vertical]) { Text(source).font(.system(size: 11, design: .monospaced)).textSelection(.enabled).padding(12) }
+                ScrollView([.horizontal, .vertical]) { Text(source).font(.system(size: ReaderTokens.detailFont, design: .monospaced)).textSelection(.enabled).padding(12) }
                     .frame(height: min(height, 320))
             } else {
                 ArtifactWebView(kind: kind, source: source, height: $height, error: $renderError)
                     .frame(height: height)
                 if renderError != nil {
                     Text("이 자료를 표시하지 못했습니다. 코드 보기에서 원문을 확인할 수 있습니다.")
-                        .font(.system(size: 11)).foregroundStyle(.secondary).padding(12)
+                        .font(.system(size: ReaderTokens.detailFont)).foregroundStyle(.secondary).padding(12)
                 }
             }
         }.background(ReaderStyle.canvas, in: RoundedRectangle(cornerRadius: 10))
@@ -59,7 +59,7 @@ private struct ArtifactExpandedView: View {
                 Text("시각 자료").font(.headline)
                 Spacer()
                 Button { zoom = max(0.5, zoom - 0.25) } label: { Image(systemName: "minus.magnifyingglass") }.accessibilityLabel("시각 자료 축소")
-                Text("\(Int(zoom * 100))%").font(.system(size: 12)).monospacedDigit().frame(width: 45)
+                Text("\(Int(zoom * 100))%").font(.system(size: ReaderTokens.captionFont)).monospacedDigit().frame(width: 45)
                 Button { zoom = min(3, zoom + 0.25) } label: { Image(systemName: "plus.magnifyingglass") }.accessibilityLabel("시각 자료 확대")
                 Button("닫기") { dismiss() }.keyboardShortcut(.cancelAction)
             }.padding(16)

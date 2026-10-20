@@ -10,6 +10,8 @@ enum ReaderTokens {
     static let controlFont: CGFloat = 13
     static let bodyFont: CGFloat = 14
     static let captionFont: CGFloat = 12
+    static let detailFont: CGFloat = 11
+    static let footnoteFont: CGFloat = 10
     static let toolbarHeight: CGFloat = 48
     static let footerHeight: CGFloat = 56
     static let hairline: CGFloat = 0.5

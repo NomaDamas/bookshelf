@@ -76,8 +76,8 @@ struct PiConnectionNotice: View {
     var body: some View {
         PiGutterRow { PiStatusMark(kind: .needsYou) } content: {
             VStack(alignment: .leading, spacing: 6) {
-                Text(title).font(.system(size: 13, weight: .semibold))
-                Text(detail).font(.system(size: 12)).foregroundStyle(.secondary).lineSpacing(3)
+                Text(title).font(.system(size: ReaderTokens.controlFont, weight: .semibold))
+                Text(detail).font(.system(size: ReaderTokens.captionFont)).foregroundStyle(.secondary).lineSpacing(3)
                     .fixedSize(horizontal: false, vertical: true)
                 HStack(spacing: 8) {
                     Button("연결하기", action: connect).buttonStyle(.borderedProminent)
@@ -117,7 +117,7 @@ struct PiStatusMark: View {
     var body: some View {
         switch kind {
         case .running: ProgressView().controlSize(.mini).accessibilityLabel("진행 중")
-        case .needsYou: Image(systemName: "smallcircle.filled.circle").font(.system(size: 10, weight: .semibold)).foregroundStyle(.orange)
+        case .needsYou: Image(systemName: "smallcircle.filled.circle").font(.system(size: ReaderTokens.footnoteFont, weight: .semibold)).foregroundStyle(.orange)
         case .done: Image(systemName: "circle.fill").font(.system(size: 7)).foregroundStyle(.green)
         case .settled: Image(systemName: "circle.fill").font(.system(size: 7)).foregroundStyle(.tertiary)
         }
@@ -148,7 +148,7 @@ struct PiStepRow: View {
             VStack(alignment: .leading, spacing: 3) {
                 Text(step.title).fontWeight(.semibold) + Text(step.detail.map { " (\($0))" } ?? "").foregroundStyle(.secondary)
                 if let result = step.result, !result.isEmpty { Text("└ " + result).foregroundStyle(.secondary) }
-            }.font(.system(size: 12)).monospacedDigit().fixedSize(horizontal: false, vertical: true)
+            }.font(.system(size: ReaderTokens.captionFont)).monospacedDigit().fixedSize(horizontal: false, vertical: true)
         }.accessibilityElement(children: .ignore)
             .accessibilityLabel([step.title, step.detail, stateLabel, step.result].compactMap { $0 }.filter { !$0.isEmpty }.joined(separator: ", "))
     }

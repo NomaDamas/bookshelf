@@ -16,7 +16,7 @@ struct ChatPageRangeEditor: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             Text("질문할 페이지 범위").font(.headline)
-            Text("PDF 페이지 번호로 지정합니다. AI는 이 범위 안에서만 본문을 찾고 읽습니다.").font(.system(size: 12)).foregroundStyle(.secondary)
+            Text("PDF 페이지 번호로 지정합니다. AI는 이 범위 안에서만 본문을 찾고 읽습니다.").font(.system(size: ReaderTokens.captionFont)).foregroundStyle(.secondary)
             HStack {
                 TextField("시작 쪽", text: $first).accessibilityLabel("질문 범위 시작 페이지")
                 Text("~")
@@ -37,10 +37,10 @@ struct ChatReadingSources: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
             Text("\(reading.scope.title) / 본문 \(reading.readPages.count)/\(reading.scope.pageCount)쪽 확인")
-                .font(.system(size: 10)).foregroundStyle(.secondary)
+                .font(.system(size: ReaderTokens.footnoteFont)).foregroundStyle(.secondary)
                 .help("본문을 끝까지 읽은 쪽 수입니다. 검색 결과의 일부 문장만 본 페이지는 포함하지 않습니다.")
             if !reading.emptyPages.isEmpty {
-                Text("텍스트가 없는 페이지 \(reading.emptyPages.count)쪽").font(.system(size: 10)).foregroundStyle(.orange)
+                Text("텍스트가 없는 페이지 \(reading.emptyPages.count)쪽").font(.system(size: ReaderTokens.footnoteFont)).foregroundStyle(.orange)
             }
             if !reading.sourcePages.isEmpty {
                 ScrollView(.horizontal, showsIndicators: false) {

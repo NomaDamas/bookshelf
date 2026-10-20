@@ -27,10 +27,10 @@ struct OCRReviewView: View {
                     .background(ReaderStyle.muted, in: RoundedRectangle(cornerRadius: ReaderTokens.radiusLarge))
                 VStack(alignment: .leading, spacing: 6) {
                     Text("\(review.result.mode.title) 결과").font(.system(size: 18, weight: .semibold))
-                    Text(review.book.title).font(.system(size: 12)).foregroundStyle(.secondary).lineLimit(1)
+                    Text(review.book.title).font(.system(size: ReaderTokens.captionFont)).foregroundStyle(.secondary).lineLimit(1)
                 }
                 Spacer()
-                Text("\(quality.textPages) / \(quality.pageCount)쪽 텍스트 확인").font(.system(size: 12)).foregroundStyle(.secondary)
+                Text("\(quality.textPages) / \(quality.pageCount)쪽 텍스트 확인").font(.system(size: ReaderTokens.captionFont)).foregroundStyle(.secondary)
             }
             HStack(spacing: 24) {
                 metric("공백 의심", count: quality.spacingSuspectPages.count)
@@ -40,14 +40,14 @@ struct OCRReviewView: View {
                     .help("서로 다른 PDF 추출기에서 글자나 읽는 순서가 다르게 나온 페이지입니다.")
                 if !quality.renderingMismatchPages.isEmpty { metric("화면 차이", count: quality.renderingMismatchPages.count) }
                 Spacer()
-                Text("화면 비교 \(quality.renderedPages.count)쪽 통과").font(.system(size: 12)).foregroundStyle(.secondary)
+                Text("화면 비교 \(quality.renderedPages.count)쪽 통과").font(.system(size: ReaderTokens.captionFont)).foregroundStyle(.secondary)
             }.padding(14)
                 .background(ReaderStyle.panel, in: RoundedRectangle(cornerRadius: ReaderTokens.radiusLarge, style: .continuous))
                 .modifier(ReaderSurfaceBorder())
             Text(quality.popplerChecked
                 ? "전체 페이지의 공백과 두 추출기의 결과를 대조했습니다. 화면 비교는 표본 검사입니다. 아래에서 문구와 읽는 순서를 확인해 주세요."
                 : "이 Mac에서는 추가 추출기 검사를 하지 못했습니다. 아래에서 공백, 문구와 읽는 순서를 확인해 주세요.")
-                .font(.system(size: 12)).foregroundStyle(.secondary)
+                .font(.system(size: ReaderTokens.captionFont)).foregroundStyle(.secondary)
             HStack {
                 ReaderPicker(choices: [("텍스트 비교", "text"), ("PDF 확인", "pdf")], selection: $display, label: "비교 화면")
                     .frame(width: 210, height: 28)
@@ -58,7 +58,7 @@ struct OCRReviewView: View {
                 TextField("쪽", text: $pageEntry).textFieldStyle(.roundedBorder).frame(width: 52)
                     .accessibilityLabel("OCR 비교 페이지 번호")
                     .onSubmit { page = min(max(Int(pageEntry) ?? page, 1), quality.pageCount); pageEntry = String(page) }
-                Text("/ \(quality.pageCount)").font(.system(size: 12)).foregroundStyle(.secondary)
+                Text("/ \(quality.pageCount)").font(.system(size: ReaderTokens.captionFont)).foregroundStyle(.secondary)
                 Stepper("페이지", value: $page, in: 1...max(1, quality.pageCount)).labelsHidden().fixedSize()
             }
             HStack(spacing: 12) {
@@ -69,11 +69,11 @@ struct OCRReviewView: View {
                 ReaderSearchField(prompt: "원문 문구를 입력해 이 페이지에서 검색", label: "OCR 검증 문구", text: $phrase)
                 if !phrase.isEmpty {
                     Label(afterText.contains(phrase) ? "문구 일치" : "일치하지 않음", systemImage: afterText.contains(phrase) ? "checkmark.circle" : "magnifyingglass")
-                        .foregroundStyle(afterText.contains(phrase) ? Color.green : Color.orange).font(.system(size: 12)).frame(width: 110)
+                        .foregroundStyle(afterText.contains(phrase) ? Color.green : Color.orange).font(.system(size: ReaderTokens.captionFont)).frame(width: 110)
                 }
             }
             if quality.needsReview {
-                Toggle("확인이 필요한 페이지를 검토했습니다", isOn: $confirmed).font(.system(size: 12))
+                Toggle("확인이 필요한 페이지를 검토했습니다", isOn: $confirmed).font(.system(size: ReaderTokens.captionFont))
                     .toggleStyle(.checkbox)
             }
             ReaderHairline()
@@ -85,7 +85,7 @@ struct OCRReviewView: View {
                     .disabled(quality.needsReview && !confirmed).keyboardShortcut(.return, modifiers: [.command])
             }
             Text("원본 파일과 책별 메모는 보존됩니다. 생성한 사본은 ‘기존 PDF 유지’를 눌러도 저장 위치에 남습니다.")
-                .font(.system(size: 11)).foregroundStyle(.secondary)
+                .font(.system(size: ReaderTokens.detailFont)).foregroundStyle(.secondary)
         }.padding(24).frame(width: 920, height: 720)
             .background(ReaderMaterial(material: .underWindowBackground)).tint(ReaderStyle.accent)
             .interactiveDismissDisabled()
@@ -93,7 +93,7 @@ struct OCRReviewView: View {
             .onChange(of: page) { _, _ in pageEntry = String(page); loadText() }
     }
     private func metric(_ title: String, count: Int) -> some View {
-        HStack(spacing: 6) { Text(title).foregroundStyle(.secondary); Text("\(count)쪽").fontWeight(.medium).foregroundStyle(count > 0 ? Color.orange : Color.primary) }.font(.system(size: 12))
+        HStack(spacing: 6) { Text(title).foregroundStyle(.secondary); Text("\(count)쪽").fontWeight(.medium).foregroundStyle(count > 0 ? Color.orange : Color.primary) }.font(.system(size: ReaderTokens.captionFont))
     }
     private func comparison(_ title: String, text: String, url: URL) -> some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -101,11 +101,11 @@ struct OCRReviewView: View {
                 Label(title, systemImage: title == "현재 PDF" ? "doc" : "doc.text")
                 Spacer()
                 Text("\(page)쪽").monospacedDigit().foregroundStyle(.secondary)
-            }.font(.system(size: 12, weight: .medium)).padding(.horizontal, 16).frame(height: 38)
+            }.font(.system(size: ReaderTokens.captionFont, weight: .medium)).padding(.horizontal, 16).frame(height: 38)
             ReaderHairline()
             if display == "pdf" { OCRPagePreview(url: url, page: page) }
             else {
-                ScrollView { Text(text.isEmpty ? "추출된 텍스트가 없습니다." : text).font(.system(size: 13)).lineSpacing(5).textSelection(.enabled).frame(maxWidth: .infinity, alignment: .leading).padding(14) }
+                ScrollView { Text(text.isEmpty ? "추출된 텍스트가 없습니다." : text).font(.system(size: ReaderTokens.controlFont)).lineSpacing(5).textSelection(.enabled).frame(maxWidth: .infinity, alignment: .leading).padding(14) }
                     .background(Color(nsColor: .textBackgroundColor))
             }
         }.frame(maxWidth: .infinity, maxHeight: .infinity).background(ReaderStyle.panel)

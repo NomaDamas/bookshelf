@@ -12,7 +12,7 @@ struct ChatModelMenu: View {
                 }
             }
         } label: {
-            Text("\(chat.backend.title) / \(chat.modelTitle)").font(.system(size: 12, weight: .medium)).lineLimit(1)
+            Text("\(chat.backend.title) / \(chat.modelTitle)").font(.system(size: ReaderTokens.captionFont, weight: .medium)).lineLimit(1)
         }.menuStyle(.borderlessButton).fixedSize()
             .accessibilityLabel("실행기와 모델").accessibilityValue("\(chat.backend.title) / \(chat.modelTitle)")
             .help("Pi가 답변에 쓸 실행기와 모델")
@@ -31,7 +31,7 @@ struct AgentConnectionSettingsView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 18) {
             Text("Pi는 이 책과 대화 기록을 바탕으로 설명합니다. 답변은 아래에서 연결한 Claude Code 또는 Codex 계정으로 받습니다. 계정 연결은 각 서비스의 공식 로그인으로 진행합니다.")
-                .font(.system(size: 12)).foregroundStyle(.secondary).lineSpacing(4).fixedSize(horizontal: false, vertical: true)
+                .font(.system(size: ReaderTokens.captionFont)).foregroundStyle(.secondary).lineSpacing(4).fixedSize(horizontal: false, vertical: true)
             ReaderHairline()
             ForEach(ChatBackend.allCases) { backend in
                 HStack(spacing: 12) {
@@ -39,10 +39,10 @@ struct AgentConnectionSettingsView: View {
                         .foregroundStyle(chat.accounts[backend]?.connected == true ? Color.green : .secondary)
                     VStack(alignment: .leading, spacing: 4) {
                         HStack(spacing: 6) {
-                            Text(executor(backend)).font(.system(size: 13, weight: .medium))
-                            if chat.backend == backend { Text("대화에 사용 중").font(.system(size: 10)).foregroundStyle(.secondary) }
+                            Text(executor(backend)).font(.system(size: ReaderTokens.controlFont, weight: .medium))
+                            if chat.backend == backend { Text("대화에 사용 중").font(.system(size: ReaderTokens.footnoteFont)).foregroundStyle(.secondary) }
                         }
-                        Text(chat.accounts[backend]?.label ?? (chat.checkingStatus ? "확인하고 있습니다" : "연결 확인 전")).font(.system(size: 11)).foregroundStyle(.secondary)
+                        Text(chat.accounts[backend]?.label ?? (chat.checkingStatus ? "확인하고 있습니다" : "연결 확인 전")).font(.system(size: ReaderTokens.detailFont)).foregroundStyle(.secondary)
                     }
                     Spacer()
                     Button(chat.accounts[backend]?.connected == true ? "다시 연결" : "연결") { chat.login(using: backend) }
@@ -69,7 +69,7 @@ struct AgentConnectionSettingsView: View {
             }
             ReaderHairline()
             HStack {
-                Text("대화 실행기와 모델").font(.system(size: 13))
+                Text("대화 실행기와 모델").font(.system(size: ReaderTokens.controlFont))
                 Spacer(); ChatModelMenu(chat: chat)
             }
             HStack {
@@ -82,8 +82,8 @@ struct AgentConnectionSettingsView: View {
             ReaderHairline()
             Toggle(isOn: Binding(get: { !chat.usePi }, set: { chat.setPi(!$0) })) {
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("Pi 계층을 끄고 실행기에 직접 요청").font(.system(size: 13))
-                    Text("답변을 비교할 때 쓰는 고급 설정입니다. 끄면 Pi가 대화를 관리합니다.").font(.system(size: 11)).foregroundStyle(.secondary)
+                    Text("Pi 계층을 끄고 실행기에 직접 요청").font(.system(size: ReaderTokens.controlFont))
+                    Text("답변을 비교할 때 쓰는 고급 설정입니다. 끄면 Pi가 대화를 관리합니다.").font(.system(size: ReaderTokens.detailFont)).foregroundStyle(.secondary)
                 }
             }.toggleStyle(.switch).disabled(chat.busy)
         }.task { AgentRuntime.node.refresh(); await chat.refreshConnections() }

@@ -11,7 +11,7 @@ struct ReaderWindow: View {
             if let message = model.errorMessage {
                 HStack(alignment: .top) {
                     Image(systemName: "exclamationmark.circle").foregroundStyle(.orange)
-                    Text(message).font(.system(size: 12)).textSelection(.enabled)
+                    Text(message).font(.system(size: ReaderTokens.captionFont)).textSelection(.enabled)
                     Spacer()
                     Button { model.errorMessage = nil } label: { Image(systemName: "xmark") }.buttonStyle(.plain).accessibilityLabel("오류 닫기")
                 }.padding(12).background(Color.orange.opacity(0.08))
@@ -20,7 +20,7 @@ struct ReaderWindow: View {
             if model.ocrRunning {
                 HStack(spacing: 10) {
                     ProgressView().controlSize(.small)
-                    Text(model.ocrMessage).font(.system(size: 12))
+                    Text(model.ocrMessage).font(.system(size: ReaderTokens.captionFont))
                     Spacer()
                     Button("취소") { model.cancelOCR() }.controlSize(.small)
                 }.padding(.horizontal, 18).padding(.vertical, 10).background(Color.accentColor.opacity(0.06))
@@ -42,7 +42,7 @@ struct ReaderWindow: View {
                     Spacer()
                     Button { model.information = nil } label: { Image(systemName: "xmark") }
                         .buttonStyle(.borderless).accessibilityLabel("알림 닫기")
-                }.font(.system(size: 12)).foregroundStyle(.secondary).padding(.horizontal, 18).padding(.vertical, 8)
+                }.font(.system(size: ReaderTokens.captionFont)).foregroundStyle(.secondary).padding(.horizontal, 18).padding(.vertical, 8)
             }
         }
         .frame(minWidth: 1000, minHeight: 650)
@@ -118,7 +118,7 @@ struct ReaderSurface: View {
         ScrollViewReader { proxy in
             ScrollView {
                 VStack(alignment: .leading, spacing: 22) {
-                    Text("PDF \(model.page)쪽").font(.system(size: 12, weight: .medium)).foregroundStyle(ReaderStyle.accent)
+                    Text("PDF \(model.page)쪽").font(.system(size: ReaderTokens.captionFont, weight: .medium)).foregroundStyle(ReaderStyle.accent)
                     Text(pageText).font(.system(size: 17)).lineSpacing(9).textSelection(.enabled)
                         .frame(maxWidth: .infinity, alignment: .leading)
                 }.padding(32).frame(maxWidth: 720)
@@ -184,10 +184,10 @@ struct ReaderSurface: View {
     private var selectionActions: some View {
         HStack(spacing: 14) {
             Image(systemName: "text.quote").foregroundStyle(ReaderStyle.accent)
-            Text("\(model.selection.reduce(0) { $0 + $1.quote.count })자 선택").font(.system(size: 12))
+            Text("\(model.selection.reduce(0) { $0 + $1.quote.count })자 선택").font(.system(size: ReaderTokens.captionFont))
             Divider().frame(height: 18)
             Button("발췌 메모에 담기") { model.saveSelection() }
-                .buttonStyle(.borderless).font(.system(size: 12, weight: .semibold)).accessibilityLabel("발췌 메모에 담기")
+                .buttonStyle(.borderless).font(.system(size: ReaderTokens.captionFont, weight: .semibold)).accessibilityLabel("발췌 메모에 담기")
             ReaderIconButton(symbol: "xmark", label: "선택 닫기") { model.selection = []; model.pdfView?.clearSelection() }
         }.padding(.leading, 18).padding(.trailing, 8).padding(.vertical, 8)
             .background(.regularMaterial, in: RoundedRectangle(cornerRadius: ReaderTokens.radiusPanel, style: .continuous))
@@ -212,12 +212,12 @@ struct ReaderSurface: View {
                     HStack(spacing: 6) {
                         TextField("페이지", text: $pageEntry)
                             .focused($pageEntryFocused)
-                            .textFieldStyle(.plain).font(.system(size: 14, weight: .semibold)).monospacedDigit()
+                            .textFieldStyle(.plain).font(.system(size: ReaderTokens.bodyFont, weight: .semibold)).monospacedDigit()
                             .multilineTextAlignment(.center).frame(width: 48, height: 28)
                             .background(ReaderStyle.muted, in: RoundedRectangle(cornerRadius: ReaderTokens.radiusMedium))
                             .onSubmit { if let number = Int(pageEntry) { model.goToPage(number, focusReader: true) }; pageEntry = String(model.page) }
                             .accessibilityLabel("페이지 번호").help("페이지 번호를 입력하고 Return")
-                        Text("/ \(pageCount)").font(.system(size: 12)).monospacedDigit().foregroundStyle(.secondary)
+                        Text("/ \(pageCount)").font(.system(size: ReaderTokens.captionFont)).monospacedDigit().foregroundStyle(.secondary)
                     }
                     pageButton(forward: true)
                 }
@@ -245,10 +245,10 @@ struct EmptyLibraryView: View {
             Image(systemName: "book.pages").font(.system(size: 42, weight: .light)).foregroundStyle(.secondary)
                 .frame(width: 88, height: 88).background(.regularMaterial, in: RoundedRectangle(cornerRadius: ReaderTokens.radiusPanel))
             Text("책에서 시작되는 생각").font(.system(size: 24, weight: .medium))
-            Text("PDF를 읽고, 문장을 남기고, 내 말로 정리해보세요.").font(.system(size: 13)).foregroundStyle(.secondary)
+            Text("PDF를 읽고, 문장을 남기고, 내 말로 정리해보세요.").font(.system(size: ReaderTokens.controlFont)).foregroundStyle(.secondary)
             HStack(spacing: 12) { Button("PDF 추가…") { model.chooseFiles() }.buttonStyle(.borderedProminent); Button("폴더 연결…") { model.chooseFiles(folder: true) } }.padding(.top, 10)
-            if !model.books.isEmpty { Text("왼쪽 책장에서 읽을 책을 선택할 수 있습니다.").font(.system(size: 12)).foregroundStyle(.secondary) }
-            Text("원본은 제자리에. 메모는 이 Mac에.").font(.system(size: 11)).foregroundStyle(.tertiary).padding(.top, 35)
+            if !model.books.isEmpty { Text("왼쪽 책장에서 읽을 책을 선택할 수 있습니다.").font(.system(size: ReaderTokens.captionFont)).foregroundStyle(.secondary) }
+            Text("원본은 제자리에. 메모는 이 Mac에.").font(.system(size: ReaderTokens.detailFont)).foregroundStyle(.tertiary).padding(.top, 35)
         }
     }
 }
@@ -299,7 +299,7 @@ struct BookTitleMenu: View {
             Button("AI로 이어가기") { model.copyContext() }
                 .help("현재 책과 메모를 외부 AI에 전달할 문맥으로 복사합니다.")
         } label: {
-            Text(book.title).font(.system(size: 13, weight: .semibold)).lineLimit(1).truncationMode(.middle)
+            Text(book.title).font(.system(size: ReaderTokens.controlFont, weight: .semibold)).lineLimit(1).truncationMode(.middle)
         }
         .menuStyle(.borderlessButton).frame(maxWidth: 420)
         .help(book.title).accessibilityLabel("\(book.title), 책 메뉴").accessibilityIdentifier("current-book-title")

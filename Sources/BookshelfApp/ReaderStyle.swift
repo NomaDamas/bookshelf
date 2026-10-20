@@ -89,7 +89,7 @@ struct ReaderIconButton: View {
     var body: some View {
         Button(action: action) {
             Image(systemName: symbol)
-                .font(.system(size: compact ? 12 : ReaderTokens.controlFont, weight: .medium))
+                .font(.system(size: compact ? ReaderTokens.captionFont : ReaderTokens.controlFont, weight: .medium))
                 .foregroundStyle(selected ? ReaderStyle.accent : compact ? Color.secondary : Color.primary)
                 .frame(width: compact ? 26 : ReaderTokens.controlSize, height: compact ? 26 : ReaderTokens.controlSize)
                 .contentShape(RoundedRectangle(cornerRadius: ReaderTokens.radiusMedium))
@@ -156,7 +156,7 @@ struct ReaderPicker<Value: Hashable>: NSViewRepresentable {
                                          target: context.coordinator, action: #selector(Coordinator.changed(_:)))
         control.segmentStyle = .texturedRounded
         control.segmentDistribution = .fill
-        control.font = .systemFont(ofSize: 12, weight: .medium)
+        control.font = .systemFont(ofSize: ReaderTokens.captionFont, weight: .medium)
         control.setContentHuggingPriority(.defaultLow, for: .horizontal)
         control.setAccessibilityLabel(label)
         return control
@@ -192,20 +192,20 @@ struct KeyboardShortcutsList: View {
                     section(group.title) { ForEach(group.actions) { row($0.title, model.shortcuts[$0].label) } }
                 }
                 Text("읽는 화면의 키는 원문과 텍스트 보기에서 쓸 수 있습니다. 메모나 검색어를 입력하는 동안에는 글 편집 키로 쓰입니다. 단축키는 설정의 단축키 항목에서 바꿀 수 있습니다.")
-                    .font(.system(size: 12)).foregroundStyle(.secondary).lineSpacing(4).fixedSize(horizontal: false, vertical: true)
+                    .font(.system(size: ReaderTokens.captionFont)).foregroundStyle(.secondary).lineSpacing(4).fixedSize(horizontal: false, vertical: true)
             }.padding(24).frame(maxWidth: .infinity, alignment: .leading)
         }.frame(width: 420, height: 620)
     }
     private func section(_ title: String, @ViewBuilder rows: () -> some View) -> some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text(title).font(.system(size: 13, weight: .semibold))
+            Text(title).font(.system(size: ReaderTokens.controlFont, weight: .semibold))
             Grid(alignment: .leading, horizontalSpacing: 24, verticalSpacing: 8) { rows() }
         }
     }
     private func row(_ title: String, _ keys: String) -> some View {
         GridRow {
-            Text(title).font(.system(size: 12)).frame(maxWidth: .infinity, alignment: .leading)
-            Text(keys).font(.system(size: 12, weight: .medium, design: .monospaced)).foregroundStyle(.secondary)
+            Text(title).font(.system(size: ReaderTokens.captionFont)).frame(maxWidth: .infinity, alignment: .leading)
+            Text(keys).font(.system(size: ReaderTokens.captionFont, weight: .medium, design: .monospaced)).foregroundStyle(.secondary)
                 .gridColumnAlignment(.trailing)
         }.accessibilityElement(children: .combine)
     }

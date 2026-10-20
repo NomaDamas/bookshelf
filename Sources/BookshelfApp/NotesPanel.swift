@@ -28,22 +28,22 @@ struct NotesPanel: View {
             VStack(alignment: .leading, spacing: 12) {
                 HStack(alignment: .firstTextBaseline) {
                     Label("이 책의 노트", systemImage: "square.and.pencil")
-                        .font(.system(size: 14, weight: .semibold))
+                        .font(.system(size: ReaderTokens.bodyFont, weight: .semibold))
                     NoteCountBadge(count: model.noteCount(book))
                     Spacer(minLength: 8)
                     HStack(spacing: 4) {
                         Image(systemName: model.hasUnsavedChanges ? "circle.dotted" : "checkmark")
                         Text(model.saveStatus)
-                    }.font(.system(size: 11)).foregroundStyle(model.saveStatus == "저장하지 못함" ? .orange : .secondary)
+                    }.font(.system(size: ReaderTokens.detailFont)).foregroundStyle(model.saveStatus == "저장하지 못함" ? .orange : .secondary)
                 }
             }.padding(18)
             ReaderHairline().padding(.horizontal, 18)
             ZStack(alignment: .topLeading) {
                 if model.notebookText.isEmpty {
                     VStack(alignment: .leading, spacing: 10) {
-                        Text("내 말로 적어보세요.").font(.system(size: 14))
+                        Text("내 말로 적어보세요.").font(.system(size: ReaderTokens.bodyFont))
                         Text("이해한 내용과 아직 남은 질문을\n여기에 기록할 수 있습니다.")
-                            .font(.system(size: 12)).lineSpacing(6)
+                            .font(.system(size: ReaderTokens.captionFont)).lineSpacing(6)
                     }.foregroundStyle(.secondary).padding(.horizontal, 22).padding(.top, 20)
                         .allowsHitTesting(false)
                 }
@@ -69,7 +69,7 @@ struct NotesPanel: View {
                             }
                         }
                     }.scrollIndicators(.hidden)
-                }.font(.system(size: 11)).padding(14)
+                }.font(.system(size: ReaderTokens.detailFont)).padding(14)
             }
         }
         .background(ReaderStyle.panel, in: RoundedRectangle(cornerRadius: ReaderTokens.radiusPanel, style: .continuous))
@@ -82,7 +82,7 @@ struct NotesPanel: View {
             if model.highlights.isEmpty {
                 panelPlaceholder(symbol: "text.quote", title: "다시 읽고 싶은 문장",
                                  message: "원문에서 문장을 선택하면 발췌와 생각을 함께 남길 수 있습니다.")
-                Text("⌘ ⇧ H  선택 문장 담기").font(.system(size: 11)).foregroundStyle(.secondary)
+                Text("⌘ ⇧ H  선택 문장 담기").font(.system(size: ReaderTokens.detailFont)).foregroundStyle(.secondary)
                     .frame(maxWidth: .infinity, alignment: .leading).padding(.horizontal, 24)
             }
             LazyVStack(spacing: 12) {
@@ -101,20 +101,20 @@ struct NotesPanel: View {
             }
             VStack(alignment: .leading, spacing: 7) {
                 Toggle("띄어쓰기 무시", isOn: $model.ignoreSearchWhitespace)
-                    .toggleStyle(.checkbox).font(.system(size: 12))
+                    .toggleStyle(.checkbox).font(.system(size: ReaderTokens.captionFont))
                     .help("OCR의 글자 사이 공백과 줄바꿈을 무시하고 찾습니다. 원문은 바뀌지 않습니다.")
                     .onChange(of: model.ignoreSearchWhitespace) { _, _ in
                         if !model.searchQuery.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty { model.searchBook() }
                     }
                 Text(model.ignoreSearchWhitespace ? "‘설 득’도 ‘설득’으로 찾습니다." : "입력한 띄어쓰기가 같은 문장을 찾습니다.")
-                    .font(.system(size: 11)).foregroundStyle(.secondary)
+                    .font(.system(size: ReaderTokens.detailFont)).foregroundStyle(.secondary)
             }.padding(.horizontal, 4)
             ReaderHairline()
             if model.isSearching {
                 HStack(spacing: 8) { ProgressView().controlSize(.small); Text("본문을 찾고 있습니다.") }
-                    .font(.system(size: 12)).foregroundStyle(.secondary)
+                    .font(.system(size: ReaderTokens.captionFont)).foregroundStyle(.secondary)
             } else if !model.searchQuery.isEmpty {
-                Text("\(model.searchResults.count)개 페이지").font(.system(size: 11)).foregroundStyle(.secondary)
+                Text("\(model.searchResults.count)개 페이지").font(.system(size: ReaderTokens.detailFont)).foregroundStyle(.secondary)
             }
             ScrollView {
                 if model.searchQuery.isEmpty {
@@ -126,7 +126,7 @@ struct NotesPanel: View {
                         Button { model.goToPage(hit.page) } label: {
                             VStack(alignment: .leading, spacing: 9) {
                                 PageChip(page: hit.page)
-                                Text(hit.text).font(.system(size: 13)).lineSpacing(5).lineLimit(7).foregroundStyle(.primary)
+                                Text(hit.text).font(.system(size: ReaderTokens.controlFont)).lineSpacing(5).lineLimit(7).foregroundStyle(.primary)
                             }.padding(14).frame(maxWidth: .infinity, alignment: .leading)
                                 .background(ReaderStyle.panel, in: RoundedRectangle(cornerRadius: ReaderTokens.radiusLarge, style: .continuous))
                                 .modifier(ReaderSurfaceBorder())
@@ -145,7 +145,7 @@ struct NotesPanel: View {
             Image(systemName: symbol).font(.system(size: 26, weight: .light)).foregroundStyle(.secondary)
                 .frame(width: 50, height: 50).background(ReaderStyle.muted, in: RoundedRectangle(cornerRadius: ReaderTokens.radiusLarge))
             Text(title).font(.system(size: 16, weight: .medium))
-            Text(message).font(.system(size: 13)).foregroundStyle(.secondary).lineSpacing(6)
+            Text(message).font(.system(size: ReaderTokens.controlFont)).foregroundStyle(.secondary).lineSpacing(6)
         }.frame(maxWidth: .infinity, alignment: .leading).padding(24).padding(.top, 12)
     }
 }
@@ -162,11 +162,11 @@ struct HighlightCard: View {
                 Spacer()
                 ReaderIconButton(symbol: "trash", label: "발췌 메모 삭제") { confirmingDelete = true }
             }
-            Text(highlight.quote).font(.system(size: 13)).lineSpacing(6).textSelection(.enabled)
+            Text(highlight.quote).font(.system(size: ReaderTokens.controlFont)).lineSpacing(6).textSelection(.enabled)
                 .frame(maxWidth: .infinity, alignment: .leading)
             ReaderHairline()
             TextField("이 문장에 대한 내 생각", text: Binding(get: { model.highlights.first(where: { $0.id == highlight.id })?.comment ?? highlight.comment }, set: { model.updateHighlight(highlight, comment: $0) }), axis: .vertical)
-                .font(.system(size: 13)).textFieldStyle(.plain).lineLimit(2...8).accessibilityLabel("발췌에 대한 내 생각")
+                .font(.system(size: ReaderTokens.controlFont)).textFieldStyle(.plain).lineLimit(2...8).accessibilityLabel("발췌에 대한 내 생각")
         }.padding(16).background(ReaderStyle.panel, in: RoundedRectangle(cornerRadius: ReaderTokens.radiusPanel, style: .continuous))
             .modifier(ReaderSurfaceBorder(radius: ReaderTokens.radiusPanel))
             .confirmationDialog("이 발췌 메모를 삭제할까요?", isPresented: $confirmingDelete) {
@@ -180,7 +180,7 @@ struct HighlightCard: View {
 struct PageChip: View {
     let page: Int
     var body: some View {
-        Text("\(page)쪽").font(.system(size: 11, weight: .medium)).monospacedDigit().foregroundStyle(.secondary)
+        Text("\(page)쪽").font(.system(size: ReaderTokens.detailFont, weight: .medium)).monospacedDigit().foregroundStyle(.secondary)
             .padding(.horizontal, 7).frame(height: 20)
             .background(ReaderStyle.muted, in: Capsule())
             .accessibilityLabel("PDF \(page)쪽")

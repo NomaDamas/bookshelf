@@ -68,7 +68,7 @@ struct BookChatView: View {
     private var header: some View {
         HStack(spacing: 8) {
             // The window toolbar already shows the book title, so the header keeps only the page.
-            Text("Pi").font(.system(size: 14, weight: .bold)).accessibilityAddTraits(.isHeader)
+            Text("Pi").font(.system(size: ReaderTokens.bodyFont, weight: .bold)).accessibilityAddTraits(.isHeader)
             Text("\(model.page)쪽").foregroundStyle(.secondary).monospacedDigit().fixedSize()
             Spacer(minLength: 4)
             Menu {
@@ -82,12 +82,12 @@ struct BookChatView: View {
                 Button("학습 지침 보기…") { DispatchQueue.main.async { showingProfile = true } }
                 Divider()
                 Button("연결 설정…") { openConnectionSettings() }
-            } label: { Image(systemName: "ellipsis").font(.system(size: 13, weight: .medium)) }
+            } label: { Image(systemName: "ellipsis").font(.system(size: ReaderTokens.controlFont, weight: .medium)) }
                 .menuStyle(.borderlessButton).menuIndicator(.hidden).fixedSize()
                 .accessibilityLabel("Pi 메뉴").help("되돌리기, 대화 복사와 비우기, 연결 설정")
                 .popover(isPresented: $showingUsage, arrowEdge: .bottom) { ContextUsageDetails(usage: chat.contextUsage) }
                 .background { Color.clear.popover(isPresented: $showingProfile, arrowEdge: .bottom) { LearningProfileView() } }
-        }.font(.system(size: 13)).padding(.horizontal, 16).frame(height: ReaderStyle.toolbarHeight)
+        }.font(.system(size: ReaderTokens.controlFont)).padding(.horizontal, 16).frame(height: ReaderStyle.toolbarHeight)
     }
 
     // MARK: Conversation
@@ -133,7 +133,7 @@ struct BookChatView: View {
         VStack(alignment: .leading, spacing: 12) {
             Text("읽다가 막힌 부분을 Pi에게 물어보세요.").font(.system(size: 16, weight: .medium))
             Text("Pi는 이 책에서 필요한 쪽을 찾아 읽고 설명합니다. 지금 보는 쪽과 선택한 문장도 함께 참고합니다. 질문 범위와 설명 방식은 입력창 위에서 고를 수 있습니다.")
-                .font(.system(size: 13)).foregroundStyle(.secondary).lineSpacing(5).fixedSize(horizontal: false, vertical: true)
+                .font(.system(size: ReaderTokens.controlFont)).foregroundStyle(.secondary).lineSpacing(5).fixedSize(horizontal: false, vertical: true)
             PiSuggestions(choose: suggest)
         }.padding(.vertical, 14)
     }
@@ -166,7 +166,7 @@ struct BookChatView: View {
     @ViewBuilder private func questionContent(_ message: BookChatMessage) -> some View {
         let editing = editingID == message.id
         PiGutterRow(alignment: editing ? .top : .firstTextBaseline) {
-            Image(systemName: "chevron.right").font(.system(size: 11, weight: .bold)).foregroundStyle(.secondary)
+            Image(systemName: "chevron.right").font(.system(size: ReaderTokens.detailFont, weight: .bold)).foregroundStyle(.secondary)
                 .padding(.top, editing ? 11 : 0).accessibilityHidden(true)
         } content: {
             if editing { questionEditor(message) }
@@ -184,7 +184,7 @@ struct BookChatView: View {
                             ReaderIconButton(symbol: "pencil", label: "질문 수정", compact: true) { beginEdit(message) }
                                 .disabled(chat.busy || editingID != nil)
                         }
-                    }.font(.system(size: 11)).padding(.top, -3)
+                    }.font(.system(size: ReaderTokens.detailFont)).padding(.top, -3)
                 }
             }
         }
@@ -192,13 +192,13 @@ struct BookChatView: View {
 
     private func questionEditor(_ message: BookChatMessage) -> some View {
         VStack(alignment: .leading, spacing: 8) {
-            TextEditor(text: $editText).font(.system(size: 14)).scrollContentBackground(.hidden)
+            TextEditor(text: $editText).font(.system(size: ReaderTokens.bodyFont)).scrollContentBackground(.hidden)
                 .focused($editorFocused).frame(minHeight: 56, maxHeight: 160).padding(6)
                 .background(ReaderStyle.panel, in: RoundedRectangle(cornerRadius: ReaderTokens.radiusMedium, style: .continuous))
                 .modifier(ReaderSurfaceBorder(radius: ReaderTokens.radiusMedium))
                 .accessibilityLabel("수정할 질문")
             Text("수정한 질문부터 다시 답합니다. 이전 대화는 Pi 메뉴의 되돌리기로 복원할 수 있습니다.")
-                .font(.system(size: 11)).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+                .font(.system(size: ReaderTokens.detailFont)).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
             HStack {
                 Spacer()
                 Button("취소") { editingID = nil }.keyboardShortcut(.cancelAction)
@@ -210,8 +210,8 @@ struct BookChatView: View {
     }
 
     @ViewBuilder private func assetContent(_ message: BookChatMessage) -> some View {
-        PiGutterRow { Image(systemName: "doc").font(.system(size: 10, weight: .semibold)).foregroundStyle(.secondary) } content: {
-            Text("이 책의 자료").font(.system(size: 12, weight: .semibold)).foregroundStyle(.secondary)
+        PiGutterRow { Image(systemName: "doc").font(.system(size: ReaderTokens.footnoteFont, weight: .semibold)).foregroundStyle(.secondary) } content: {
+            Text("이 책의 자료").font(.system(size: ReaderTokens.captionFont, weight: .semibold)).foregroundStyle(.secondary)
         }
         ForEach(message.attachments ?? []) { ChatAttachmentView(attachment: $0, directory: model.store.directory) }
             .padding(.leading, PiTranscript.gutter)
@@ -240,7 +240,7 @@ struct BookChatView: View {
     }
 
     private var turnMark: some View {
-        Image(systemName: "asterisk").font(.system(size: 10, weight: .semibold)).foregroundStyle(.secondary)
+        Image(systemName: "asterisk").font(.system(size: ReaderTokens.footnoteFont, weight: .semibold)).foregroundStyle(.secondary)
     }
 
     /// "✻ 생각하는 중, 8초" while the reply streams; the clock ticks once a second.
@@ -248,7 +248,7 @@ struct BookChatView: View {
         TimelineView(.periodic(from: .now, by: 1)) { context in
             PiGutterRow { turnMark } content: {
                 Text(PiTurnWording.running(started: message.created, writing: !message.text.isEmpty, now: context.date))
-                    .font(.system(size: 12)).foregroundStyle(.secondary).monospacedDigit()
+                    .font(.system(size: ReaderTokens.captionFont)).foregroundStyle(.secondary).monospacedDigit()
             }
         }.accessibilityIdentifier("pi-turn-running")
     }
@@ -261,7 +261,7 @@ struct BookChatView: View {
                 if message.state == "failed" { PiStatusMark(kind: .needsYou) } else { turnMark }
             } content: {
                 Text(PiTurnWording.finished(message, speaker: chat.speaker(of: message)))
-                    .font(.system(size: 12)).foregroundStyle(.secondary).monospacedDigit()
+                    .font(.system(size: ReaderTokens.captionFont)).foregroundStyle(.secondary).monospacedDigit()
                     .fixedSize(horizontal: false, vertical: true)
                     .help(message.harness == "pi" ? "Pi가 이 실행기로 답했습니다." : "Pi 계층 없이 실행기에 직접 요청했습니다.")
             }
@@ -308,7 +308,7 @@ struct BookChatView: View {
             if chat.hasUnsavedChanges { Button("저장 재시도") { chat.persist() }.controlSize(.small) }
             Button { chat.errorMessage = nil } label: { Image(systemName: "xmark") }
                 .buttonStyle(.plain).foregroundStyle(.secondary).accessibilityLabel("오류 닫기").help("오류 닫기")
-        }.font(.system(size: 11)).padding(12).background(Color.orange.opacity(0.08))
+        }.font(.system(size: ReaderTokens.detailFont)).padding(12).background(Color.orange.opacity(0.08))
     }
 
     /// Sign-in waits on the reader in the browser, so it carries the orange "needs you" ring.
@@ -321,7 +321,7 @@ struct BookChatView: View {
                 if let url = chat.loginURL { Link("열기", destination: url) }
                 Button("취소") { chat.stop() }.controlSize(.small)
             }
-        }.font(.system(size: 12)).padding(.horizontal, 16).padding(.vertical, 10)
+        }.font(.system(size: ReaderTokens.captionFont)).padding(.horizontal, 16).padding(.vertical, 10)
     }
 
     // MARK: Composer
@@ -332,11 +332,11 @@ struct BookChatView: View {
                 HStack(spacing: 6) { scopeMenu; notesToggle; explanationMenu }
                 VStack(alignment: .leading, spacing: 6) { scopeMenu; HStack(spacing: 6) { notesToggle; explanationMenu } }
             }.frame(maxWidth: .infinity, alignment: .leading).disabled(chat.busy)
-            TextEditor(text: $chat.draft).font(.system(size: 14)).scrollContentBackground(.hidden)
+            TextEditor(text: $chat.draft).font(.system(size: ReaderTokens.bodyFont)).scrollContentBackground(.hidden)
                 .focused($composerFocused)
                 .frame(minHeight: 56, maxHeight: 100).padding(.vertical, 2)
                 .overlay(alignment: .topLeading) {
-                    if chat.draft.isEmpty { Text("이 책에 대해 Pi에게 물어보세요.").font(.system(size: 13)).foregroundStyle(.tertiary).padding(.leading, 5).padding(.top, 10).allowsHitTesting(false) }
+                    if chat.draft.isEmpty { Text("이 책에 대해 Pi에게 물어보세요.").font(.system(size: ReaderTokens.controlFont)).foregroundStyle(.tertiary).padding(.leading, 5).padding(.top, 10).allowsHitTesting(false) }
                 }
                 .accessibilityLabel("Pi에게 질문").accessibilityIdentifier("book-chat-composer")
             HStack(spacing: 4) {
@@ -349,7 +349,7 @@ struct BookChatView: View {
                 sendControl(block)
             }
             if let block {
-                Text(block.message).font(.system(size: 11)).foregroundStyle(.secondary)
+                Text(block.message).font(.system(size: ReaderTokens.detailFont)).foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true).accessibilityIdentifier("pi-send-blocked")
                     .transition(.opacity)
             }
@@ -395,10 +395,10 @@ struct BookChatView: View {
 
     @ViewBuilder private func sendControl(_ block: PiComposerBlock?) -> some View {
         if chat.busy && chat.operation == "chat" {
-            Button { chat.stop() } label: { Image(systemName: "stop.fill").font(.system(size: 11)).frame(width: 28, height: 28) }
+            Button { chat.stop() } label: { Image(systemName: "stop.fill").font(.system(size: ReaderTokens.detailFont)).frame(width: 28, height: 28) }
                 .buttonStyle(.bordered).clipShape(Circle()).accessibilityLabel("답변 중단").help("답변 중단")
         } else {
-            Button { send() } label: { Image(systemName: "arrow.up").font(.system(size: 13, weight: .semibold)).frame(width: 28, height: 28) }
+            Button { send() } label: { Image(systemName: "arrow.up").font(.system(size: ReaderTokens.controlFont, weight: .semibold)).frame(width: 28, height: 28) }
                 .buttonStyle(.borderedProminent).clipShape(Circle()).accessibilityLabel("질문하기")
                 .help("질문하기 (\(model.shortcuts[.sendMessage].label))")
                 .keyboardShortcut(model.shortcuts[.sendMessage].value)
@@ -473,8 +473,8 @@ private struct LearningProfileView: View {
         VStack(alignment: .leading, spacing: 12) {
             Text("Pi 학습 지침").font(.headline)
             Text("공통 지침은 영어로 작성하며 답변은 질문한 언어를 따릅니다. 자동 설명 방식이 글, 표와 시각 자료를 고릅니다. Codex는 이미지도 만들 수 있습니다.")
-                .font(.system(size: 12)).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
-            ScrollView { Text(text).font(.system(size: 12)).textSelection(.enabled).frame(maxWidth: .infinity, alignment: .leading) }
+                .font(.system(size: ReaderTokens.captionFont)).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+            ScrollView { Text(text).font(.system(size: ReaderTokens.captionFont)).textSelection(.enabled).frame(maxWidth: .infinity, alignment: .leading) }
         }.padding(20).frame(width: 440, height: 420)
     }
 }
@@ -511,7 +511,7 @@ struct ChatMarkdownText: View {
                             ForEach(Array(rows.enumerated()), id: \.offset) { row, cells in
                                 HStack(alignment: .top, spacing: 12) {
                                     ForEach(Array(cells.enumerated()), id: \.offset) { _, cell in
-                                        Text(inline(cell)).font(.system(size: 12, weight: row == 0 ? .semibold : .regular))
+                                        Text(inline(cell)).font(.system(size: ReaderTokens.captionFont, weight: row == 0 ? .semibold : .regular))
                                             .frame(width: 128, alignment: .leading)
                                     }
                                 }.padding(.vertical, 8)
