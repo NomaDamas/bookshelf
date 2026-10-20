@@ -1,4 +1,4 @@
-![Bookside on macOS: PDF library, reading view, and a per-book notebook](Resources/Design/evidence/readme-reader-light.jpg)
+[![Bookside demo: saving an excerpt and notes, asking Pi about the book, and making scanned pages searchable](Resources/Design/evidence/readme-demo.gif)](Resources/Design/evidence/readme-demo.mp4)
 
 # Bookside / 서재
 
@@ -12,7 +12,9 @@ their folders; notes, bookmarks, and reading progress live in a local SQLite dat
 [User guide](docs/02-reading-and-notes.md) | [CLI & MCP](docs/03-cli-and-mcp.md) |
 [Contribute](CONTRIBUTING.md)
 
-The screenshot shows the running native app with an authored sample PDF and sample notes.
+The demo is recorded from the running app; the [full video with English narration and captions](Resources/Design/evidence/readme-demo.mp4)
+runs 1:54. It reads Franz Kafka's *The Metamorphosis* in Ian Johnston's public-domain translation:
+it saves an excerpt and notes, asks Pi to compare Gregor's family, and runs OCR on scanned pages.
 The interface currently uses Korean labels; the guides explain the relevant controls in English.
 
 ## What you can do
@@ -36,6 +38,10 @@ The interface currently uses Korean labels; the guides explain the relevant cont
 <details>
 <summary>More native app screenshots</summary>
 
+**Reading view and notebook**
+
+![Bookside on macOS: PDF library, reading view, and a per-book notebook](Resources/Design/evidence/readme-reader-light.jpg)
+
 **Reading shelves and history**
 
 ![Finished sample books with read-through counts and note badges](Resources/Design/evidence/reading-history-light.png)
@@ -48,7 +54,7 @@ The interface currently uses Korean labels; the guides explain the relevant cont
 
 ![Comparing original and improved OCR text before accepting a copy](Resources/Design/evidence/ocr-review-dark.png)
 
-Screenshots use authored fixtures. See [capture provenance and verification](docs/06-development.md#screenshots-and-ui-verification).
+Screenshots use authored fixtures; the demo uses a public-domain book. See [capture provenance and verification](docs/06-development.md#screenshots-and-ui-verification).
 
 </details>
 

@@ -1,4 +1,4 @@
-![실제 macOS 서재 앱의 PDF 책장, 읽기 화면과 책별 메모](Resources/Design/evidence/readme-reader-light.jpg)
+[![서재 데모: 발췌와 메모 남기기, Pi에게 책 내용 묻기, 스캔한 쪽을 검색할 수 있게 만들기](Resources/Design/evidence/readme-demo.gif)](Resources/Design/evidence/readme-demo.mp4)
 
 # Bookside / 서재
 
@@ -11,7 +11,9 @@ PDF는 원래 폴더에 두고 메모, 책갈피, 읽던 위치는 로컬 SQLite
 [사용법](docs/02-reading-and-notes.md) | [CLI/MCP](docs/03-cli-and-mcp.md) |
 [기여 안내](CONTRIBUTING.md)
 
-위 화면은 직접 작성한 예시 PDF와 메모를 실제 앱에서 연 캡처입니다.
+위 데모는 실제 앱을 녹화한 것이며, [영어 내레이션과 자막이 있는 전체 영상](Resources/Design/evidence/readme-demo.mp4)은 1분 54초입니다.
+프란츠 카프카의 『변신』 영어판(Ian Johnston 번역, 퍼블릭 도메인)으로 발췌와 메모를 남기고,
+Pi에게 그레고르의 가족을 비교해 달라고 묻고, 스캔한 쪽에 OCR을 실행합니다. 영상의 내레이션과 자막은 영어입니다.
 앱의 화면 문구는 한국어이며, 현재 상세 개발 문서는 영어로 제공합니다.
 
 ## 할 수 있는 일
@@ -27,6 +29,10 @@ PDF는 원래 폴더에 두고 메모, 책갈피, 읽던 위치는 로컬 SQLite
 <details>
 <summary>다른 실제 화면 보기</summary>
 
+읽기 화면과 책별 메모:
+
+![실제 macOS 서재 앱의 PDF 책장, 읽기 화면과 책별 메모](Resources/Design/evidence/readme-reader-light.jpg)
+
 독서 기록과 메모 수:
 
 ![읽은 책의 회독 수와 메모 배지](Resources/Design/evidence/reading-history-light.png)
@@ -39,7 +45,7 @@ OCR 사본 검토:
 
 ![원본과 개선한 OCR 텍스트 비교](Resources/Design/evidence/ocr-review-dark.png)
 
-모든 화면에는 직접 만든 예시 자료를 사용했습니다. [촬영 기록](Resources/Design/evidence/readme-capture.md)을 확인할 수 있습니다.
+스크린샷에는 직접 만든 예시 자료를, 데모 영상에는 퍼블릭 도메인 책을 사용했습니다. [촬영 기록](Resources/Design/evidence/readme-capture.md)을 확인할 수 있습니다.
 
 </details>
 

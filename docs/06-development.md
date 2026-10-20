@@ -109,14 +109,16 @@ preserving visible/mixed text, vectors, and pixels.
 
 ## Screenshots and UI verification
 
-Screenshots must come from the running native app and contain authored fixtures.
+Screenshots and recordings must come from the running native app. Their content is
+either an authored fixture or a public-domain text whose source the capture record names.
 Use the isolated sample setup in [getting started](01-getting-started.md#try-an-isolated-sample-library).
 Capture only the app window, inspect the saved image, and exclude personal books,
 notes, file paths, notifications, and unrelated desktop content.
 
-The README's `readme-reader-light.jpg` and `readme-reader-dark.jpg` are current
+The README's `readme-demo.gif`/`readme-demo.mp4` recording and the
+`readme-reader-light.jpg` and `readme-reader-dark.jpg` screenshots are current
 native captures. [Capture record](../Resources/Design/evidence/readme-capture.md)
-records the source revision, fixture, and environment. Other gallery images link
+records the source revision, content, editing, and environment. Other gallery images link
 to existing dated [verification](../Resources/Design/verification.md) and
 [reading-shelf checks](../Resources/Design/evidence/reading-shelf-checks.json).
 They are real UI captures, not mockups.
