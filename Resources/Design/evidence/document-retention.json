@@ -1,0 +1,231 @@
+{
+  "issue": 35,
+  "date": "2026-10-20",
+  "scenario": "Release build with temporary timing probes, isolated library, accessibility actions only. Open a 328-page OCRmyPDF scanned book, scroll its page thumbnails to the end, select a second book, wait 40 s, then return to the scanned book three times.",
+  "metrics": {
+    "liveHeap": "heap All zones",
+    "footprint": "vmmap --summary Physical footprint",
+    "returnShown": "selection to PDF view navigated to the reading page",
+    "returnFirstThumbnail": "selection to first thumbnail image"
+  },
+  "before": {
+    "policy": "reuse up to two unchanged documents within 512 MiB of source files",
+    "footprintAfterSwitchMB": [
+      589.1,
+      695.8
+    ],
+    "footprintRuns": 5,
+    "liveHeapAfterSwitchMB": [
+      552.0,
+      553.4
+    ],
+    "liveHeapRuns": 5,
+    "returnShownMedianMs": 245.9,
+    "returnShownRangeMs": [
+      184.4,
+      515.5
+    ],
+    "returns": 14,
+    "returnFirstThumbnailMedianMs": 288.2,
+    "returnFirstThumbnailRangeMs": [
+      217.2,
+      620.4
+    ],
+    "runs": [
+      {
+        "run": "A-main1",
+        "footprintAfterSwitchMB": 629.4,
+        "liveHeapAfterSwitchMB": 552.3,
+        "returnShownMs": [
+          318.9,
+          314.1,
+          305.7
+        ],
+        "returnFirstThumbnailMs": [
+          403.9,
+          388.4,
+          367.1
+        ]
+      },
+      {
+        "run": "A-main2",
+        "footprintAfterSwitchMB": 595.0,
+        "liveHeapAfterSwitchMB": 552.0,
+        "returnShownMs": [
+          238.4,
+          230.4,
+          253.5
+        ],
+        "returnFirstThumbnailMs": [
+          281.5,
+          283.5,
+          292.2
+        ]
+      },
+      {
+        "run": "A-main3",
+        "footprintAfterSwitchMB": 695.8,
+        "liveHeapAfterSwitchMB": 552.1,
+        "returnShownMs": [
+          208.4,
+          184.4,
+          200.3
+        ],
+        "returnFirstThumbnailMs": [
+          284.3,
+          239.7,
+          255.0
+        ]
+      },
+      {
+        "run": "A-mainr1",
+        "footprintAfterSwitchMB": 608.4,
+        "liveHeapAfterSwitchMB": 553.4,
+        "returnShownMs": [
+          304.5,
+          203.8,
+          230.4
+        ],
+        "returnFirstThumbnailMs": [
+          343.7,
+          217.2,
+          265.0
+        ]
+      },
+      {
+        "run": "A-mainr2",
+        "footprintAfterSwitchMB": 589.1,
+        "liveHeapAfterSwitchMB": 552.0,
+        "returnShownMs": [
+          515.5,
+          322.4
+        ],
+        "returnFirstThumbnailMs": [
+          620.4,
+          368.6
+        ]
+      }
+    ]
+  },
+  "after": {
+    "policy": "keep only the active book's document; a dismantled reader view clears its document",
+    "footprintAfterSwitchMB": [
+      164.1,
+      209.7
+    ],
+    "footprintRuns": 2,
+    "liveHeapAfterSwitchMB": [
+      102.8,
+      102.8
+    ],
+    "liveHeapRuns": 1,
+    "returnShownMedianMs": 268.5,
+    "returnShownRangeMs": [
+      235.0,
+      296.2
+    ],
+    "returns": 3,
+    "returnFirstThumbnailMedianMs": 356.7,
+    "returnFirstThumbnailRangeMs": [
+      311.8,
+      381.2
+    ],
+    "runs": [
+      {
+        "run": "B2-mainr1",
+        "footprintAfterSwitchMB": 164.1,
+        "liveHeapAfterSwitchMB": 102.8,
+        "returnShownMs": [
+          235.0,
+          268.5,
+          296.2
+        ],
+        "returnFirstThumbnailMs": [
+          311.8,
+          356.7,
+          381.2
+        ]
+      },
+      {
+        "run": "B2-mainr2",
+        "footprintAfterSwitchMB": 209.7,
+        "liveHeapAfterSwitchMB": null,
+        "returnShownMs": [],
+        "returnFirstThumbnailMs": []
+      }
+    ],
+    "note": "The second run stopped after the 40 s footprint sample, before the heap sample and the returns."
+  },
+  "afterWithoutViewClearing": {
+    "policy": "active document only, dismantled view keeps its document",
+    "footprintAfterSwitchMB": [
+      375.8,
+      711.2
+    ],
+    "footprintRuns": 3,
+    "liveHeapAfterSwitchMB": [
+      96.5,
+      552.8
+    ],
+    "liveHeapRuns": 3,
+    "returnShownMedianMs": 218.3,
+    "returnShownRangeMs": [
+      184.4,
+      489.1
+    ],
+    "returns": 9,
+    "returnFirstThumbnailMedianMs": 277.7,
+    "returnFirstThumbnailRangeMs": [
+      234.0,
+      600.5
+    ],
+    "runs": [
+      {
+        "run": "B-main1",
+        "footprintAfterSwitchMB": 614.6,
+        "liveHeapAfterSwitchMB": 552.8,
+        "returnShownMs": [
+          331.2,
+          260.1,
+          489.1
+        ],
+        "returnFirstThumbnailMs": [
+          400.7,
+          277.7,
+          600.5
+        ]
+      },
+      {
+        "run": "B-main2",
+        "footprintAfterSwitchMB": 375.8,
+        "liveHeapAfterSwitchMB": 96.5,
+        "returnShownMs": [
+          254.7,
+          184.4,
+          194.8
+        ],
+        "returnFirstThumbnailMs": [
+          317.3,
+          277.1,
+          257.3
+        ]
+      },
+      {
+        "run": "B-main3",
+        "footprintAfterSwitchMB": 711.2,
+        "liveHeapAfterSwitchMB": 552.2,
+        "returnShownMs": [
+          218.3,
+          195.7,
+          203.7
+        ],
+        "returnFirstThumbnailMs": [
+          246.8,
+          279.6,
+          234.0
+        ]
+      }
+    ],
+    "note": "One of three runs released the document; in the other two a dismantled PDF view kept it alive."
+  }
+}

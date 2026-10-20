@@ -111,6 +111,9 @@ that its Git tag or GitHub Release has been published.
 - Reading a whole book's text no longer holds every page in memory. On a 328-page scanned
   book, the first open peaks at about 360 MB instead of 900 MB, and `bookside-cli search`,
   `inspect`, a Pi reading turn and the OCR comparison stay under about 250 MB.
+- Switching to another book releases the previous one. After you scroll through the page
+  thumbnails of a 328-page scanned book and open another book, Bookside keeps about 100 MB
+  instead of 550 MB. Returning to a book opens its file again.
 
 ### Removed
 
