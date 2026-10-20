@@ -1,0 +1,192 @@
+{
+  "date": "2026-10-20",
+  "scope": "Pi pre-reading questions (pretest); one authored eleven-page Korean text PDF with an embedded outline and invented facts only",
+  "sourceHashes": {
+    "Sources/BookshelfAgent/instructions.ts": "f0a4cccb714324f836c15935b51d034a5eab2129067e9d88cef15918a236468e",
+    "Sources/BookshelfAgent/agent.test.ts": "4376a759676c9a2fb7dfd5b287a6bc0babcf88fe719fb3b71c8c4dc086e07aff",
+    "Sources/BookshelfCore/BookOutline.swift": "a2b4de08be9a49d5cb4f82b50f94ae82c75b395df0d14db2b104172dcac1162f",
+    "Sources/BookshelfCore/PretestQuestions.swift": "46e99598411ac159dfc27de60cbc976e1c0a98be7fa401eaa3357ed6d1ceea47",
+    "Sources/BookshelfCore/BookConversation.swift": "08a4ca89138161036e25eb68777015967eb2f08d94bab609838274d29449068a",
+    "Sources/BookshelfCore/BookReadingSession.swift": "689c671b91a14b0d606fe22e146a0796a23e2014718dc30e889f69d43bf42584",
+    "Sources/BookshelfApp/PiPanelParts.swift": "33dc4022b7a074548debcf40f6e42b69003e40bf5cd41bc1848d1694fda6c6f5",
+    "Sources/BookshelfApp/BookChatView.swift": "601d3fa5373b243e7d683f130e34cc65694ef061a3e1e4995cc6d64c177605cc",
+    "Sources/BookshelfApp/BookChatModel.swift": "2291d9a216a891833bb7f46e493be1d88b5f8039d48b7ec7c1706e0eb2e8348f",
+    "Tests/BookshelfCoreTests/PretestQuestionsTests.swift": "35e48efbd883e7d3e24e750120a1353bd639c28e91f0c6c0e0a2ff0e23a3318b",
+    "Tests/BookshelfAppTests/BookChatModelTests.swift": "0ec451530fbc6d0bb868e8110a75843230cd8af53a8d000796e7715496516519"
+  },
+  "automated": {
+    "swiftTests": 89,
+    "bunTests": 21,
+    "typecheck": "passed",
+    "nativeBundle": "release, ad-hoc signed; profile.json lists auto, explain, compare, visualize, trace, check, pretest",
+    "coreTests": "block parsing and page checks (after the position, inside the range, among pages read, at most three), malformed and unclosed blocks, streaming fence hold-back, history and copy text without unopened answers, saved-format compatibility, one outline reader shared by the offer and get_book_overview, with matching chapter starts; get_book_overview output byte-identical before and after the move for book, range and page scopes",
+    "appTests": "answers open at their page with no request, moving back keeps them open, guesses save after a pause, a revealed guess is final, history sent to Pi omits unopened answers, one dismissal and two sets end the offer, state survives reopening, stopping mid-block keeps the answers hidden"
+  },
+  "fixture": {
+    "sha256": "7bb9eb1124795bd6ae5d5f83799cbaba98ec049834f233527444782bdacf5144",
+    "outline": "차례 p1; 1장 물그릇 p2-4; 2장 방울 박자 p5-8 with one-page sections p7 and p8; 3장 뜸자 p9-10; 부록 점검표 p11",
+    "expectedOfferPages": [
+      2,
+      5,
+      9
+    ]
+  },
+  "live": {
+    "executor": "official Claude Code 2.1.304 through the Pi bridge, model alias sonnet, whole-book scope, isolated library",
+    "requests": 5,
+    "limit": 6,
+    "turns": [
+      {
+        "request": 1,
+        "case": "pretest-1",
+        "page": 5,
+        "question": "“2장 방울 박자”(5~8쪽)을 읽기 전에 풀어 볼 예습 질문 2~3개를 내 주세요. 틀려도 괜찮아요.",
+        "seconds": 7.7,
+        "tools": [
+          "6~8쪽을 읽고 있습니다."
+        ],
+        "sourcePages": [
+          5,
+          6,
+          7,
+          8
+        ],
+        "visible": "2장을 읽기 전에 먼저 답을 추측해 보세요. 틀려도 괜찮습니다. 읽다가 답을 만나면 더 눈에 띕니다.",
+        "questions": [
+          {
+            "question": "관리인은 박자를 셀 때 무엇을 이용해서 세고, 표준 박자는 1분에 몇 번일까요?",
+            "answerPage": 6,
+            "answer": "관리인은 종이 우는 횟수를 세고, 표준 박자는 1분에 48번이다."
+          },
+          {
+            "question": "윗그릇에 고인 물의 높이가 낮아지면 박자는 어떻게 되고, 관리인은 이를 막으려고 무엇을 할까요?",
+            "answerPage": 7,
+            "answer": "박자가 느려지므로 관리인은 정오에 윗그릇에 물을 한 번 보충한다."
+          },
+          {
+            "question": "겨울에 눈을 쑤실 때 어떤 바늘을 쓰고, 왜 다른 바늘은 쓰지 않을까요?",
+            "answerPage": 8,
+            "answer": "은바늘을 쓰며, 쇠바늘은 녹이 슬어 눈을 넓히기 때문에 쓰지 않는다."
+          }
+        ],
+        "appChecks": "every answer page after the position, inside the range and among the pages read"
+      },
+      {
+        "request": 2,
+        "case": "follow-5",
+        "page": 5,
+        "question": "제 추측이 맞았나요? 그리고 겨울에는 박자가 어떻게 달라지나요?",
+        "seconds": 7.5,
+        "tools": [],
+        "sourcePages": [
+          5
+        ],
+        "visible": "아직 맞았는지 알려 드릴 수 없습니다. 지금 위치(5쪽)에는 2장의 소개만 있습니다. 소개에는 방울 박자가 \"1분 동안 눈에서 떨어지는 물방울의 수\"라는 정의가 있습니다. 또 이 장이 박자를 맞추는 법, 박자가 변하는 까닭, 계절에 따른 관리를 다룬다는 안내가 있습니다 [p. 5].\n\n겨울에 박자가 어떻게 달라지는지는 뒤쪽 쪽수에서 다룹니다. 답은 그 쪽에 도달하면 앱이 보여 줍니다. 그때 세 가지 추측과 비교해 보세요.\n\n계속 읽다가 궁금한 대목이 있으면 다시 물어봐 주세요."
+      },
+      {
+        "request": 3,
+        "case": "follow-6",
+        "page": 6,
+        "question": "종소리로 박자를 센다는 게 무슨 뜻이에요? 그리고 오후에 박자가 느려지면 관리인은 언제 무엇을 하나요?",
+        "seconds": 4.8,
+        "tools": [],
+        "sourcePages": [
+          6
+        ],
+        "visible": "종소리로 박자를 센다는 말은 이렇습니다. 관리인은 눈금을 보지 않습니다. 아랫그릇 옆에 작은 종이 달려 있습니다. 그 종의 접시에 물방울이 떨어질 때마다 종이 한 번 웁니다. 관리인은 1분 동안 종이 우는 횟수를 셉니다. 표준 박자는 1분에 48번입니다 [p. 6].\n\n이 내용은 첫 번째 예습 질문의 답입니다. 앞서 \"눈금을 보고 세고 60번\"이라고 추측하셨습니다. 이 쪽의 내용과 비교해 보세요.\n\n오후에 박자가 느려지면 관리인이 언제 무엇을 하는지는 현재 위치(6쪽)까지의 내용에 없습니다. 뒤쪽 쪽수에서 다룹니다. 그 쪽에 도달하면 앱이 답을 보여 줍니다.\n\n확인 질문입니다. 종이 1분에 50번 울면 표준 박자보다 빠를까요, 느릴까요?"
+      },
+      {
+        "request": 4,
+        "case": "pretest-9",
+        "page": 9,
+        "question": "“3장 뜸자”(9~10쪽)을 읽기 전에 풀어 볼 예습 질문 2~3개를 내 주세요. 틀려도 괜찮아요.",
+        "seconds": 6.9,
+        "tools": [
+          "10~11쪽을 읽고 있습니다."
+        ],
+        "sourcePages": [
+          9,
+          10,
+          11
+        ],
+        "visible": "3장을 읽기 전에 먼저 답을 추측해 보세요. 틀려도 괜찮습니다. 읽다가 답을 만나면 더 눈에 띕니다.",
+        "questions": [
+          {
+            "question": "뜸자의 한 칸은 어떤 기준에 맞춰 만들까요?",
+            "answerPage": 10,
+            "answer": "한 칸은 표준 박자 48로 한 시간 동안 모이는 물의 높이에 맞춘다."
+          },
+          {
+            "question": "뜸자의 칸마다 선을 그을 때 어떤 색의 재료를 쓸까요?",
+            "answerPage": 10,
+            "answer": "칸마다 붉은 옻으로 선을 긋는다."
+          },
+          {
+            "question": "뜸자는 어떤 나무로 깎아 만들까요?",
+            "answerPage": 10,
+            "answer": "뜸자는 물에 잘 뜨는 버드나무를 깎아 만든다."
+          }
+        ],
+        "appChecks": "every answer page after the position, inside the range and among the pages read"
+      },
+      {
+        "request": 5,
+        "case": "pretest-5b",
+        "page": 5,
+        "question": "“2장 방울 박자”(5~8쪽)을 읽기 전에 풀어 볼 예습 질문 2~3개를 내 주세요. 틀려도 괜찮아요.",
+        "seconds": 6.7,
+        "tools": [
+          "6~8쪽을 읽고 있습니다."
+        ],
+        "sourcePages": [
+          5,
+          6,
+          7,
+          8
+        ],
+        "visible": "2장을 읽기 전에 먼저 짐작해 보세요. 틀려도 괜찮아요. 읽다가 답을 만나면 알아보기 쉬워집니다.",
+        "questions": [
+          {
+            "question": "관리인은 박자를 셀 때 무엇을 이용해 물방울의 수를 센까요?",
+            "answerPage": 6,
+            "answer": "아랫그릇 옆에 매단 작은 종이 물방울이 떨어질 때마다 우는 횟수를 센다."
+          },
+          {
+            "question": "하루 중 언제, 왜 관리인은 윗그릇에 물을 보충할까요?",
+            "answerPage": 7,
+            "answer": "오후에 누름 높이가 낮아져 박자가 느려지므로 정오에 물을 한 번 보충한다."
+          },
+          {
+            "question": "겨울에 눈이 막히지 않게 하려고 관리인은 어떤 도구로 눈을 쑤실까요?",
+            "answerPage": 8,
+            "answer": "녹이 슬지 않는 은바늘로 하루 두 번 쑤신다."
+          }
+        ],
+        "appChecks": "every answer page after the position, inside the range and among the pages read"
+      }
+    ],
+    "afterRequest1": "Request 1 asked two things in each question. The instruction 'Each question asks for one thing' was added before requests 4 and 5. Request 4 asked three single-fact questions; request 5 still joined when and why in one question.",
+    "leaks": "No question contained its answer or its page. Question 3 of requests 1 and 5 names the act of clearing the outlet in winter while asking for the tool, so it previews part of page 8.",
+    "positionBoundary": "At page 5 Pi did not grade the guesses and said the coming pages cover winter, without saying what. At page 6 it explained page 6 with [p. 6], compared it with the guess and withheld the noon refill on page 7."
+  },
+  "native": {
+    "bundle": "org.nomadamas.bookside.qa-learn, isolated BOOKSIDE_DATA_DIR, replay bridge that streams the recorded live replies with no model request",
+    "input": "Accessibility actions only: page buttons, the chip, send, and set-value on focused fields",
+    "offerPages": "Light, first run: offer on pages 2 and 5; none on 1, 3, 4. Light, second run: offer on 2 and 9; none on 1, 3, 4, 5 (set exists), 6, 7, 8 (one-page sections), 10, 11 (one-page appendix)",
+    "chip": "filled the field with “2장 방울 박자”(5~8쪽)을 읽기 전에 풀어 볼 예습 질문 2~3개를 내 주세요. 틀려도 괜찮아요. and switched the menu to 예습 질문; the bridge log showed only the status check until send",
+    "streaming": "a capture 4.5 s into the streamed reply showed the invitation sentence and no fence or JSON fragment",
+    "card": "three questions with guess fields and lock lines, 0/3 공개; stored reply text has no block; source chips showed only page 5",
+    "reveal": "pages 6, 7 and 8 opened answers 1, 2 and 3 with their page link and the guess; the bridge log line count did not change while moving",
+    "historySent": "the follow-up at page 6 carried the opened answer for page 6 and both guesses, and neither the page 7 nor the page 8 answer",
+    "relaunch": "after quitting through the menu and reopening in light, page 9 was restored and all three answers were open; stored guesses and opening times were unchanged",
+    "offerPlacement": "the first build put the offer at the end of the transcript, where a long conversation scrolled it out of view at page 9; the offer now sits above the composer. Moving from page 3 to page 2 then left the last transcript row 5 pt under the shortened transcript (row 726-742, transcript bottom 737). Anchoring the scroll view to the bottom for size changes (macOS 15) left the transcript far from its end; scrolling on the next run loop turn covered the row completely (742-758); scrolling after the offer animation also when the offer went away moved the transcript off its end. The kept version scrolls to the end only when the offer appears, after its 0.2 s animation, while following the tail: in four rounds the row sat at 706-722 above the 737 bottom on page 2 and at 726-742 above 773 on page 3",
+    "secondSet": "the page 9 offer filled the 3장 request; the set held three questions on page 10, and moving to page 10 opened them with no request",
+    "dark": "reopened in dark at page 10: moving back to page 9 kept the three answers open and showed no offer; through the 이동 menu, page 1 showed no offer, page 2 showed it above the composer, page 3 did not",
+    "notChecked": "the screen locked during the dark run, so the window's accessibility elements were unavailable; the × dismissal was not pressed natively (an app test covers it); a reader who scrolled up was not simulated, because AX cannot start a live scroll, so the follow-tail guard is checked by reading the code only"
+  },
+  "boundaries": [
+    "The reading-position rule for other replies is an instruction to the model; the reading range stays the whole book because the questions need later pages.",
+    "Guesses were entered with AX set-value after focusing the field; real typing was not used (no CGEvent).",
+    "Live requests ran through the bridge outside the app; the app parsed the same recorded replies through a replay bridge."
+  ]
+}

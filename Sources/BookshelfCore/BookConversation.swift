@@ -18,6 +18,8 @@ public struct BookChatMessage: Codable, Identifiable, Equatable, Sendable {
     public var steps: [ChatStep]?
     /// When the reply stopped streaming (completed, failed or interrupted).
     public var finished: Double?
+    /// Pre-reading questions parsed out of a `pretest` reply, with the reader's guesses and reveals.
+    public var pretest: PretestSet?
     public var sourcePages: [Int] {
         Array(Set(reading?.sourcePages ?? (scope?.contains(page) == false ? [] : [page]))).sorted()
     }

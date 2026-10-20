@@ -15,6 +15,8 @@ struct BookChatView: View {
     @State private var editingID: String?
     @State private var editText = ""
     @State private var choosingRange = false
+    /// The open PDF's embedded outline, the same entries Pi's `get_book_overview` reads.
+    @State private var outline: [BookOutlineEntry] = []
     @FocusState private var composerFocused: Bool
     @FocusState private var editorFocused: Bool
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -32,6 +34,13 @@ struct BookChatView: View {
                                  choosingRange: choosingRange, editing: editingID != nil, draft: chat.draft)
     }
     private var motion: Animation? { reduceMotion ? nil : ReaderMotion.ease(ReaderTokens.messageDuration) }
+    /// The chapter that starts on the current page, while Pi may still offer pre-reading questions.
+    /// Without an embedded outline there is no chapter start, so there is no offer.
+    private var pretestChapter: BookOutlineEntry? {
+        guard !chat.busy, editingID == nil, scope.contains(model.page + 1),
+              let chapter = BookOutline.chapter(startingAt: model.page, in: outline), chat.offersPretest(at: model.page) else { return nil }
+        return chapter
+    }
 
     var body: some View {
         let block = composerBlock
@@ -43,10 +52,17 @@ struct BookChatView: View {
             if !chat.messages.isEmpty, let block, block.needsConnection {
                 connectionNotice(block).padding(.horizontal, 16).padding(.top, 10).transition(.opacity)
             }
+            // The offer belongs to the page, not to a turn, so it stays in view above the composer
+            // wherever the transcript is scrolled.
+            if block?.needsConnection != true, let chapter = pretestChapter {
+                pretestOffer(chapter).frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.horizontal, 16).padding(.top, 10).transition(.opacity)
+            }
             if let error = chat.errorMessage { errorBanner(error) }
             if chat.operation == "login" { loginStrip }
             composer(block)
         }.background(ReaderStyle.canvas)
+            .animation(motion, value: pretestChapter)
             .confirmationDialog("이 책의 대화를 비울까요?", isPresented: $confirmingClear) {
                 Button("대화 비우기", role: .destructive) { chat.clearConversation() }
                 Button("취소", role: .cancel) { }
@@ -62,7 +78,17 @@ struct BookChatView: View {
             }
             .task(id: book.id) {
                 guard !Task.isCancelled, model.activeBook?.id == book.id else { return }
-                if chat.selectBook(book.id), chat.account == nil, AgentRuntime.ready { chat.checkConnection() }
+                guard chat.selectBook(book.id) else { return }
+                chat.reachPage(model.page, bookID: book.id)
+                if chat.account == nil, AgentRuntime.ready { chat.checkConnection() }
+            }
+            .task(id: model.document.map(ObjectIdentifier.init)) {
+                outline = model.activeBook?.id == book.id ? model.document.map(BookOutline.entries) ?? [] : []
+            }
+            // The answers to pre-reading questions open from the reader's page, never from a request.
+            .onChange(of: model.page) { _, page in
+                guard model.activeBook?.id == book.id, model.document != nil else { return }
+                chat.reachPage(page, bookID: book.id)
             }
     }
 
@@ -122,6 +148,17 @@ struct BookChatView: View {
                     guard shown && followTail else { return }
                     DispatchQueue.main.async { withAnimation(motion) { proxy.scrollTo("conversation-end", anchor: .bottom) } }
                 }
+                // When the pre-reading offer appears above the composer, the transcript gets shorter over
+                // `motion`. After that, bring the end back into view unless the reader scrolled up. Scrolling
+                // on the next run loop turn measured the old height and left the last row covered; scrolling
+                // when the offer goes away moved the transcript off its end.
+                .onChange(of: pretestChapter != nil) { _, shown in
+                    guard shown, followTail else { return }
+                    DispatchQueue.main.asyncAfter(deadline: .now() + (reduceMotion ? 0 : ReaderTokens.messageDuration) + 0.05) {
+                        guard followTail else { return }
+                        proxy.scrollTo("conversation-end", anchor: .bottom)
+                    }
+                }
                 .onAppear { proxy.scrollTo("conversation-end", anchor: .bottom) }
                 .overlay(alignment: .bottom) {
                     if !followTail {
@@ -139,6 +176,10 @@ struct BookChatView: View {
                 .font(.system(size: ReaderTokens.controlFont)).foregroundStyle(.secondary).lineSpacing(5).fixedSize(horizontal: false, vertical: true)
             PiSuggestions(selection: selectedText, choose: suggest)
         }.padding(.vertical, 14)
+    }
+
+    private func pretestOffer(_ chapter: BookOutlineEntry) -> some View {
+        PiPretestOffer(chapter: chapter, choose: suggest, decline: { withAnimation(motion) { chat.declinePretest() } })
     }
 
     private func connectionNotice(_ block: PiComposerBlock) -> some View {
@@ -224,6 +265,11 @@ struct BookChatView: View {
     @ViewBuilder private func replyContent(_ message: BookChatMessage) -> some View {
         let isLast = message.id == chat.messages.last?.id
         let streaming = chat.busy && isLast && message.role == "assistant"
+        let pretest = message.skill == PiExplanation.pretest.rawValue
+        let text = pretest && streaming ? PretestBlock.streamingText(message.text) : message.visibleText
+        // In pre-reading mode, pages after the reader's position stay unlinked until the reader gets there.
+        let reached = max(model.page, message.page)
+        let sources = Set(message.sourcePages.filter { !pretest || $0 <= reached })
         if let steps = message.steps, !steps.isEmpty {
             VStack(alignment: .leading, spacing: 8) { ForEach(steps) { PiStepRow(step: $0) } }
                 .padding(.bottom, 4).animation(motion, value: steps.count)
@@ -232,12 +278,15 @@ struct BookChatView: View {
             if let attachments = message.attachments {
                 ForEach(attachments) { ChatAttachmentView(attachment: $0, directory: model.store.directory) }
             }
-            if !message.text.isEmpty {
-                ChatResponseView(text: message.text, streaming: streaming, sourcePages: Set(message.sourcePages)) { page in openPage(page) }
+            if !text.isEmpty {
+                ChatResponseView(text: text, streaming: streaming, sourcePages: sources) { page in openPage(page) }
                     .equatable()
             }
-            if !streaming, let reading = message.reading, !message.text.isEmpty {
-                ChatReadingSources(reading: reading) { page in openPage(page) }
+            if !streaming, let reading = message.reading, !text.isEmpty || message.pretest != nil {
+                ChatReadingSources(reading: pretest ? reading.sources(through: reached) : reading) { page in openPage(page) }
+            }
+            if !streaming, let set = message.pretest {
+                PiPretestCard(set: set, commitGuess: { chat.setGuess($1, question: $0) }, openPage: openPage)
             }
         }.padding(.leading, PiTranscript.gutter)
         if streaming { runningLine(message) } else { turnLine(message, isLast: isLast) }
@@ -259,7 +308,7 @@ struct BookChatView: View {
 
     /// "✻ 12초 동안 작업, 오후 9:41 완료, Claude / Sonnet" with copy, regenerate and save-to-notes on the same line.
     private func turnLine(_ message: BookChatMessage, isLast: Bool) -> some View {
-        let hasText = !message.text.isEmpty
+        let hasText = !message.transcriptText.isEmpty
         return HStack(alignment: .center, spacing: 6) {
             PiGutterRow {
                 if message.state == "failed" { PiStatusMark(kind: .needsYou) } else { turnMark }
@@ -270,7 +319,7 @@ struct BookChatView: View {
                     .help(message.harness == "pi" ? "Pi가 이 실행기로 답했습니다." : "Pi 계층 없이 실행기에 직접 요청했습니다.")
             }
             HStack(spacing: 2) {
-                if hasText { ReaderIconButton(symbol: "doc.on.doc", label: "답변 복사", compact: true) { copy(message.text) } }
+                if hasText { ReaderIconButton(symbol: "doc.on.doc", label: "답변 복사", compact: true) { copy(message.transcriptText) } }
                 if isLast {
                     ReaderIconButton(symbol: "arrow.clockwise", label: message.state == "complete" ? "다시 생성" : "다시 시도", compact: true, action: retry)
                         .disabled(!canRetry)
@@ -289,8 +338,8 @@ struct BookChatView: View {
             }
             Button("질문 복사") { copy(message.text) }.disabled(message.text.isEmpty)
         } else if message.role == "assistant" {
-            Button("답변 복사") { copy(message.text) }.disabled(message.text.isEmpty)
-            if message.state == "complete" && !message.text.isEmpty { Button("메모에 담기") { saveToNotes(message) } }
+            Button("답변 복사") { copy(message.transcriptText) }.disabled(message.transcriptText.isEmpty)
+            if message.state == "complete" && !message.transcriptText.isEmpty { Button("메모에 담기") { saveToNotes(message) } }
         }
         Divider()
         Button("여기부터 지우기…") { pendingDelete = message }.disabled(chat.busy)
@@ -399,7 +448,7 @@ struct BookChatView: View {
         } label: { Text(current.title) }
             .menuStyle(.button).buttonStyle(.bordered).buttonBorderShape(.capsule).controlSize(.small).fixedSize()
             .accessibilityLabel("설명 방식").accessibilityValue(current.title)
-            .help("설명 방식. 자동은 질문에 맞게 글, 표, 다이어그램을 고릅니다. 막힌 곳 찾기와 내 설명 점검은 Pi가 한 번에 하나씩 묻고 답을 기다리며, 다른 방식을 고를 때까지 이어집니다. Codex는 이미지도 만들 수 있습니다.")
+            .help("설명 방식. 자동은 질문에 맞게 글, 표, 다이어그램을 고릅니다. 막힌 곳 찾기와 내 설명 점검은 Pi가 한 번에 하나씩 묻고 답을 기다립니다. 예습 질문은 장 첫 쪽에서 앞으로 읽을 쪽의 질문을 내고, 답은 그 쪽에 이르면 열립니다. 이해 점검 방식은 다른 방식을 고를 때까지 이어집니다. Codex는 이미지도 만들 수 있습니다.")
     }
 
     @ViewBuilder private func sendControl(_ block: PiComposerBlock?) -> some View {
@@ -456,7 +505,7 @@ struct BookChatView: View {
     private func saveToNotes(_ message: BookChatMessage) {
         guard model.activeBook?.id == book.id else { return }
         let sourceLabel = message.scope?.title ?? "PDF \(message.page)쪽"
-        model.editNotebook(model.notebookText + (model.notebookText.isEmpty ? "" : "\n\n") + "[Pi 답변 / \(sourceLabel)]\n" + message.text)
+        model.editNotebook(model.notebookText + (model.notebookText.isEmpty ? "" : "\n\n") + "[Pi 답변 / \(sourceLabel)]\n" + message.transcriptText)
         model.sidebarVisible = true; model.panelTab = "notes"
     }
     private func copy(_ text: String) { NSPasteboard.general.clearContents(); NSPasteboard.general.setString(text, forType: .string) }
