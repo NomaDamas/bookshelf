@@ -1,5 +1,36 @@
 # README native captures
 
+## Demo recording
+
+Recorded on 2026-10-20 from the native app built at source revision `77046c1`
+(merged into `main` as `3a090ee`). That revision fixed excerpt highlights that
+appeared only after turning the page; the bug showed up during this recording.
+
+| Item | Record |
+| --- | --- |
+| Environment | macOS 26.6.2, Apple Silicon, Xcode 27.0 / Swift 6.4, dark appearance |
+| Build | `scripts/build-app.sh`, release configuration |
+| UI | 1380 x 900 point window |
+| Recording | ScreenCaptureKit with a filter that includes only the app's windows, 60 fps, cursor shown. Pointer and keyboard input was scripted at a human pace, so every click and keystroke was a real event in the app |
+| Isolation | A new `BOOKSIDE_DATA_DIR` for each scene and a copy of the built bundle with a separate bundle ID |
+| Content | See below; the comment, notebook text and Pi question were written for the demo |
+| Pi | A live answer from Claude through the local Claude Code sign-in. The answer is shown as returned |
+| Editing | Remotion: cuts, zoom, speed-up, English captions, and title and credit cards. Every sped-up part shows its rate (for example `6×`). App pixels were not edited. macOS draws a capture indicator in place of the window buttons while a window is recorded |
+| Files | [`readme-demo.mp4`](readme-demo.mp4): 1920 x 1080, 30 fps, H.264, 1:34. [`readme-demo.gif`](readme-demo.gif): 960 x 540, 10 fps, 38 s cut of the same recording |
+
+The book is Franz Kafka's *The Metamorphosis* in Ian Johnston's English translation,
+from the Feedbooks PDF edition (54 pages). The German original is in the public domain,
+and the translator released this translation into the public domain on the condition
+that the source is acknowledged. The Feedbooks file adds a notice asking that it not be
+used commercially; this repository shows its pages only in non-commercial documentation,
+with the source credited in the video and here.
+
+The "scanned pages" book is PDF pages 3 to 8 of the same file, rasterized at 200 dpi
+onto a tinted, slightly rotated page with no text layer. It shows OCR on a document
+that has no text to start with.
+
+## Screenshots
+
 Captured on 2026-10-16 from the native app built at source revision `5f638f1`.
 The documentation branch does not change app source.
 

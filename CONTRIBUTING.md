@@ -59,7 +59,8 @@ Link a tracked issue with `Closes #N` only when the change resolves it.
 
 Before submitting, run relevant checks, `git diff --check`, and inspect the diff
 for accidental assets/data. Keep `.build/`, `.runtime/`, `dist/`, and private PDFs
-out of commits. Use synthetic content in public screenshots and test fixtures.
+out of commits. Use synthetic content in test fixtures. Public screenshots and recordings
+may also use a public-domain text when the capture record names its source.
 
 ## Documentation changes
 
