@@ -85,6 +85,8 @@ that its Git tag or GitHub Release has been published.
 
 ### Fixed
 
+- Saving or deleting an excerpt updates its highlight on the page right away. Before, the
+  change appeared only after you turned the page or reopened the book.
 - Opening a book no longer disables the Pi panel while the account status is checked.
 - Connecting an account in **Settings > Pi** no longer switches the conversation to that engine.
 - Pi panel errors can be dismissed.

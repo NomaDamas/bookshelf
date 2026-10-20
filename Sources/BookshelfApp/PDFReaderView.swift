@@ -135,6 +135,7 @@ struct PDFReaderView: NSViewRepresentable {
         func drawHighlights(_ highlights: [Highlight]) {
             let ids = Set(highlights.map(\.id))
             guard ids != highlightIDs, let document = view?.document else { return }
+            let pagesAlreadyShown = highlightIDs != nil
             // A cached PDF may still contain marks drawn by a previous view.
             // Track only our touched pages; never walk the entire book to redraw.
             let previous = (Self.annotatedPages.object(forKey: document) ?? NSIndexSet()) as IndexSet
@@ -156,6 +157,18 @@ struct PDFReaderView: NSViewRepresentable {
             }
             Self.annotatedPages.setObject(touched as NSIndexSet, forKey: document)
             highlightIDs = ids
+            if pagesAlreadyShown { repaintVisiblePages(among: previous.union(touched)) }
+        }
+        /// PDFView keeps the pages it already rendered: annotationsChanged(on:) and invalidating its layers
+        /// leave them stale, so a saved or deleted excerpt stayed hidden until the book reopened.
+        /// Visiting a distant page and returning to the same spot makes PDFView rebuild the visible pages.
+        private func repaintVisiblePages(among changed: IndexSet) {
+            guard let view, let document = view.document, document.pageCount > 1,
+                  let page = view.currentPage, let destination = view.currentDestination,
+                  view.visiblePages.contains(where: { changed.contains(document.index(for: $0)) }) else { return }
+            let index = document.index(for: page)
+            guard let away = document.page(at: index < document.pageCount / 2 ? document.pageCount - 1 : 0) else { return }
+            view.go(to: away); view.go(to: destination)
         }
     }
 }
