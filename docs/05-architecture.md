@@ -61,7 +61,10 @@ Notebook writes use an expected revision inside a transaction. A stale revision
 raises a conflict rather than overwriting a newer notebook. App navigation and
 normal termination flush pending saves; a failure keeps the draft recoverable.
 
-The current schema is initialized by `LibraryStore` and records `user_version=1`.
+The current schema is initialized by `LibraryStore` and records `user_version=2`.
+Version 2 only adds the `structure_pages` table. Builds before it rewrite
+`user_version=1` on every open and ignore that table, so they keep working with the
+library; the next open by a current build raises the version again.
 Schema changes need an explicit migration and reopening tests; the existing
 initialization is not a general versioned migration framework.
 
@@ -77,6 +80,7 @@ initialization is not a general versioned migration framework.
 | `conversation_edits` | Up to ten previous message snapshots per book for undoing chat edits or clearing. |
 | `ocr_candidates` | Pending candidate paths and review report paths. |
 | `ocr_versions` | Accepted asset ownership across rescans. |
+| `structure_pages` | Structure-layer page Markdown, layout blocks and engine details per book, PDF file SHA-256 and page, with state `candidate`, `accepted` or `needs_review`. |
 
 ## OCR lifecycle
 

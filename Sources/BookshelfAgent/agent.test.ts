@@ -104,6 +104,16 @@ test("Tutoring modes keep the book-grounded protocol: earlier pages, one questio
 	);
 });
 
+test("Reviewed structure pages are read for tables and formulas and cited like any page", () => {
+	const withTools = systemInstructions("auto", "claude", true);
+	expect(withTools).toContain('source "structure"');
+	expect(withTools).toContain("HTML tables and LaTeX formulas");
+	expect(withTools).toContain("cite the page as [p. N] as before");
+	expect(systemInstructions("auto", "claude", false)).not.toContain(
+		'source "structure"',
+	);
+});
+
 test("Execution profiles isolate development settings without disabling official account auth", () => {
 	const claude = claudeArguments("learning only");
 	expect(claude).toContain("--safe-mode");

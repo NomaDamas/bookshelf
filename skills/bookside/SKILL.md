@@ -58,6 +58,10 @@ These commands change the user's data. Run one only when the user asked for that
 - `position <id> <page>` saves the reading page and moves the book to the top of recent books.
 - `import <PDF-or-folder>` registers PDFs. Books already in the library keep their IDs.
 - For OCR, read [references/ocr.md](references/ocr.md) first. It creates a new PDF and can run for minutes.
+- `structure <id> --pages <first>-<last>` recognizes tables and formulas on those pages as review candidates. It runs a local engine for several seconds per page, and `--resume` continues a stopped run.
+    - `structure-status <id>` shows the engine it found under `engine`. When `python` or `server` is absent there, point the user to the [structure layer guide](https://github.com/NomaDamas/bookside/blob/main/docs/04-ocr.md#tables-and-formulas-structure-layer) instead of installing it, because it downloads a 1.8 GB model.
+    - `structure-status <id> --pages <first>-<last>` prints each page's Markdown with HTML tables and LaTeX formulas. Show it to the user to compare with the page.
+    - `structure-accept <id> --pages <first>-<last>` records the user's approval, so run it only after they reviewed those pages. Only accepted pages reach the in-app chat; `read` and `search` keep using the text layer.
 
 ## When `read` fails
 

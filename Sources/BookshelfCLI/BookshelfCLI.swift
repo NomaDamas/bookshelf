@@ -38,6 +38,9 @@ func stderr(_ text: String) { FileHandle.standardError.write(Data((text + "\n").
             bookside-cli ocr <book-id> [--language kor|eng|jpn|chi_sim|chi_tra|und] [--output path] [--redo] [--review-only]
             bookside-cli ocr-accept <result-json>
             bookside-cli ocr-original <book-id>
+            bookside-cli structure <book-id> --pages <first>-<last> [--resume]
+            bookside-cli structure-accept <book-id> --pages <first>-<last>
+            bookside-cli structure-status <book-id> [--pages <first>-<last>]
             bookside-cli export <book-id>
             bookside-cli doctor
             bookside-cli mcp
@@ -47,11 +50,20 @@ func stderr(_ text: String) { FileHandle.standardError.write(Data((text + "\n").
             (an existing Application Support/Bookshelf library is used in place)
             Search ignores OCR whitespace by default. --exact-spacing preserves word spacing.
             MCP exposes only reads. OCR and imports require explicit CLI/app actions.
+            structure recognizes tables and formulas as review candidates; only accepted pages reach Pi.
             """)
             return
         }
         let store = try LibraryStore()
         func argument(_ index: Int) throws -> String { guard args.indices.contains(index) else { throw ShelfError.message("필수 인자가 없습니다. bookside-cli --help를 확인해 주세요.") }; return args[index] }
+        /// `--pages A-B` plus the flags a command allows, after the book ID.
+        func structurePages(_ book: Book, flags: Set<String>) throws -> ClosedRange<Int> {
+            let options = Array(args.dropFirst(2))
+            guard let index = options.firstIndex(of: "--pages"), options.indices.contains(index + 1) else { throw ShelfError.message("--pages <첫 쪽>-<끝 쪽>이 필요합니다.") }
+            var rest = options; rest.removeSubrange(index...(index + 1))
+            guard Set(rest).isSubset(of: flags), rest.count == Set(rest).count else { throw ShelfError.message("알 수 없는 옵션입니다. bookside-cli --help를 확인해 주세요.") }
+            return try StructureLayer.pages(options[index + 1], pageCount: PDFService.document(at: book.url).pageCount)
+        }
         func pageArgument(_ index: Int) throws -> Int { guard let page = Int(try argument(index)), page > 0 else { throw ShelfError.message("페이지는 양의 정수여야 합니다.") }; return page }
         switch command {
         case "import": print(try encoded(LibraryImporter.add(URL(fileURLWithPath: try argument(1)), to: store)))
@@ -98,6 +110,23 @@ func stderr(_ text: String) { FileHandle.standardError.write(Data((text + "\n").
             let id = try argument(1)
             try store.useOriginal(bookID: id)
             print(try encoded(store.book(id)))
+        case "structure":
+            let book = try store.book(argument(1)), pages = try structurePages(book, flags: ["--resume"])
+            guard let engine = StructureEngine.discover().engine else { throw ShelfError.message(StructureLayer.missingEngine) }
+            let service = StructureService(engine: engine)
+            signal(SIGINT, SIG_IGN)
+            let signalSource = DispatchSource.makeSignalSource(signal: SIGINT, queue: .global())
+            signalSource.setEventHandler { service.cancel() }; signalSource.resume()
+            defer { signalSource.cancel() }
+            let resume = args.contains("--resume")
+            let result = try await Task.detached { try service.run(book: book, pages: pages, resume: resume, store: store, progress: { stderr($0) }) }.value
+            print(try encoded(result))
+        case "structure-accept":
+            let book = try store.book(argument(1))
+            print(try encoded(StructureLayer.accept(book: book, pages: structurePages(book, flags: []), store: store)))
+        case "structure-status":
+            let book = try store.book(argument(1))
+            print(try encoded(StructureLayer.status(book: book, store: store, results: args.count > 2 ? structurePages(book, flags: []) : nil)))
         case "doctor": print(try objectJSON(["data_directory": store.directory.path, "ocrmypdf": OCRService.executable()?.path ?? "not found", "book_count": store.books().count, "version": AppMetadata.current.version, "build_number": AppMetadata.current.buildNumber, "bundle_identifier": AppMetadata.current.bundleIdentifier]))
         case "mcp": try await runMCP(store: store)
         case "reading-mcp":

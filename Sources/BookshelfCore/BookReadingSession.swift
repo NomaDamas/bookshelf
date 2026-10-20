@@ -34,6 +34,8 @@ public actor BookReadingSession {
     private let pdf: PDFDocument
     private let scope: BookReadingScope
     private var textCache: [Int: String] = [:]
+    /// Accepted structure Markdown of the current file version, by page. Candidates never get here.
+    private let structure: [Int: String]
     private var textSource: PDFDocument?
     private var textReads = 0
     private var readPrefix: [Int: Int] = [:]
@@ -41,7 +43,7 @@ public actor BookReadingSession {
     private var sources = Set<Int>()
     private var empty = Set<Int>()
 
-    public init(book: Book, scope: BookReadingScope, providedPage: Int? = nil, providedCharacters: Int = 0) throws {
+    public init(book: Book, scope: BookReadingScope, providedPage: Int? = nil, providedCharacters: Int = 0, structure: [Int: String] = [:]) throws {
         let document = try PDFService.document(at: book.url)
         guard ["book", "page", "range"].contains(scope.mode), scope.startPage >= 1,
               scope.endPage >= scope.startPage, scope.endPage <= document.pageCount,
@@ -49,15 +51,20 @@ public actor BookReadingSession {
               scope.mode != "page" || scope.startPage == scope.endPage else {
             throw ShelfError.message("질문할 페이지 범위를 확인해 주세요.")
         }
+        let structured = structure.filter { scope.contains($0.key) }
         // A nonisolated actor init may only write isolated state before every stored property is set.
         if let page = providedPage, scope.contains(page), providedCharacters > 0 {
             let text = document.page(at: page - 1)?.string ?? ""
             let count = min(text.count, min(providedCharacters, 10000))
-            textCache[page] = text; readPrefix[page] = count
+            textCache[page] = text
             if count > 0 { sources.insert(page) }
-            if count == text.count && count > 0 { complete.insert(page) }
+            // The prompt carried the text layer; read_pages serves this page's structure, which is not read yet.
+            if structured[page] == nil {
+                readPrefix[page] = count
+                if count == text.count && count > 0 { complete.insert(page) }
+            }
         }
-        self.book = book; pdf = document; self.scope = scope
+        self.book = book; pdf = document; self.scope = scope; self.structure = structured
     }
 
     public func call(_ tool: String, query: String? = nil, startPage: Int? = nil, endPage: Int? = nil, offset: Int? = nil) throws -> String {
@@ -98,10 +105,12 @@ public actor BookReadingSession {
             var pages: [[String: Any]] = [], remaining = 24000
             for page in start...min(end, start + 9) {
                 try Task.checkCancellation()
-                let value = text(page), begin = page == start ? initialOffset : 0
+                // A reviewed structure page replaces the text layer: it holds the same text plus tables,
+                // formulas, footnotes and formula numbers, and sending both would double the page's cost.
+                let value = structure[page] ?? text(page), begin = page == start ? initialOffset : 0
                 guard begin <= value.count else { throw ShelfError.message("offset이 페이지 길이를 넘었습니다.") }
                 let chunk = String(value.dropFirst(begin).prefix(remaining)), finish = begin + chunk.count
-                pages.append(["page": page, "text": chunk, "offset": begin, "truncated": finish < value.count])
+                pages.append(["page": page, "text": chunk, "offset": begin, "truncated": finish < value.count, "source": structure[page] == nil ? "text_layer" : "structure"])
                 if !chunk.isEmpty { sources.insert(page) }
                 if value.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty { empty.insert(page) }
                 else if begin <= (readPrefix[page] ?? 0) {
