@@ -1,0 +1,158 @@
+{
+  "date": "2026-10-20",
+  "scope": "Pi tutoring modes trace and check; one authored seven-page Korean text PDF with invented terms only",
+  "sourceHashes": {
+    "Sources/BookshelfAgent/instructions.ts": "87c48477de4775389c24420af787f4c81c37010c3704f102c384109a944309eb",
+    "Sources/BookshelfAgent/types.ts": "4993938a6d009c7d0dbcd3347d63881bf425af9ecf3f60fcc3795d32636020d2",
+    "Sources/BookshelfAgent/agent.test.ts": "0b972f3c2e25d207248d66b4ce90b70dd76caa306f0611b0a1c28b25192c8a95",
+    "Sources/BookshelfApp/PiPanelParts.swift": "13f340268d2545171cad918426aca5182dfbdc3fdac8fc56fa34e8bdcbc3c75a",
+    "Sources/BookshelfApp/BookChatView.swift": "5c37b2832013d51a48aad3dee9fb5f191141729adb2843788dc0e9a8dfd552c6",
+    "Sources/BookshelfApp/BookChatModel.swift": "e95bd03b7ab5d11b3daf97c5929ad696e5a68a72631c6ffcec7b40797e692ea8",
+    "Tests/BookshelfAppTests/BookChatModelTests.swift": "57d42f01004e99cfb4186e2ff597e7df300d75416558d405057ebc46fb168eec"
+  },
+  "automated": {
+    "swiftTests": 82,
+    "bunTests": 21,
+    "typecheck": "passed",
+    "nativeBundle": "release, ad-hoc signed; profile.json lists auto, explain, compare, visualize, trace, check",
+    "biome": "zero errors on the changed TypeScript files; seven earlier warnings retained",
+    "skillNamesInSync": "Request.skill is keyof typeof learningSkills; a Bun test compares the Swift PiExplanation cases with learningSkills"
+  },
+  "fixture": {
+    "sha256": "a936a4a6eaf9995e0ead64b685c7accdb161c7b7e773f0617626dc90234f986b",
+    "pages": {
+      "1": "contents page that only mentions every term",
+      "2": "defines 방울 박자",
+      "3": "defines 누름 높이 and how it sets 방울 박자",
+      "4": "defines 뜸자",
+      "5": "defines 늦음",
+      "6": "stuck sentence: 보정 고리를 끼운 시계는 늦음 없이 뜸자가 제 박자로 오른다.",
+      "7": "appendix that mentions the terms again"
+    }
+  },
+  "live": {
+    "executor": "official Claude Code 2.1.304 through the Pi bridge, model alias sonnet, whole-book scope, isolated library",
+    "requests": 10,
+    "limitReached": true,
+    "turns": [
+      {
+        "request": 1,
+        "mode": "trace",
+        "page": 6,
+        "readPages": [
+          2,
+          3,
+          4,
+          5,
+          6
+        ],
+        "result": "Graph nodes p. 2-5 and stuck sentence p. 6, one question; failed: defined every concept before the question, giving the answer away. Instruction tightened."
+      },
+      {
+        "request": 2,
+        "mode": "trace",
+        "page": 6,
+        "readPages": [
+          2,
+          3,
+          4,
+          5,
+          6
+        ],
+        "result": "Passed: quote, four concepts, flowchart TD with [p. 2], [p. 3], [p. 4], [p. 5] and [p. 6], one question about 방울 박자, no definitions. Page 1 (mention only) and page 7 (later mention) were not cited as explaining pages."
+      },
+      {
+        "request": 3,
+        "mode": "trace",
+        "history": 1,
+        "result": "Wrong answer judged against [p. 2] and an easier question on the same concept; failed: revealed the correct answer first and began with the Chinese character 答. Instruction tightened."
+      },
+      {
+        "request": 4,
+        "mode": "trace",
+        "history": 1,
+        "result": "Passed: said the answer does not match [p. 2], withheld the answer, asked one easier question."
+      },
+      {
+        "request": 5,
+        "mode": "trace",
+        "history": 2,
+        "result": "Failed: after a second miss it asked the first question again instead of ending the trace, and its first sentence was Chinese before a self-correction."
+      },
+      {
+        "request": 6,
+        "mode": "check",
+        "page": 5,
+        "result": "Passed: caught the planted reversal, quoted the reader and \"누름 높이가 높을수록 물이 출구를 미는 힘이 커져 방울 박자가 빨라진다.\" [p. 3], confirmed the two correct sentences, asked one restatement."
+      },
+      {
+        "request": 7,
+        "mode": "check",
+        "page": 6,
+        "result": "Passed: correct explanation of 뜸자 got no invented gap; three points matched to [p. 4]; the check ended."
+      },
+      {
+        "request": 8,
+        "mode": "trace",
+        "history": 2,
+        "result": "Failed: repeated case 5 with an intermediate stop rule; still asked a third, easier question, again starting in Chinese."
+      },
+      {
+        "request": 9,
+        "mode": "trace",
+        "history": 2,
+        "answer": "칸",
+        "readPages": [
+          2,
+          3,
+          4,
+          5,
+          6
+        ],
+        "result": "Passed with the final rules: \"같은 개념에서 두 번째로 맞지 않았으니, 빠진 고리는 방울 박자입니다. [p. 2]를 다시 읽어 보세요.\" Then five cited steps [p. 2] to [p. 6], the added link marked as its own inference, and the trace closed. Korean throughout."
+      },
+      {
+        "request": 10,
+        "mode": "trace",
+        "history": 2,
+        "answer": "뜸자 눈금이 60칸 올라간다는 건가요?",
+        "readPages": [
+          2,
+          3,
+          4,
+          5,
+          6
+        ],
+        "result": "Passed on the input that failed in requests 5 and 8: named 방울 박자 as the missing link, sent the reader to [p. 2], explained forward to [p. 6] and closed the trace. Korean throughout."
+      }
+    ],
+    "after8": "Final rules: a short answer keeps the conversation's language; after a second wrong or don't-know answer on one concept, stop asking, name the missing link, send the reader to its page and explain from there. Requests 9 and 10 used these rules.",
+    "languageNote": "The three Chinese openings followed full Korean sentences, not short answers; the conversation-language rule removed them in both final requests, a sample of two."
+  },
+  "native": {
+    "bundle": "org.nomadamas.bookside.qa-learn, isolated BOOKSIDE_DATA_DIR, replay bridge with no model request",
+    "input": "Accessibility actions only; the PDF selection used Edit > 전체 선택 after a brief AXFrontmost activation",
+    "chipsWithoutSelection": [
+      "이 페이지 쉽게 설명해줘",
+      "이 장 핵심 정리해줘",
+      "확인 퀴즈 내줘",
+      "내 설명 점검받기"
+    ],
+    "traceChipWithSelection": "선택한 문장에서 막혔어요 appeared first, switched the menu to 막힌 곳 찾기 and filled the field; nothing was sent",
+    "checkChip": "switched the menu to 내 설명 점검 and filled the field ending in 내 설명: ; nothing was sent",
+    "menu": "자동 / 쉽게 설명, 비교표, 시각 자료 / 이해 점검 header with 막힌 곳 찾기 and 내 설명 점검, checkmark on the current mode",
+    "sentRequests": "trace request carried skill trace and the selection; check request carried skill check and the typed explanation",
+    "tutoringModeKept": "after each replay the mode stayed, the placeholder changed and the starting prompts were hidden",
+    "clearResetsMode": "clearing the conversation returned 내 설명 점검 to 자동; undo restored the turns",
+    "narrowPanel": "the replayed trace graph (5 nodes) fit a panel of about 320 pt without horizontal clipping",
+    "appearances": [
+      "light",
+      "dark"
+    ]
+  },
+  "boundaries": [
+    "Synthetic fixture only; no private books, notes or app library were used.",
+    "Claude used its existing official CLI login; no sign-in, sign-out or account change. Codex was not used.",
+    "Native screenshots stay outside the repository."
+  ]
+}

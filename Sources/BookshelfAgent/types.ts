@@ -1,3 +1,5 @@
+import type { learningSkills } from "./instructions.js";
+
 export type Backend = "claude" | "codex";
 export type ChatMessage = { role: "user" | "assistant"; text: string };
 export type Request = {
@@ -6,7 +8,8 @@ export type Request = {
 	backend: Backend;
 	model?: string;
 	usePi: boolean;
-	skill: "auto" | "explain" | "compare" | "visualize";
+	/** Every app-owned learning skill; the Pi panel's explanation menu lists the same names. */
+	skill: keyof typeof learningSkills;
 	assetDirectory?: string;
 	workspace: string;
 	codexHome: string;

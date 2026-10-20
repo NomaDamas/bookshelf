@@ -1,5 +1,12 @@
 import { expect, test } from "bun:test";
-import { chmod, mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
+import {
+	chmod,
+	mkdir,
+	mkdtemp,
+	readFile,
+	rm,
+	writeFile,
+} from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { claudeArguments } from "./claude.js";
@@ -39,6 +46,52 @@ test("Every bundled system instruction is English while response language remain
 	expect(systemInstructions("auto", "codex")).toContain("image_gen.imagegen");
 	expect(systemInstructions("auto", "claude")).toContain(
 		"no image-generation tool",
+	);
+});
+
+test("Tutoring modes keep the book-grounded protocol: earlier pages, one question, no invented gaps", async () => {
+	expect(Object.keys(learningSkills)).toEqual([
+		"auto",
+		"explain",
+		"compare",
+		"visualize",
+		"trace",
+		"check",
+	]);
+	for (const skill of ["trace", "check"]) {
+		expect(validateRequest({ ...base, skill }).skill).toBe(skill);
+	}
+	const trace = systemInstructions("trace", "claude", true);
+	expect(trace).toContain("Selected learning skill: Stuck-point trace");
+	expect(trace).toContain("first explains it, not one that only mentions it");
+	expect(trace).toContain("usually before the current page");
+	expect(trace).toContain("flowchart TD");
+	expect(trace).toContain("[p. N]");
+	expect(trace).toContain(
+		'After the second wrong or "don\'t know" answer on the same concept, stop asking about it',
+	);
+	expect(trace).toContain("Ask exactly one question per turn, then wait");
+	expect(trace).toContain("outside the book");
+	// A one-letter answer must not switch the reply language.
+	expect(trace).toContain(
+		"a short answer (a letter, a number or a few words) does not change it",
+	);
+	const check = systemInstructions("check", "claude", true);
+	expect(check).toContain("Selected learning skill: Explanation check");
+	expect(check).toContain("at most one gap per turn");
+	expect(check).toContain("Never invent a gap");
+	expect(check).toContain("when the reader asks to stop");
+	expect(check).toContain("outside the book");
+	// Both modes rely on the book tools; without them the shared notice still states the limit.
+	expect(systemInstructions("trace")).toContain("No book-access tools");
+	// The Pi panel's explanation menu must offer exactly the bridge's skills.
+	const panel = await readFile(
+		new URL("../BookshelfApp/PiPanelParts.swift", import.meta.url),
+		"utf8",
+	);
+	const cases = panel.match(/enum PiExplanation[^{]*\{\s*case ([^\n]+)/)?.[1];
+	expect(cases?.split(",").map((name) => name.trim())).toEqual(
+		Object.keys(learningSkills),
 	);
 });
 

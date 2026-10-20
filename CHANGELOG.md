@@ -87,6 +87,13 @@ that its Git tag or GitHub Release has been published.
   same way under a Korean input source.
 - Option-Up/Down page commands step aside while you type, so the keys still move the cursor
   in notes, search and the Pi composer.
+- Two Pi modes check understanding over several turns, under **이해 점검** in the
+  explanation menu. **막힌 곳 찾기** starts from a selected sentence (**선택한 문장에서
+  막혔어요**): Pi finds the earlier pages of the book that explain what the sentence depends
+  on, shows them as a small graph with page numbers, and asks one check question at a time
+  until it finds the missing idea. **내 설명 점검** (**내 설명 점검받기**) compares your own
+  explanation with the book's pages and points out one gap per turn, quoting the page.
+- Pi keeps the conversation's language when you answer with a letter, a number or a few words.
 
 ### Fixed
 

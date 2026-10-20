@@ -166,6 +166,16 @@ tool after the app's own ChatGPT sign-in. The panel's header menu, composer, tra
 media are described in [Pi learning chat](../Resources/Design/PI-AGENT.md#reading-workspace-and-controls).
 To use the library from another AI client, follow [CLI and MCP setup](03-cli-and-mcp.md).
 
+Two modes under **이해 점검** in the explanation menu check understanding over several turns.
+Select the sentence where you got stuck and choose **선택한 문장에서 막혔어요**: Pi finds the
+earlier pages that explain the concepts it depends on, draws them as a small graph with page
+numbers, and asks one check question at a time. Choose **내 설명 점검받기** to write a concept
+in your own words; Pi compares it with the book's pages and points out one gap per turn with
+the page sentence it relies on. The mode stays selected while you answer. It ends when you
+choose another mode; a plain starting prompt, switching books or clearing the conversation
+returns it to **자동**. See
+[tutoring modes](../Resources/Design/PI-AGENT.md#tutoring-modes).
+
 The default question scope is **이 책 전체** (this book). The current page identifies what
 you are looking at; the agent can search the book and read other relevant pages. Use the
 **질문 범위** menu to choose **현재 쪽** or **페이지 범위…**. The menu label shows the scope
