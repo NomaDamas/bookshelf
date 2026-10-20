@@ -11,9 +11,9 @@ PDF는 원래 폴더에 두고 메모, 책갈피, 읽던 위치는 로컬 SQLite
 [사용법](docs/02-reading-and-notes.md) | [CLI/MCP](docs/03-cli-and-mcp.md) |
 [기여 안내](CONTRIBUTING.md)
 
-위 데모는 실제 앱을 녹화한 것이며, [자막이 있는 전체 영상](Resources/Design/evidence/readme-demo.mp4)은 1분 34초입니다.
+위 데모는 실제 앱을 녹화한 것이며, [영어 내레이션과 자막이 있는 전체 영상](Resources/Design/evidence/readme-demo.mp4)은 1분 54초입니다.
 프란츠 카프카의 『변신』 영어판(Ian Johnston 번역, 퍼블릭 도메인)으로 발췌와 메모를 남기고,
-Pi에게 그레고르의 가족을 비교해 달라고 묻고, 스캔한 쪽에 OCR을 실행합니다. 영상 자막은 영어입니다.
+Pi에게 그레고르의 가족을 비교해 달라고 묻고, 스캔한 쪽에 OCR을 실행합니다. 영상의 내레이션과 자막은 영어입니다.
 앱의 화면 문구는 한국어이며, 현재 상세 개발 문서는 영어로 제공합니다.
 
 ## 할 수 있는 일

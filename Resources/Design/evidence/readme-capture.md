@@ -15,8 +15,9 @@ appeared only after turning the page; the bug showed up during this recording.
 | Isolation | A new `BOOKSIDE_DATA_DIR` for each scene and a copy of the built bundle with a separate bundle ID |
 | Content | See below; the comment, notebook text and Pi question were written for the demo |
 | Pi | A live answer from Claude through the local Claude Code sign-in. The answer is shown as returned |
-| Editing | Remotion: cuts, zoom, speed-up, English captions, and title and credit cards. Every sped-up part shows its rate (for example `6×`). App pixels were not edited. macOS draws a capture indicator in place of the window buttons while a window is recorded |
-| Files | [`readme-demo.mp4`](readme-demo.mp4): 1920 x 1080, 30 fps, H.264, 1:34. [`readme-demo.gif`](readme-demo.gif): 960 x 540, 10 fps, 38 s cut of the same recording |
+| Editing | Remotion: cuts, zoom, speed-up, held frames, English captions, and title and credit cards. Every sped-up part shows its rate (for example `4.9×`). Where a narration line runs longer than its clip, the clip's last frame is held. App pixels were not edited. macOS draws a capture indicator in place of the window buttons while a window is recorded |
+| Narration | English, in the MP4 only. A synthetic voice generated on this Mac with Qwen3-TTS (preset speaker Ryan); the credit card says so. Each line was checked against the script with Apple's on-device speech recognition. Loudness is normalized to -16 LUFS |
+| Files | [`readme-demo.mp4`](readme-demo.mp4): 1920 x 1080, 30 fps, H.264 with AAC audio, 1:54. [`readme-demo.gif`](readme-demo.gif): 960 x 540, 10 fps, 38 s silent cut of the same recording |
 
 The book is Franz Kafka's *The Metamorphosis* in Ian Johnston's English translation,
 from the Feedbooks PDF edition (54 pages). The German original is in the public domain,

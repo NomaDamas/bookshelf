@@ -12,8 +12,8 @@ their folders; notes, bookmarks, and reading progress live in a local SQLite dat
 [User guide](docs/02-reading-and-notes.md) | [CLI & MCP](docs/03-cli-and-mcp.md) |
 [Contribute](CONTRIBUTING.md)
 
-The demo is recorded from the running app; the [full video with captions](Resources/Design/evidence/readme-demo.mp4)
-runs 1:34. It reads Franz Kafka's *The Metamorphosis* in Ian Johnston's public-domain translation:
+The demo is recorded from the running app; the [full video with English narration and captions](Resources/Design/evidence/readme-demo.mp4)
+runs 1:54. It reads Franz Kafka's *The Metamorphosis* in Ian Johnston's public-domain translation:
 it saves an excerpt and notes, asks Pi to compare Gregor's family, and runs OCR on scanned pages.
 The interface currently uses Korean labels; the guides explain the relevant controls in English.
 
