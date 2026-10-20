@@ -57,8 +57,9 @@ test("Tutoring modes keep the book-grounded protocol: earlier pages, one questio
 		"visualize",
 		"trace",
 		"check",
+		"pretest",
 	]);
-	for (const skill of ["trace", "check"]) {
+	for (const skill of ["trace", "check", "pretest"]) {
 		expect(validateRequest({ ...base, skill }).skill).toBe(skill);
 	}
 	const trace = systemInstructions("trace", "claude", true);
@@ -82,6 +83,14 @@ test("Tutoring modes keep the book-grounded protocol: earlier pages, one questio
 	expect(check).toContain("Never invent a gap");
 	expect(check).toContain("when the reader asks to stop");
 	expect(check).toContain("outside the book");
+	const pretest = systemInstructions("pretest", "claude", true);
+	expect(pretest).toContain("Selected learning skill: Pre-reading questions");
+	expect(pretest).toContain("come after the reader's position");
+	expect(pretest).toContain("must not contain its answer");
+	expect(pretest).toContain(
+		'{"questions":[{"question":"...","answerPage":12,"answer":"..."}]}',
+	);
+	expect(pretest).toContain("Use only pages up to the reader's position");
 	// Both modes rely on the book tools; without them the shared notice still states the limit.
 	expect(systemInstructions("trace")).toContain("No book-access tools");
 	// The Pi panel's explanation menu must offer exactly the bridge's skills.

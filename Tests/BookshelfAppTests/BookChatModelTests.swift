@@ -211,7 +211,7 @@ import BookshelfCore
         XCTAssertEqual(BookReadingScope(mode: "page", startPage: 27, endPage: 27).composerLabel(currentPage: 27), "현재 쪽(27쪽)")
         XCTAssertEqual(BookReadingScope(mode: "range", startPage: 27, endPage: 40).composerLabel(currentPage: 30), "27~40쪽")
         XCTAssertEqual(PiExplanation(skill: "auto").title, "자동"); XCTAssertEqual(PiExplanation(skill: "unknown"), .auto)
-        XCTAssertEqual(PiExplanation.allCases.map(\.title), ["자동", "쉽게 설명", "비교표", "시각 자료", "막힌 곳 찾기", "내 설명 점검"])
+        XCTAssertEqual(PiExplanation.allCases.map(\.title), ["자동", "쉽게 설명", "비교표", "시각 자료", "막힌 곳 찾기", "내 설명 점검", "예습 질문"])
     }
     func testStartingPromptsSwitchTutoringModesWithoutSending() throws {
         XCTAssertEqual(PiStarter.all(selection: "").map(\.title), ["이 페이지 쉽게 설명해줘", "이 장 핵심 정리해줘", "확인 퀴즈 내줘", "내 설명 점검받기"])
@@ -227,8 +227,103 @@ import BookshelfCore
         XCTAssertEqual(PiExplanation.trace.starting(nil), .auto)
         XCTAssertEqual(PiExplanation.check.starting(nil), .auto)
         XCTAssertEqual(PiExplanation.compare.starting(nil), .compare)
-        XCTAssertEqual(PiExplanation.allCases.filter(\.isTutoring), [.trace, .check])
+        XCTAssertEqual(PiExplanation.allCases.filter(\.isTutoring), [.trace, .check, .pretest])
+        XCTAssertEqual(PiExplanation.pretest.starting(nil), .auto)
+        let chapter = PiStarter.pretest(chapter: BookOutlineEntry(title: " 2장 방울 박자 ", startPage: 5, endPage: 8, depth: 0))
+        XCTAssertEqual(chapter.title, "이 장 예습 질문 받기"); XCTAssertEqual(chapter.mode, .pretest)
+        XCTAssertEqual(chapter.prompt, "“2장 방울 박자”(5~8쪽)을 읽기 전에 풀어 볼 예습 질문 2~3개를 내 주세요. 틀려도 괜찮아요.")
+        XCTAssertTrue(PiStarter.pretest(chapter: BookOutlineEntry(title: "", startPage: 2, endPage: 4, depth: 0)).prompt.hasPrefix("이 장(2~4쪽)"))
         XCTAssertNotEqual(PiExplanation.trace.placeholder, PiExplanation.auto.placeholder)
+    }
+    func testPretestAnswersOpenAtTheirPageWithoutARequestAndSurviveRelaunch() async throws {
+        guard let node = AgentRuntime.findExecutable("node") else { throw XCTSkip("Node.js not installed") }
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let store = try LibraryStore(directory: root.appendingPathComponent("data"))
+        let file = root.appendingPathComponent("Book.pdf"); try Data("authored".utf8).write(to: file)
+        let book = try store.register(source: file, ocr: nil, root: root)
+        let script = root.appendingPathComponent("pretest.mjs"), calls = root.appendingPathComponent("calls.txt")
+        try """
+        import fs from 'node:fs';
+        let input='';process.stdin.on('data',c=>input+=c);process.stdin.on('end',()=>{
+          const r=JSON.parse(input),emit=e=>console.log(JSON.stringify(e)),h=r.messages.map(m=>m.text).join('\\n');
+          fs.appendFileSync('\(calls.path)',r.question+'\\n');
+          if(r.skill!=='pretest'||h.includes('은바늘'))process.exit(3);
+          const set=(qs)=>'추측해 보세요.\\n\\n```pretest\\n'+JSON.stringify({questions:qs})+'\\n```';
+          emit({type:'reading',reading:{bookID:r.book.id,scope:r.book.scope,readPages:[6,7,8,10],sourcePages:[5,6,7,8,10],emptyPages:[]}});
+          if(r.question==='5쪽 예습')emit({type:'answer',text:set([{question:'박자는 무엇으로 맞출까요?',answerPage:6,answer:'방울 소리'},{question:'겨울에는?',answerPage:8,answer:'은바늘'},{question:'앞 장',answerPage:3,answer:'앞'}])});
+          else if(r.question==='9쪽 예습')emit({type:'answer',text:set([{question:'뜸자는?',answerPage:10,answer:'쉼표'}])});
+          else{if(!h.includes('방울 소리')||!h.includes("Reader's guess: 북소리"))process.exit(4);emit({type:'answer',text:'다음 쪽에서 다룹니다.'});}
+          emit({type:'done'});
+        });
+        """.write(to: script, atomically: true, encoding: .utf8)
+        let chat = BookChatModel(store: store, bridgeFactory: { AgentBridge(executable: node, script: script) })
+        XCTAssertTrue(chat.selectBook(book.id))
+        let scope = BookReadingScope(mode: "book", startPage: 1, endPage: 11)
+        func ask(_ question: String, page: Int) async throws {
+            chat.skill = "pretest"; chat.draft = question
+            chat.send(context: AgentRequest.Context(id: book.id, title: book.title, page: page, text: "", notes: "", selection: "", scope: scope))
+            for _ in 0..<300 where chat.busy { try await Task.sleep(for: .milliseconds(10)) }
+            XCTAssertNil(chat.errorMessage, question)
+        }
+        chat.reachPage(5, bookID: book.id)
+        XCTAssertTrue(chat.offersPretest(at: 5))
+        try await ask("5쪽 예습", page: 5)
+        let reply = try XCTUnwrap(chat.messages.last)
+        XCTAssertEqual(reply.text, "추측해 보세요.", "The answers never stay in the visible reply")
+        XCTAssertEqual(reply.pretest?.questions.map(\.answerPage), [6, 8]); XCTAssertEqual(reply.pretest?.dropped, 1)
+        XCTAssertFalse(chat.offersPretest(at: 5), "A chapter with a set is not offered again"); XCTAssertTrue(chat.offersPretest(at: 9))
+        let first = try XCTUnwrap(reply.pretest?.questions.first), second = try XCTUnwrap(reply.pretest?.questions.last)
+        XCTAssertFalse(chat.transcript().contains("은바늘")); XCTAssertTrue(chat.transcript().contains("답: 아직 읽지 않은 쪽에 있습니다."))
+        chat.setGuess("북소리", question: first.id)
+        chat.reachPage(9, bookID: "another-book"); XCTAssertNil(chat.messages.last?.pretest?.questions.first?.revealed)
+        chat.reachPage(6, bookID: book.id)
+        XCTAssertNotNil(chat.messages.last?.pretest?.questions.first?.revealed); XCTAssertNil(chat.messages.last?.pretest?.questions.last?.revealed)
+        chat.reachPage(5, bookID: book.id); XCTAssertNotNil(chat.messages.last?.pretest?.questions.first?.revealed, "Moving back keeps an answer open")
+        chat.setGuess("바꾼 추측", question: first.id); XCTAssertEqual(chat.messages.last?.pretest?.questions.first?.guess, "북소리", "A revealed guess is final")
+        chat.setGuess("모름", question: second.id)
+        try await Task.sleep(for: .milliseconds(900))
+        XCTAssertEqual(try String(contentsOf: calls, encoding: .utf8), "5쪽 예습\n", "Reaching a page sends no request")
+        try await ask("겨울에는 무엇을 하나요?", page: 6)
+        try await ask("9쪽 예습", page: 9)
+        XCTAssertFalse(chat.offersPretest(at: 2), "Two finished sets end the offers for this run")
+        let reopened = BookChatModel(store: try LibraryStore(directory: store.directory))
+        XCTAssertTrue(reopened.selectBook(book.id))
+        let saved = try XCTUnwrap(reopened.messages.first { $0.pretest?.questions.count == 2 }?.pretest?.questions)
+        XCTAssertNotNil(saved[0].revealed); XCTAssertEqual(saved[0].guess, "북소리")
+        XCTAssertNil(saved[1].revealed); XCTAssertEqual(saved[1].guess, "모름", "A typed guess is saved after a pause")
+        XCTAssertTrue(reopened.offersPretest(at: 2)); XCTAssertFalse(reopened.offersPretest(at: 9))
+        reopened.declinePretest(); XCTAssertFalse(reopened.offersPretest(at: 2), "One dismissal ends the offers")
+        reopened.reachPage(8, bookID: book.id)
+        XCTAssertNotNil(reopened.messages.first { $0.pretest?.questions.count == 2 }?.pretest?.questions.last?.revealed)
+    }
+    func testStoppingAPretestReplyMidBlockKeepsTheAnswersHidden() async throws {
+        guard let node = AgentRuntime.findExecutable("node") else { throw XCTSkip("Node.js not installed") }
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let store = try LibraryStore(directory: root.appendingPathComponent("data"))
+        let file = root.appendingPathComponent("Book.pdf"); try Data("authored".utf8).write(to: file)
+        let book = try store.register(source: file, ocr: nil, root: root)
+        let script = root.appendingPathComponent("stop.mjs")
+        try """
+        let input='';process.stdin.on('data',c=>input+=c);process.stdin.on('end',()=>{
+          console.log(JSON.stringify({type:'delta',text:'추측해 보세요.\\n```pretest\\n{"questions":[{"question":"Q","answerPage":6,"answer":"숨길 답'}));
+          setTimeout(()=>{},10000);
+        });
+        """.write(to: script, atomically: true, encoding: .utf8)
+        let chat = BookChatModel(store: store, bridgeFactory: { AgentBridge(executable: node, script: script) })
+        XCTAssertTrue(chat.selectBook(book.id)); chat.skill = "pretest"; chat.draft = "예습 질문"
+        chat.send(context: AgentRequest.Context(id: book.id, title: book.title, page: 5, text: "", notes: "", selection: "", scope: BookReadingScope(mode: "book", startPage: 1, endPage: 9)))
+        for _ in 0..<300 where chat.messages.last?.text.isEmpty ?? true { try await Task.sleep(for: .milliseconds(10)) }
+        XCTAssertTrue(chat.messages.last?.text.contains("숨길 답") ?? false, "The block is still arriving")
+        XCTAssertEqual(PretestBlock.streamingText(chat.messages.last?.text ?? ""), "추측해 보세요.")
+        chat.stop()
+        XCTAssertEqual(chat.messages.last?.text, "추측해 보세요."); XCTAssertEqual(chat.messages.last?.state, "interrupted")
+        XCTAssertNil(chat.messages.last?.pretest)
+        let reopened = BookChatModel(store: try LibraryStore(directory: store.directory))
+        XCTAssertTrue(reopened.selectBook(book.id)); XCTAssertFalse(reopened.transcript().contains("숨길 답"))
     }
     func testTutoringModeLastsForTheConversationAndEndsOnClearOrBookSwitch() throws {
         let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)

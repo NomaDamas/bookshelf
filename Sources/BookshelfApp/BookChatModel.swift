@@ -46,6 +46,13 @@ import BookshelfCore
     private var receivedAnswer = false
     private var pendingDelta = ""
     private var deltaTask: Task<Void, Never>?
+    private var guessTask: Task<Void, Never>?
+    /// The open book's page as the reader view last reported it. Pre-reading answers open from it.
+    private(set) var readerPage = 0
+    /// Pre-reading offers in this app run, per book. One dismissal or two finished question sets ends them.
+    @Published private var pretestDeclined: Set<String> = []
+    @Published private var pretestSets: [String: Int] = [:]
+    static let pretestSetLimit = 2
 
     init(store: LibraryStore, bridgeFactory: @escaping () -> AgentBridge = { AgentBridge() }) {
         self.store = store; self.bridgeFactory = bridgeFactory
@@ -65,7 +72,7 @@ import BookshelfCore
         do {
             let saved = try store.conversation(bookID: id)
             bookID = id; messages = saved.messages; revision = saved.revision; draft = drafts[id] ?? ""
-            scopeMode = "book"; pageRange = nil; endTutoring()
+            scopeMode = "book"; pageRange = nil; readerPage = 0; endTutoring()
             canUndoEdit = (try? store.canUndoConversationEdit(bookID: id)) ?? false
             errorMessage = nil; return true
         } catch { errorMessage = error.localizedDescription; return false }
@@ -123,9 +130,9 @@ import BookshelfCore
         guard !question.isEmpty else { return }
         guard question.utf16.count <= 10000 else { errorMessage = "질문은 10000자 이내로 입력해 주세요."; return }
         let history = messages.filter {
-            $0.state == "complete" && !$0.text.isEmpty && $0.backend != "local" &&
+            $0.state == "complete" && !$0.conversationText.isEmpty && $0.backend != "local" &&
             (context.scope == nil || context.scope?.mode == "book" || $0.scope == context.scope)
-        }.suffix(12).map { AgentRequest.Message(role: $0.role, text: String($0.text.prefix(6000))) }
+        }.suffix(12).map { AgentRequest.Message(role: $0.role, text: String($0.conversationText.prefix(6000))) }
         var user = BookChatMessage(role: "user", text: question, backend: backend.rawValue, page: context.page, harness: usePi ? "pi" : "direct", skill: skill)
         user.scope = context.scope; messages.append(user)
         hasUnsavedChanges = true
@@ -159,7 +166,57 @@ import BookshelfCore
             for i in steps.indices where steps[i].state == "running" { steps[i].state = state; steps[i].finished = now }
             messages[index].steps = steps
         }
+        if messages[index].skill == PiExplanation.pretest.rawValue { settlePretest(at: index) }
         hasUnsavedChanges = true
+    }
+    /// Moves a `pretest` block out of the reply into checked questions. It runs for every ending,
+    /// so a stopped or failed reply never keeps the answers in its visible text.
+    private func settlePretest(at index: Int) {
+        let message = messages[index]
+        let result = PretestBlock.extract(message.text, askedOn: message.page, scope: message.scope, sourcePages: message.reading?.sourcePages ?? [])
+        messages[index].text = result.text
+        guard message.state == "complete", let set = result.set else { return }
+        messages[index].pretest = set
+        if !set.questions.isEmpty, let bookID { pretestSets[bookID, default: 0] += 1 }
+        reveal(through: readerPage)
+    }
+    /// Whether to offer pre-reading questions for a chapter that starts on `page`. The offer stops
+    /// after one dismissal or two finished sets for this book, and once the chapter already has a set.
+    func offersPretest(at page: Int) -> Bool {
+        guard let bookID, !busy, !pretestDeclined.contains(bookID), (pretestSets[bookID] ?? 0) < Self.pretestSetLimit else { return false }
+        return !messages.contains { $0.pretest != nil && $0.page == page }
+    }
+    func declinePretest() { if let bookID { pretestDeclined.insert(bookID) } }
+    /// The reader view reports each page change. Reaching a page opens the answers that page holds;
+    /// moving back never hides them again. No request runs: the answers arrived with the questions.
+    func reachPage(_ page: Int, bookID id: String) {
+        guard id == bookID, page != readerPage else { return }
+        readerPage = page
+        if reveal(through: page) { _ = persist() }
+    }
+    @discardableResult private func reveal(through page: Int) -> Bool {
+        let now = Date().timeIntervalSince1970
+        var changed = false
+        for i in messages.indices {
+            guard var set = messages[i].pretest, set.questions.contains(where: { $0.revealed == nil && $0.answerPage <= page }) else { continue }
+            for q in set.questions.indices where set.questions[q].revealed == nil && set.questions[q].answerPage <= page { set.questions[q].revealed = now }
+            messages[i].pretest = set; changed = true
+        }
+        if changed { hasUnsavedChanges = true }
+        return changed
+    }
+    /// Keeps the reader's guess with the conversation. Typing saves after a short pause and adds no undo step.
+    func setGuess(_ guess: String, question id: String) {
+        guard let i = messages.firstIndex(where: { $0.pretest?.questions.contains { $0.id == id } == true }),
+              var set = messages[i].pretest, let q = set.questions.firstIndex(where: { $0.id == id }), set.questions[q].revealed == nil else { return }
+        let value: String? = guess.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? nil : String(guess.prefix(1000))
+        guard set.questions[q].guess != value else { return }
+        set.questions[q].guess = value; messages[i].pretest = set; hasUnsavedChanges = true
+        guessTask?.cancel()
+        guessTask = Task { [weak self] in
+            do { try await Task.sleep(for: .milliseconds(600)) } catch { return }
+            self?.persist()
+        }
     }
     private func updateSteps(_ change: (inout [ChatStep]) -> Void) {
         guard let index = messages.firstIndex(where: { $0.id == assistantID }) else { return }
@@ -212,8 +269,8 @@ import BookshelfCore
                 let names = (message.attachments ?? []).map(\.name)
                 return names.isEmpty ? nil : "자료: " + names.joined(separator: ", ")
             }
-            guard !message.text.isEmpty else { return nil }
-            return (message.role == "user" ? "질문 (\(message.page)쪽)" : speaker(of: message)) + "\n" + message.text
+            guard !message.transcriptText.isEmpty else { return nil }
+            return (message.role == "user" ? "질문 (\(message.page)쪽)" : speaker(of: message)) + "\n" + message.transcriptText
         }.joined(separator: "\n\n")
     }
     /// Executor and model that produced a reply, named as in the model menu, e.g. "Claude / Sonnet".
@@ -400,6 +457,13 @@ enum PiComposerBlock: Equatable {
         case .editingQuestion: return "수정 중인 질문을 먼저 마쳐 주세요."
         case .tooLong: return "질문은 10000자 이내로 입력해 주세요."
         }
+    }
+}
+
+extension BookReadingCoverage {
+    /// The same coverage without source pages after `page`, for a reader who has not got there yet.
+    func sources(through page: Int) -> BookReadingCoverage {
+        var copy = self; copy.sourcePages.removeAll { $0 > page }; return copy
     }
 }
 

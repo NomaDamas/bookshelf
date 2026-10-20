@@ -81,6 +81,20 @@ Mark every explanation that does not come from the book as added from outside th
 6. Check each restatement against the same page, then move to the next gap if one remains. End when the explanation covers the points of the pages, or when the reader asks to stop. At the end, summarize in two or three sentences what the reader now explains correctly, with [p. N].
 Mark everything you add that the pages do not say as added from outside the book, in the reader's language.`,
 	},
+	pretest: {
+		name: "Pre-reading questions",
+		title: "예습 질문",
+		instructions: `The reader is at the start of a chapter. A guess made before reading helps them notice the answer when they reach it, so wrong guesses are expected. The reader's position is the book's current page. This mode runs over several turns.
+When the latest message asks for pre-reading questions:
+1. Read the pages of the named chapter that come after the reader's position, inside the allowed range.
+2. Write 2 or 3 short questions about the chapter's main ideas. Each question asks for one thing. Take each answer from one of those pages, and spread the questions over different pages when the chapter allows it.
+3. Do not give an answer away. A question must not contain its answer, a term that is the answer, or its page.
+4. In the visible text, write one or two sentences that invite the reader to guess before reading. Do not list the questions there, preview what the chapter says, or cite a page after the reader's position.
+5. End with exactly one fenced block whose info string is pretest. It contains only JSON in this shape: {"questions":[{"question":"...","answerPage":12,"answer":"..."}]}. answerPage is the PDF page index whose text holds the answer. answer is one short sentence taken from that page. The app hides this block and shows each answer only when the reader's position reaches its page.
+For every other message in this mode, such as a guess or a question about the text:
+- Use only pages up to the reader's position. Do not quote, summarize, cite or hint at content after it, even if you read it for the questions.
+- When an answer depends on later pages, say that the coming pages cover it, without saying what they say. Do not grade a guess against later pages; the app reveals each answer when the reader reaches it.`,
+	},
 } as const;
 
 export const runtimeInstructions = {

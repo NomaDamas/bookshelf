@@ -11,7 +11,7 @@ struct PiMenuChoice: View {
 }
 
 enum PiExplanation: String, CaseIterable, Identifiable {
-    case auto, explain, compare, visualize, trace, check
+    case auto, explain, compare, visualize, trace, check, pretest
     var id: String { rawValue }
     var title: String {
         switch self {
@@ -21,12 +21,13 @@ enum PiExplanation: String, CaseIterable, Identifiable {
         case .visualize: return "시각 자료"
         case .trace: return "막힌 곳 찾기"
         case .check: return "내 설명 점검"
+        case .pretest: return "예습 질문"
         }
     }
     /// Tutoring modes run over several turns: Pi asks, the reader answers in the next message.
     /// They stay selected so each answer is read under the same protocol, and end when the reader
     /// picks another mode or starting prompt, switches books or clears the conversation.
-    var isTutoring: Bool { self == .trace || self == .check }
+    var isTutoring: Bool { self == .trace || self == .check || self == .pretest }
     /// The mode after choosing a starting prompt. A plain prompt leaves a tutoring mode
     /// because it is a new question, not an answer to Pi's last check.
     func starting(_ requested: PiExplanation?) -> PiExplanation { requested ?? (isTutoring ? .auto : self) }
@@ -34,6 +35,7 @@ enum PiExplanation: String, CaseIterable, Identifiable {
         switch self {
         case .trace: return "막힌 문장을 묻거나 Pi의 확인 질문에 답해 보세요."
         case .check: return "내 말로 설명하거나 Pi가 짚은 부분을 다시 설명해 보세요."
+        case .pretest: return "지금까지 읽은 쪽에 대해 물어보세요. 추측은 질문 아래에 적습니다."
         default: return "이 책에 대해 Pi에게 물어보세요."
         }
     }
@@ -59,6 +61,13 @@ struct PiStarter: Equatable {
         let sentence = selection.split(whereSeparator: \.isWhitespace).joined(separator: " ")
         let quote = sentence.count > 200 ? String(sentence.prefix(200)) + "…" : sentence
         return PiStarter(title: "선택한 문장에서 막혔어요", prompt: "“\(quote)”\n이 문장에서 막혔어요. 이 문장이 기대는 개념을 이 책 앞쪽에서 찾아 주세요.", mode: .trace)
+    }
+    /// Pre-reading questions for the chapter the reader is opening. The page range in the
+    /// question tells Pi which pages lie ahead.
+    static func pretest(chapter: BookOutlineEntry) -> PiStarter {
+        let title = chapter.title.trimmingCharacters(in: .whitespacesAndNewlines)
+        let name = (title.isEmpty ? "이 장" : "“\(title)”") + "(\(chapter.startPage)~\(chapter.endPage)쪽)"
+        return PiStarter(title: "이 장 예습 질문 받기", prompt: "\(name)을 읽기 전에 풀어 볼 예습 질문 2~3개를 내 주세요. 틀려도 괜찮아요.", mode: .pretest)
     }
     /// The trace prompt needs a selected sentence; the check prompt leaves room for the reader's own words.
     static func all(selection: String) -> [PiStarter] {
@@ -88,6 +97,83 @@ struct PiSuggestions: View {
                 .buttonStyle(.bordered).buttonBorderShape(.capsule).controlSize(.small)
                 .help((item.mode.map { "\($0.title) 방식으로 바꾸고 " } ?? "") + "입력창에 넣기: " + item.prompt)
         }
+    }
+}
+
+/// Offered only at the start of an outline chapter. Choosing it fills the composer like any
+/// starting prompt; closing it stops the offer for this book until the app restarts.
+struct PiPretestOffer: View {
+    let chapter: BookOutlineEntry
+    let choose: (PiStarter) -> Void
+    let decline: () -> Void
+    var body: some View {
+        let starter = PiStarter.pretest(chapter: chapter)
+        HStack(spacing: 2) {
+            Button(starter.title) { choose(starter) }
+                .buttonStyle(.bordered).buttonBorderShape(.capsule).controlSize(.small)
+                .help("예습 질문 방식으로 바꾸고 입력창에 넣기: " + starter.prompt)
+            ReaderIconButton(symbol: "xmark", label: "예습 질문 제안 닫기", compact: true, action: decline)
+        }.accessibilityElement(children: .contain).accessibilityIdentifier("pi-pretest-offer")
+    }
+}
+
+/// Pre-reading questions under Pi's reply. An answer and its page stay hidden until the reader's
+/// position reaches that page; then the guess and the answer sit together for comparison.
+struct PiPretestCard: View {
+    let set: PretestSet
+    let commitGuess: (_ question: String, _ guess: String) -> Void
+    let openPage: (Int) -> Void
+    var body: some View {
+        let revealed = set.questions.filter { $0.revealed != nil }.count
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(spacing: 6) {
+                Text("예습 질문").font(.system(size: ReaderTokens.captionFont, weight: .semibold))
+                Spacer(minLength: 4)
+                if !set.questions.isEmpty {
+                    Text("\(revealed)/\(set.questions.count) 공개").font(.system(size: ReaderTokens.detailFont)).foregroundStyle(.secondary).monospacedDigit()
+                }
+            }
+            ForEach(Array(set.questions.enumerated()), id: \.element.id) { index, item in
+                PiPretestRow(number: index + 1, item: item, commit: { commitGuess(item.id, $0) }, openPage: openPage)
+            }
+            if set.dropped > 0 {
+                Text(set.questions.isEmpty ? "답이 있는 쪽을 확인한 질문이 없어 보여 드릴 질문이 없습니다." : "답이 있는 쪽을 확인하지 못한 질문 \(set.dropped)개는 뺐습니다.")
+                    .font(.system(size: ReaderTokens.detailFont)).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+            }
+        }.padding(12).frame(maxWidth: .infinity, alignment: .leading)
+            .background(ReaderStyle.panel, in: RoundedRectangle(cornerRadius: ReaderTokens.radiusMedium, style: .continuous))
+            .modifier(ReaderSurfaceBorder(radius: ReaderTokens.radiusMedium))
+            .accessibilityElement(children: .contain).accessibilityIdentifier("pi-pretest-card")
+    }
+}
+
+private struct PiPretestRow: View {
+    let number: Int
+    let item: PretestQuestion
+    let commit: (String) -> Void
+    let openPage: (Int) -> Void
+    @State private var guess = ""
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text("\(number). \(item.question)").font(.system(size: ReaderTokens.bodyFont, weight: .medium)).lineSpacing(3)
+                .textSelection(.enabled).fixedSize(horizontal: false, vertical: true)
+            if item.revealed == nil {
+                TextField("읽기 전에 추측해 보세요", text: $guess, axis: .vertical)
+                    .textFieldStyle(.roundedBorder).font(.system(size: ReaderTokens.controlFont)).lineLimit(1...4)
+                    .onChange(of: guess) { _, value in commit(value) }
+                    .accessibilityLabel("질문 \(number) 추측")
+                Label("읽다가 답이 나오는 쪽에 이르면 답이 열립니다.", systemImage: "lock")
+                    .font(.system(size: ReaderTokens.detailFont)).foregroundStyle(.secondary)
+            } else {
+                Button("\(item.answerPage)쪽에 나온 답") { openPage(item.answerPage) }
+                    .buttonStyle(.plain).foregroundStyle(ReaderStyle.accent).font(.system(size: ReaderTokens.detailFont, weight: .semibold))
+                    .help("\(item.answerPage)쪽으로 이동합니다.")
+                Text(item.answer).font(.system(size: ReaderTokens.controlFont)).lineSpacing(3)
+                    .textSelection(.enabled).fixedSize(horizontal: false, vertical: true)
+                Text("내 추측: " + ((item.guess?.isEmpty ?? true) ? "적지 않음" : item.guess!))
+                    .font(.system(size: ReaderTokens.captionFont)).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+            }
+        }.onAppear { guess = item.guess ?? "" }
     }
 }
 

@@ -7,7 +7,7 @@ Bookside includes a native chat panel. It uses Pi agent core for conversation st
 - Ask across the selected book by default, using the current page as the reader's location. Restrict a request to the current page or an explicit PDF page range when needed.
 - Choose Claude or Codex, preserving the app's book-specific conversation.
 - Choose a model. The default automatic profile selects prose, comparison tables, diagrams or interactive explanations for the question; plain explanation, comparison table and visual explanation remain optional overrides.
-- Check understanding in two [tutoring modes](#tutoring-modes): trace a stuck sentence back to the earlier pages that explain its concepts, or check the reader's own explanation against the cited pages.
+- Check understanding in three [tutoring modes](#tutoring-modes): trace a stuck sentence back to the earlier pages that explain its concepts, check the reader's own explanation against the cited pages, or guess at [pre-reading questions](#pre-reading-questions) before reading a chapter.
 - Use an English system prompt while answering in the user's requested language.
 - Stream replies, stop a request, save a completed reply to the notebook and return to the question's PDF page.
 - Store conversations in a separate SQLite table with revision checks. Chats do not count as notebook items unless explicitly copied to the notebook.
@@ -54,10 +54,12 @@ occasional ones move to the header's ⋯ menu:
   page, summarize this chapter, quiz me and 내 설명 점검받기. With a selected sentence,
   선택한 문장에서 막혔어요 comes first. Choosing one fills the field; nothing is sent until
   the reader sends it. The two tutoring prompts also switch the explanation menu to their mode.
+  On the first page of an outline chapter, 이 장 예습 질문 받기 sits above the composer
+  with a close button; see [pre-reading questions](#pre-reading-questions).
 
 ### Tutoring modes
 
-The explanation menu lists two modes under 이해 점검. Both are app-owned skills in
+The explanation menu lists three modes under 이해 점검. All are app-owned skills in
 `instructions.ts`; Pi still loads no external skill. They use the four book tools and cite
 `[p. N]`, and mark anything added from outside the book. The bridge's `Request.skill` type is
 derived from `learningSkills`, and a Bun test checks that the Swift `PiExplanation` cases list
@@ -80,6 +82,8 @@ instructions keep the conversation's language when the latest message is that sh
   without its mechanism), quotes the reader and the book sentence with `[p. N]`, and asks for a
   restatement. A correct explanation gets no invented gap. The check ends when the explanation
   covers the page's points or the reader asks to stop.
+- **예습 질문** (`pretest`) asks 2–3 questions about the chapter pages after the reader's
+  position before the reader reads them. See [pre-reading questions](#pre-reading-questions).
 
 A tutoring mode stays selected after a reply, because the next message is the reader's
 answer and must be read under the same protocol. While it is selected, the starting prompts
@@ -88,6 +92,50 @@ reader picks another mode. A plain starting prompt, a book switch or clearing th
 returns it to 자동: a plain prompt is a new question rather than an answer, and the protocol's
 state lives in one conversation's history, so it does not carry over. Plain explanation
 formats stay selected as before.
+
+### Pre-reading questions
+
+A guess made before reading helps the reader notice the answer when they reach it, even when
+the guess is wrong. The mechanism follows the pre-reading questions idea in
+[DrCatHicks/learning-opportunities](https://github.com/DrCatHicks/learning-opportunities)
+(CC BY 4.0). Bookside's instructions and labels are written anew; no text is copied.
+
+- **Offer.** The chip 이 장 예습 질문 받기 appears above the composer only when the current
+  page is the first page of an embedded-outline entry that has pages after it. When several
+  entries start on that page, the outermost one names the chapter; a one-page section gets no
+  offer. The offer and `get_book_overview` both read chapter boundaries from `BookOutline`,
+  and a Core test checks that they name the same chapter starts. A PDF without an outline gets no offer. The chip only fills the composer
+  and switches the menu to 예습 질문; nothing runs until the reader sends. Closing it with
+  its × stops the offer for that book until the app restarts. Two finished sets in one app run
+  also stop it, and a chapter page that already has a set is not offered again. The offer sits
+  outside the transcript because it belongs to the page, not to a turn, so it stays in view
+  wherever the transcript is scrolled. When it appears while the transcript follows the latest
+  reply, the transcript scrolls back to its end once the offer's animation ends, so the last row
+  is not left under the offer. A reader who scrolled up keeps their place.
+- **Reply.** Pi reads the chapter's pages after the position and writes 2 or 3 short questions,
+  each asking for one thing answered on one page. The question must not contain its answer.
+  The visible text only invites a guess. The reply ends with a fenced `pretest` block holding
+  `{"questions":[{"question":"…","answerPage":12,"answer":"…"}]}`.
+- **Checks.** The app removes the block from the reply text: while streaming (including a
+  fence that is still arriving), when the reply ends, and when it is stopped mid-block. A
+  question is kept only when its answer page comes after the page it was asked from, lies in
+  the request's range and was among the pages Pi's tools returned. At most three are kept;
+  the card says how many were dropped.
+- **Card.** Each question has a guess field and a lock line. When the reader's page reaches an
+  answer page, that answer opens with a "N쪽에 나온 답" link and the guess beside it. Opening
+  runs no request. Moving back keeps it open. Questions, guesses (saved after a short pause,
+  without an undo entry) and opening times are stored with the conversation in
+  `BookChatMessage.pretest` and survive relaunch.
+- **Reading position.** Later requests see the questions, the guesses and only the answers
+  already opened (`conversationText`). In this mode Pi's other replies use only pages up to
+  the reader's position and say that the coming pages cover a later topic without saying
+  what. Source chips and citation links of pretest-mode replies also leave out pages after the
+  position. The boundary is an instruction, not a reading-range limit: writing the questions
+  needs the later pages, and a narrower range would also drop the questions from the history
+  sent with later requests. Like the other tutoring modes, the mode is not restored when the
+  app restarts.
+- **Copies.** Copy, conversation copy and save-to-notes write unopened answers as
+  "답: 아직 읽지 않은 쪽에 있습니다."
 
 ### Transcript
 
@@ -227,6 +275,7 @@ The bridge is bundled, but the executors and Node runtime are not redistributed.
 - Native checks with authored PDFs verified library return, all four book tools, search, clear/undo, custom shortcuts, account controls, selected Sonnet inference, question edit/regeneration/undo, interactive HTML and M4A playback. Media, model choice and shortcuts survived relaunch. Automatic mode selected both a Markdown table and Mermaid for a comparison/process question without either format being explicitly requested. [Account acceptance](https://github.com/NomaDamas/bookside/issues/8) and [automatic/image evidence](evidence/automatic-learning-checks.json) record the boundaries.
 - On 2026-10-20 the Pi panel layout passed 68 Swift tests, including status checks that leave the panel enabled, Settings sign-in that keeps the conversation engine, composer block reasons, scope labels and conversation copy. A native debug build with an isolated library and a seeded synthetic conversation showed the empty, conversation, inline-edit, minimum-width (320 pt), disconnected-Codex and Settings > Pi states; menus were checked through their accessibility items. No model request or sign-in was made.
 - On 2026-10-20 the tutoring modes passed 82 Swift tests, 21 Bun tests and the TypeScript check. Ten live Claude Sonnet requests used an authored seven-page Korean fixture with invented terms. Trace cited the explaining pages 2–5 before the current page 6, skipped pages that only mention the terms, drew a five-node top-to-bottom graph and waited after one question. After a first miss it withheld the answer and asked an easier question. Check caught a planted reversal by quoting the right sentence on page 3, and gave a correct explanation no invented gap. Earlier wording kept asking after a second miss, and three of its answer-judging replies began in Chinese. With the final stop rule and the conversation-language rule, both final requests (a one-character answer and a full-sentence answer) stopped, sent the reader to page 2, explained forward to page 6 in Korean and closed the trace. A `.qa-learn` build with a replay bridge showed the chips, menu, mode label and narrow-panel graph in light and dark appearance. See [tutoring-mode evidence](evidence/tutoring-mode-checks.json).
+- On 2026-10-20 pre-reading questions passed 89 Swift tests, 21 Bun tests and the TypeScript check. Five live Claude Sonnet requests used an authored eleven-page Korean fixture with an embedded outline and invented facts. Both chapter-2 sets read pages 6–8 and returned three questions answered on pages 6, 7 and 8; the chapter-3 set used page 10, the only later page in that chapter. Every answer page was right, every block parsed, and no question contained its answer or page. The first set asked two things per question; after the one-thing rule, the chapter-3 set did not, and the repeated chapter-2 set still joined when and why once. One question names the act its page describes while hiding the answer. At page 5 Pi neither graded the guesses nor described the coming pages; at page 6 it explained page 6, compared the guess and withheld page 7. A `.qa-learn` build with a replay bridge of those replies showed the offer only on pages 2, 5 and 9, no block fragment while streaming, answers opening at pages 6–8 and 10 without a request, history without unopened answers, and the state after relaunch in light and dark appearance. See [pre-reading evidence](evidence/pretest-checks.json).
 - Native screenshots use authored synthetic PDF pages. Private source books, notes, account tokens and raw authentication URLs must not be committed as evidence.
 - On 2026-10-20, the original five-tool MCP protocol and the four-tool scoped protocol passed after the real synthetic OCR prerequisite. A real Codex App Server listed all four reading tools after the compatibility fix. Codex inference then returned the account usage limit, so live book-retrieval answers through Codex remain unverified in [issue #15](https://github.com/NomaDamas/bookside/issues/15); no alternate billing route was used. See [book-scope evidence](evidence/book-reading-checks.json).
 

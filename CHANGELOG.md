@@ -94,6 +94,12 @@ that its Git tag or GitHub Release has been published.
   until it finds the missing idea. **내 설명 점검** (**내 설명 점검받기**) compares your own
   explanation with the book's pages and points out one gap per turn, quoting the page.
 - Pi keeps the conversation's language when you answer with a letter, a number or a few words.
+- On the first page of a chapter in a book with an embedded outline, the Pi panel offers
+  **이 장 예습 질문 받기**. Pi asks two or three questions about the pages ahead without giving
+  the answers away, and you can write a guess under each. When you reach the page that
+  answers a question, its answer opens next to your guess, without another request. The
+  questions, guesses and opened answers stay with the conversation. The offer stops after
+  you dismiss it once or finish two sets for a book.
 
 ### Fixed
 

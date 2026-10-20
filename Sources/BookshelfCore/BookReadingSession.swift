@@ -139,22 +139,12 @@ public actor BookReadingSession {
         let value = autoreleasepool { (textSource ?? pdf).page(at: page - 1)?.string ?? "" }
         textCache[page] = value; return value
     }
+    /// Outline entries clipped to the allowed range; entries wholly outside it are left out.
     private func outline() -> [[String: Any]] {
-        var entries: [(title: String, page: Int, depth: Int)] = []
-        func walk(_ node: PDFOutline, depth: Int) {
-            guard entries.count < 300, depth < 12 else { return }
-            if let page = (node.destination ?? (node.action as? PDFActionGoTo)?.destination)?.page {
-                let index = pdf.index(for: page)
-                if index != NSNotFound { entries.append((String((node.label ?? "").prefix(200)), index + 1, depth)) }
-            }
-            for i in 0..<node.numberOfChildren { if let child = node.child(at: i) { walk(child, depth: depth + 1) } }
-        }
-        if let root = pdf.outlineRoot { walk(root, depth: -1) }
-        return entries.enumerated().compactMap { index, entry in
-            let next = entries.dropFirst(index + 1).first { $0.depth <= entry.depth && $0.page > entry.page }?.page ?? (pdf.pageCount + 1)
-            let start = max(scope.startPage, entry.page), end = min(scope.endPage, next - 1)
+        BookOutline.entries(in: pdf).compactMap { entry in
+            let start = max(scope.startPage, entry.startPage), end = min(scope.endPage, entry.endPage)
             guard start <= end else { return nil }
-            return ["title": entry.title, "startPage": start, "endPage": end, "depth": max(0, entry.depth)]
+            return ["title": entry.title, "startPage": start, "endPage": end, "depth": entry.depth]
         }
     }
 }

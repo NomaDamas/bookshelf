@@ -166,7 +166,7 @@ tool after the app's own ChatGPT sign-in. The panel's header menu, composer, tra
 media are described in [Pi learning chat](../Resources/Design/PI-AGENT.md#reading-workspace-and-controls).
 To use the library from another AI client, follow [CLI and MCP setup](03-cli-and-mcp.md).
 
-Two modes under **이해 점검** in the explanation menu check understanding over several turns.
+Three modes under **이해 점검** in the explanation menu check understanding over several turns.
 Select the sentence where you got stuck and choose **선택한 문장에서 막혔어요**: Pi finds the
 earlier pages that explain the concepts it depends on, draws them as a small graph with page
 numbers, and asks one check question at a time. Choose **내 설명 점검받기** to write a concept
@@ -175,6 +175,17 @@ the page sentence it relies on. The mode stays selected while you answer. It end
 choose another mode; a plain starting prompt, switching books or clearing the conversation
 returns it to **자동**. See
 [tutoring modes](../Resources/Design/PI-AGENT.md#tutoring-modes).
+
+When you open the first page of a chapter in the PDF's outline, **이 장 예습 질문 받기**
+appears above the question field. Choosing it fills in a request and switches to
+**예습 질문**; send it to get two or three short questions about the pages ahead. Write a
+guess under each question; a wrong guess is fine. Each answer stays locked until you reach
+the page that holds it, then it opens beside your guess, without asking Pi again. While the
+mode is on, Pi's other replies use only the pages you have reached. The questions, guesses
+and opened answers stay with the conversation after you quit. Close the offer with its
+**×** button to stop it for that book until you reopen the app; it also stops after two sets.
+PDFs without an outline get no offer. See
+[pre-reading questions](../Resources/Design/PI-AGENT.md#pre-reading-questions).
 
 The default question scope is **이 책 전체** (this book). The current page identifies what
 you are looking at; the agent can search the book and read other relevant pages. Use the
