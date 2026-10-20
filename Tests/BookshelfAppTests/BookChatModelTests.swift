@@ -211,7 +211,42 @@ import BookshelfCore
         XCTAssertEqual(BookReadingScope(mode: "page", startPage: 27, endPage: 27).composerLabel(currentPage: 27), "현재 쪽(27쪽)")
         XCTAssertEqual(BookReadingScope(mode: "range", startPage: 27, endPage: 40).composerLabel(currentPage: 30), "27~40쪽")
         XCTAssertEqual(PiExplanation(skill: "auto").title, "자동"); XCTAssertEqual(PiExplanation(skill: "unknown"), .auto)
-        XCTAssertEqual(PiExplanation.allCases.map(\.title), ["자동", "쉽게 설명", "비교표", "시각 자료"])
+        XCTAssertEqual(PiExplanation.allCases.map(\.title), ["자동", "쉽게 설명", "비교표", "시각 자료", "막힌 곳 찾기", "내 설명 점검"])
+    }
+    func testStartingPromptsSwitchTutoringModesWithoutSending() throws {
+        XCTAssertEqual(PiStarter.all(selection: "").map(\.title), ["이 페이지 쉽게 설명해줘", "이 장 핵심 정리해줘", "확인 퀴즈 내줘", "내 설명 점검받기"])
+        XCTAssertEqual(PiStarter.all(selection: " \n ").count, 4, "Whitespace is not a selected sentence")
+        let stuck = try XCTUnwrap(PiStarter.all(selection: "드립 속도는\n  수두에 따라 변한다.").first)
+        XCTAssertEqual(stuck.title, "선택한 문장에서 막혔어요"); XCTAssertEqual(stuck.mode, .trace)
+        XCTAssertTrue(stuck.prompt.hasPrefix("“드립 속도는 수두에 따라 변한다.”\n"), "The stuck sentence stays in the question history")
+        let long = PiStarter.trace(selection: String(repeating: "가", count: 500)).prompt
+        XCTAssertTrue(long.contains(String(repeating: "가", count: 200) + "…”")); XCTAssertFalse(long.contains(String(repeating: "가", count: 201)))
+        XCTAssertEqual(PiStarter.check.mode, .check); XCTAssertTrue(PiStarter.check.prompt.hasSuffix("내 설명: "))
+        // A tutoring chip switches the mode; a plain prompt leaves a tutoring mode but keeps a chosen format.
+        XCTAssertEqual(PiExplanation.compare.starting(.trace), .trace)
+        XCTAssertEqual(PiExplanation.trace.starting(nil), .auto)
+        XCTAssertEqual(PiExplanation.check.starting(nil), .auto)
+        XCTAssertEqual(PiExplanation.compare.starting(nil), .compare)
+        XCTAssertEqual(PiExplanation.allCases.filter(\.isTutoring), [.trace, .check])
+        XCTAssertNotEqual(PiExplanation.trace.placeholder, PiExplanation.auto.placeholder)
+    }
+    func testTutoringModeLastsForTheConversationAndEndsOnClearOrBookSwitch() throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let store = try LibraryStore(directory: root.appendingPathComponent("data"))
+        var books: [Book] = []
+        for name in ["A", "B"] {
+            let file = root.appendingPathComponent(name + ".pdf"); try Data(name.utf8).write(to: file)
+            books.append(try store.register(source: file, ocr: nil, root: root))
+        }
+        let chat = BookChatModel(store: store)
+        XCTAssertTrue(chat.selectBook(books[0].id))
+        chat.skill = "trace"; XCTAssertTrue(chat.selectBook(books[0].id)); XCTAssertEqual(chat.skill, "trace", "Reselecting the same book keeps the trace")
+        XCTAssertTrue(chat.selectBook(books[1].id)); XCTAssertEqual(chat.skill, "auto")
+        chat.skill = "check"; chat.clearConversation(); XCTAssertEqual(chat.skill, "auto")
+        chat.skill = "visualize"; XCTAssertTrue(chat.selectBook(books[0].id)); chat.clearConversation()
+        XCTAssertEqual(chat.skill, "visualize", "Plain explanation formats are a standing preference")
     }
     func testOnlyTheReplyThatChangedIsRebuiltWhileAnotherStreams() {
         let finished = ChatResponseView(text: "답 [p. 3]", streaming: false, sourcePages: [3]) { _ in }

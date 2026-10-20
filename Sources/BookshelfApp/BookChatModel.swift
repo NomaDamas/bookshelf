@@ -65,7 +65,7 @@ import BookshelfCore
         do {
             let saved = try store.conversation(bookID: id)
             bookID = id; messages = saved.messages; revision = saved.revision; draft = drafts[id] ?? ""
-            scopeMode = "book"; pageRange = nil
+            scopeMode = "book"; pageRange = nil; endTutoring()
             canUndoEdit = (try? store.canUndoConversationEdit(bookID: id)) ?? false
             errorMessage = nil; return true
         } catch { errorMessage = error.localizedDescription; return false }
@@ -187,7 +187,10 @@ import BookshelfCore
         }
         pendingDelta = ""
     }
-    func clearConversation() { stop(); _ = replaceConversation(with: []) }
+    func clearConversation() { stop(); _ = replaceConversation(with: []); endTutoring() }
+    /// A trace or explanation check lives in one conversation's history, so it does not carry
+    /// over to another book or an emptied conversation. Plain explanation formats do.
+    private func endTutoring() { if PiExplanation(skill: skill).isTutoring { skill = "auto" } }
     func deleteFrom(_ id: String) {
         stop(); guard let index = messages.firstIndex(where: { $0.id == id }) else { return }
         _ = replaceConversation(with: Array(messages[..<index]))

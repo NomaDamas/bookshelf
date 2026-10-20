@@ -21,6 +21,9 @@ struct BookChatView: View {
     private var currentText: String { model.document?.page(at: model.page - 1)?.string ?? "" }
     private var pageCount: Int { model.document?.pageCount ?? book.pageCount }
     private var scope: BookReadingScope { chat.readingScope(page: model.page, pageCount: pageCount) }
+    /// Selected sentences the next request will carry; a narrower scope drops selections outside it.
+    private var selectedText: String { model.selection.filter { scope.contains($0.page) }.map(\.quote).joined(separator: "\n") }
+    private var mode: PiExplanation { PiExplanation(skill: chat.skill) }
     private var composerBlock: PiComposerBlock? {
         PiComposerBlock.evaluate(nodeFound: AgentRuntime.node.url != nil, bridgeFound: AgentRuntime.bridgeURL != nil,
                                  backend: chat.backend, connected: chat.account?.connected,
@@ -101,7 +104,7 @@ struct BookChatView: View {
                     }
                     ForEach(chat.messages) { message in messageView(message) }
                     if !chat.messages.isEmpty && block?.needsConnection != true && showsFollowUps {
-                        PiSuggestions(choose: suggest).padding(.leading, PiTranscript.gutter).transition(.opacity)
+                        PiSuggestions(selection: selectedText, choose: suggest).padding(.leading, PiTranscript.gutter).transition(.opacity)
                     }
                     Color.clear.frame(height: 1).id("conversation-end")
                         .background(ChatScrollObserver(nearBottom: { if $0 && !followTail { followTail = true } }, scrolledAway: { if followTail { followTail = false } }))
@@ -134,7 +137,7 @@ struct BookChatView: View {
             Text("읽다가 막힌 부분을 Pi에게 물어보세요.").font(.system(size: 16, weight: .medium))
             Text("Pi는 이 책에서 필요한 쪽을 찾아 읽고 설명합니다. 지금 보는 쪽과 선택한 문장도 함께 참고합니다. 질문 범위와 설명 방식은 입력창 위에서 고를 수 있습니다.")
                 .font(.system(size: ReaderTokens.controlFont)).foregroundStyle(.secondary).lineSpacing(5).fixedSize(horizontal: false, vertical: true)
-            PiSuggestions(choose: suggest)
+            PiSuggestions(selection: selectedText, choose: suggest)
         }.padding(.vertical, 14)
     }
 
@@ -142,8 +145,9 @@ struct BookChatView: View {
         PiConnectionNotice(block: block, connect: openConnectionSettings, recheck: { AgentRuntime.node.refresh(); chat.checkConnection() })
     }
 
+    /// A tutoring mode waits for the reader's answer, so the starting prompts stay out of the way.
     private var showsFollowUps: Bool {
-        guard !chat.busy, editingID == nil, let last = chat.messages.last else { return false }
+        guard !chat.busy, editingID == nil, !mode.isTutoring, let last = chat.messages.last else { return false }
         return last.role == "assistant" && last.state == "complete" && !last.text.isEmpty
     }
 
@@ -336,7 +340,7 @@ struct BookChatView: View {
                 .focused($composerFocused)
                 .frame(minHeight: 56, maxHeight: 100).padding(.vertical, 2)
                 .overlay(alignment: .topLeading) {
-                    if chat.draft.isEmpty { Text("이 책에 대해 Pi에게 물어보세요.").font(.system(size: ReaderTokens.controlFont)).foregroundStyle(.tertiary).padding(.leading, 5).padding(.top, 10).allowsHitTesting(false) }
+                    if chat.draft.isEmpty { Text(mode.placeholder).font(.system(size: ReaderTokens.controlFont)).foregroundStyle(.tertiary).padding(.leading, 5).padding(.top, 10).allowsHitTesting(false) }
                 }
                 .accessibilityLabel("Pi에게 질문").accessibilityIdentifier("book-chat-composer")
             HStack(spacing: 4) {
@@ -381,16 +385,21 @@ struct BookChatView: View {
     }
 
     private var explanationMenu: some View {
-        let current = PiExplanation(skill: chat.skill)
+        let current = mode
         return Menu {
-            ForEach(PiExplanation.allCases) { option in
+            ForEach(PiExplanation.allCases.filter { !$0.isTutoring }) { option in
                 PiMenuChoice(title: option.title, selected: option == current) { chat.skill = option.rawValue }
                 if option == .auto { Divider() }
+            }
+            Section("이해 점검") {
+                ForEach(PiExplanation.allCases.filter(\.isTutoring)) { option in
+                    PiMenuChoice(title: option.title, selected: option == current) { chat.skill = option.rawValue }
+                }
             }
         } label: { Text(current.title) }
             .menuStyle(.button).buttonStyle(.bordered).buttonBorderShape(.capsule).controlSize(.small).fixedSize()
             .accessibilityLabel("설명 방식").accessibilityValue(current.title)
-            .help("설명 방식. 자동은 질문에 맞게 글, 표, 다이어그램을 고릅니다. Codex는 이미지도 만들 수 있습니다.")
+            .help("설명 방식. 자동은 질문에 맞게 글, 표, 다이어그램을 고릅니다. 막힌 곳 찾기와 내 설명 점검은 Pi가 한 번에 하나씩 묻고 답을 기다리며, 다른 방식을 고를 때까지 이어집니다. Codex는 이미지도 만들 수 있습니다.")
     }
 
     @ViewBuilder private func sendControl(_ block: PiComposerBlock?) -> some View {
@@ -417,9 +426,12 @@ struct BookChatView: View {
         followTail = true; composerFocused = true
         let scope = self.scope
         chat.send(context: AgentRequest.Context(id: book.id, title: book.title, page: model.page,
-                  text: currentText, notes: includeNotes ? model.notebookText : "", selection: model.selection.filter { scope.contains($0.page) }.map(\.quote).joined(separator: "\n"), scope: scope))
+                  text: currentText, notes: includeNotes ? model.notebookText : "", selection: selectedText, scope: scope))
     }
-    private func suggest(_ prompt: String) { chat.draft = prompt; composerFocused = true }
+    private func suggest(_ starter: PiStarter) {
+        chat.skill = mode.starting(starter.mode).rawValue
+        chat.draft = starter.prompt; composerFocused = true
+    }
     private func beginEdit(_ message: BookChatMessage) {
         guard !chat.busy else { return }
         editText = message.text; editingID = message.id

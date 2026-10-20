@@ -11,7 +11,7 @@ struct PiMenuChoice: View {
 }
 
 enum PiExplanation: String, CaseIterable, Identifiable {
-    case auto, explain, compare, visualize
+    case auto, explain, compare, visualize, trace, check
     var id: String { rawValue }
     var title: String {
         switch self {
@@ -19,34 +19,74 @@ enum PiExplanation: String, CaseIterable, Identifiable {
         case .explain: return "쉽게 설명"
         case .compare: return "비교표"
         case .visualize: return "시각 자료"
+        case .trace: return "막힌 곳 찾기"
+        case .check: return "내 설명 점검"
+        }
+    }
+    /// Tutoring modes run over several turns: Pi asks, the reader answers in the next message.
+    /// They stay selected so each answer is read under the same protocol, and end when the reader
+    /// picks another mode or starting prompt, switches books or clears the conversation.
+    var isTutoring: Bool { self == .trace || self == .check }
+    /// The mode after choosing a starting prompt. A plain prompt leaves a tutoring mode
+    /// because it is a new question, not an answer to Pi's last check.
+    func starting(_ requested: PiExplanation?) -> PiExplanation { requested ?? (isTutoring ? .auto : self) }
+    var placeholder: String {
+        switch self {
+        case .trace: return "막힌 문장을 묻거나 Pi의 확인 질문에 답해 보세요."
+        case .check: return "내 말로 설명하거나 Pi가 짚은 부분을 다시 설명해 보세요."
+        default: return "이 책에 대해 Pi에게 물어보세요."
         }
     }
     init(skill: String) { self = PiExplanation(rawValue: skill) ?? .auto }
 }
 
-/// Fixed starting prompts. Choosing one fills the composer; nothing is sent until the reader sends it.
-struct PiSuggestions: View {
-    static let prompts: [(title: String, prompt: String)] = [
-        ("이 페이지 쉽게 설명해줘", "이 페이지의 핵심 내용을 작은 예시와 함께 쉽게 설명해줘."),
-        ("이 장 핵심 정리해줘", "지금 읽는 장의 핵심 내용을 정리해줘."),
-        ("확인 퀴즈 내줘", "지금까지 읽은 내용을 확인하는 퀴즈 3문제를 내줘. 정답은 마지막에 따로 알려줘."),
+/// A starting prompt fills the composer and may switch the explanation mode. Nothing is sent
+/// until the reader sends it.
+struct PiStarter: Equatable {
+    let title: String
+    let prompt: String
+    var mode: PiExplanation? = nil
+
+    static let fixed: [PiStarter] = [
+        PiStarter(title: "이 페이지 쉽게 설명해줘", prompt: "이 페이지의 핵심 내용을 작은 예시와 함께 쉽게 설명해줘."),
+        PiStarter(title: "이 장 핵심 정리해줘", prompt: "지금 읽는 장의 핵심 내용을 정리해줘."),
+        PiStarter(title: "확인 퀴즈 내줘", prompt: "지금까지 읽은 내용을 확인하는 퀴즈 3문제를 내줘. 정답은 마지막에 따로 알려줘."),
     ]
-    let choose: (String) -> Void
+    static let check = PiStarter(title: "내 설명 점검받기", prompt: "내 말로 설명해 볼게요. 이 책의 관련 쪽과 대조해서 점검해 줘.\n\n내 설명: ", mode: .check)
+    /// The stuck sentence goes into the question itself, so later answers keep it in the
+    /// conversation history after the selection is gone.
+    static func trace(selection: String) -> PiStarter {
+        let sentence = selection.split(whereSeparator: \.isWhitespace).joined(separator: " ")
+        let quote = sentence.count > 200 ? String(sentence.prefix(200)) + "…" : sentence
+        return PiStarter(title: "선택한 문장에서 막혔어요", prompt: "“\(quote)”\n이 문장에서 막혔어요. 이 문장이 기대는 개념을 이 책 앞쪽에서 찾아 주세요.", mode: .trace)
+    }
+    /// The trace prompt needs a selected sentence; the check prompt leaves room for the reader's own words.
+    static func all(selection: String) -> [PiStarter] {
+        let stuck = selection.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? [] : [trace(selection: selection)]
+        return stuck + fixed + [check]
+    }
+}
+
+struct PiSuggestions: View {
+    var selection = ""
+    let choose: (PiStarter) -> Void
     var body: some View {
+        let items = PiStarter.all(selection: selection)
         ViewThatFits(in: .horizontal) {
-            HStack(spacing: 6) { chips(Self.prompts) }
+            HStack(spacing: 6) { chips(items) }
             VStack(alignment: .leading, spacing: 6) {
-                HStack(spacing: 6) { chips(Array(Self.prompts.prefix(2))) }
-                chips(Array(Self.prompts.dropFirst(2)))
+                ForEach(Array(stride(from: 0, to: items.count, by: 2)), id: \.self) { start in
+                    HStack(spacing: 6) { chips(Array(items[start..<min(start + 2, items.count)])) }
+                }
             }
-            VStack(alignment: .leading, spacing: 6) { chips(Self.prompts) }
+            VStack(alignment: .leading, spacing: 6) { chips(items) }
         }.frame(maxWidth: .infinity, alignment: .leading)
     }
-    private func chips(_ items: [(title: String, prompt: String)]) -> some View {
+    private func chips(_ items: [PiStarter]) -> some View {
         ForEach(items, id: \.title) { item in
-            Button(item.title) { choose(item.prompt) }
+            Button(item.title) { choose(item) }
                 .buttonStyle(.bordered).buttonBorderShape(.capsule).controlSize(.small)
-                .help("입력창에 넣기: " + item.prompt)
+                .help((item.mode.map { "\($0.title) 방식으로 바꾸고 " } ?? "") + "입력창에 넣기: " + item.prompt)
         }
     }
 }

@@ -7,6 +7,7 @@ Bookside includes a native chat panel. It uses Pi agent core for conversation st
 - Ask across the selected book by default, using the current page as the reader's location. Restrict a request to the current page or an explicit PDF page range when needed.
 - Choose Claude or Codex, preserving the app's book-specific conversation.
 - Choose a model. The default automatic profile selects prose, comparison tables, diagrams or interactive explanations for the question; plain explanation, comparison table and visual explanation remain optional overrides.
+- Check understanding in two [tutoring modes](#tutoring-modes): trace a stuck sentence back to the earlier pages that explain its concepts, or check the reader's own explanation against the cited pages.
 - Use an English system prompt while answering in the user's requested language.
 - Stream replies, stop a request, save a completed reply to the notebook and return to the question's PDF page.
 - Store conversations in a separate SQLite table with revision checks. Chats do not count as notebook items unless explicitly copied to the notebook.
@@ -49,9 +50,44 @@ occasional ones move to the header's ⋯ menu:
   is in the message's context menu, asks for confirmation and can be restored with undo.
 - Replies end with source page chips. Copy, regenerate (latest reply only) and save-to-notes
   icons sit on the turn's summary line, each with a tooltip.
-- The empty conversation and the latest completed reply offer three fixed prompts (explain this
-  page, summarize this chapter, quiz me). Choosing one fills the field; nothing is sent until
-  the reader sends it.
+- The empty conversation and the latest completed reply offer starting prompts: explain this
+  page, summarize this chapter, quiz me and 내 설명 점검받기. With a selected sentence,
+  선택한 문장에서 막혔어요 comes first. Choosing one fills the field; nothing is sent until
+  the reader sends it. The two tutoring prompts also switch the explanation menu to their mode.
+
+### Tutoring modes
+
+The explanation menu lists two modes under 이해 점검. Both are app-owned skills in
+`instructions.ts`; Pi still loads no external skill. They use the four book tools and cite
+`[p. N]`, and mark anything added from outside the book. The bridge's `Request.skill` type is
+derived from `learningSkills`, and a Bun test checks that the Swift `PiExplanation` cases list
+the same names. Answers in these modes are often one letter or number, so the shared
+instructions keep the conversation's language when the latest message is that short.
+
+- **막힌 곳 찾기** (`trace`) starts from the stuck sentence. 선택한 문장에서 막혔어요 puts the
+  selection, collapsed to one line and cut at 200 characters, into the question, so later turns
+  keep it after the selection is gone. Pi names the 2–5 concepts the sentence depends on and
+  finds the page that first explains each one, usually before the current page. It shows a
+  top-to-bottom Mermaid graph with `[p. N]` on every node, then asks one check question and
+  stops. A single miss does not settle a gap: Pi asks an easier question about the same concept
+  without giving the answer yet. After a second wrong or "don't know" answer on that concept it
+  stops asking, names the missing link, sends the reader back to its page and explains forward
+  to the stuck sentence. The mechanism follows
+  the floor/ceiling probing of `amosblomqvist/learn`; that project has no license, so the
+  wording is rewritten.
+- **내 설명 점검** (`check`) compares the reader's own words with the pages that cover the
+  concept. It names at most one gap per turn (a wrong claim, a missing link, or a term used
+  without its mechanism), quotes the reader and the book sentence with `[p. N]`, and asks for a
+  restatement. A correct explanation gets no invented gap. The check ends when the explanation
+  covers the page's points or the reader asks to stop.
+
+A tutoring mode stays selected after a reply, because the next message is the reader's
+answer and must be read under the same protocol. While it is selected, the starting prompts
+are hidden after replies and the field's placeholder asks for an answer. It ends when the
+reader picks another mode. A plain starting prompt, a book switch or clearing the conversation
+returns it to 자동: a plain prompt is a new question rather than an answer, and the protocol's
+state lives in one conversation's history, so it does not carry over. Plain explanation
+formats stay selected as before.
 
 ### Transcript
 
@@ -190,6 +226,7 @@ The bridge is bundled, but the executors and Node runtime are not redistributed.
 - On 2026-10-19, a fresh official Codex App Server process confirmed the app-owned ChatGPT subscription login. A native Pi/Codex request returned a 1312 by 1199 PNG plus a source-grounded explanation. The app displayed it, enlarged it, copied it, exported identical PNG bytes, and restored it after clear/undo and relaunch. The same book then continued through Claude Sonnet without losing the generated image. No credentials were copied.
 - Native checks with authored PDFs verified library return, all four book tools, search, clear/undo, custom shortcuts, account controls, selected Sonnet inference, question edit/regeneration/undo, interactive HTML and M4A playback. Media, model choice and shortcuts survived relaunch. Automatic mode selected both a Markdown table and Mermaid for a comparison/process question without either format being explicitly requested. [Account acceptance](https://github.com/NomaDamas/bookside/issues/8) and [automatic/image evidence](evidence/automatic-learning-checks.json) record the boundaries.
 - On 2026-10-20 the Pi panel layout passed 68 Swift tests, including status checks that leave the panel enabled, Settings sign-in that keeps the conversation engine, composer block reasons, scope labels and conversation copy. A native debug build with an isolated library and a seeded synthetic conversation showed the empty, conversation, inline-edit, minimum-width (320 pt), disconnected-Codex and Settings > Pi states; menus were checked through their accessibility items. No model request or sign-in was made.
+- On 2026-10-20 the tutoring modes passed 82 Swift tests, 21 Bun tests and the TypeScript check. Ten live Claude Sonnet requests used an authored seven-page Korean fixture with invented terms. Trace cited the explaining pages 2–5 before the current page 6, skipped pages that only mention the terms, drew a five-node top-to-bottom graph and waited after one question. After a first miss it withheld the answer and asked an easier question. Check caught a planted reversal by quoting the right sentence on page 3, and gave a correct explanation no invented gap. Earlier wording kept asking after a second miss, and three of its answer-judging replies began in Chinese. With the final stop rule and the conversation-language rule, both final requests (a one-character answer and a full-sentence answer) stopped, sent the reader to page 2, explained forward to page 6 in Korean and closed the trace. A `.qa-learn` build with a replay bridge showed the chips, menu, mode label and narrow-panel graph in light and dark appearance. See [tutoring-mode evidence](evidence/tutoring-mode-checks.json).
 - Native screenshots use authored synthetic PDF pages. Private source books, notes, account tokens and raw authentication URLs must not be committed as evidence.
 - On 2026-10-20, the original five-tool MCP protocol and the four-tool scoped protocol passed after the real synthetic OCR prerequisite. A real Codex App Server listed all four reading tools after the compatibility fix. Codex inference then returned the account usage limit, so live book-retrieval answers through Codex remain unverified in [issue #15](https://github.com/NomaDamas/bookside/issues/15); no alternate billing route was used. See [book-scope evidence](evidence/book-reading-checks.json).
 
