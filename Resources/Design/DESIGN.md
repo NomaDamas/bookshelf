@@ -22,6 +22,20 @@ The forest wallpaper, experimental Liquid Glass shader layers, Aside logo and bu
 
 `tokens.json` is the dimension/opacity source. Its DTCG `px` dimensions map to macOS points. Run `python3 scripts/generate-reader-tokens.py` from the repository root after changing a token. `ReaderTokens.swift` is generated; `build-app.sh` rejects a stale copy. Semantic colors and native materials are defined in `ReaderStyle.swift`, so macOS retains control of their appearance and accessibility behavior.
 
+### Type scale
+
+Text sizes use five tokens. Aside declares text-xs (12px), text-sm (14px) and text-base (16px) but no smaller step, so the two smallest steps take macOS standard sizes.
+
+| Token | pt | Origin | Used for |
+| --- | --- | --- | --- |
+| `footnoteFont` | 10 | macOS label size (`NSFont.labelFontSize`) | Status tags, media captions and clocks, reading-coverage lines, Pi gutter marks |
+| `detailFont` | 11 | macOS small system size (`NSFont.smallSystemFontSize`) | Counts, dates, save status, helper lines, notices, code in chat |
+| `captionFont` | 12 | Aside text-xs | Secondary labels and messages, shortcut rows, chat turn lines and tables, compact and segmented controls |
+| `controlFont` | 13 | Aside text-sm at the macOS system size | Controls, rows, toolbar titles, settings and empty-state text, quotes, search hits, OCR text |
+| `bodyFont` | 14 | Aside text-sm | Notes, chat messages and editors, headings that differ from body text only by weight, the page field |
+
+A token names its step's main use; a call site takes the step that matches its size. SF Symbols sized with `.font` use the same steps, as `ReaderIconButton` already did. Sizes outside the scale stay literal: the 7pt Pi status dots, and 16pt or larger titles and empty-state symbols.
+
 ## Screen rules
 
 - The library is a quiet material sidebar with a search field and neutral selected row. Cover/title/progress form one hit target. Opening a PDF replaces this with the book's pages, notes, excerpts and search tools; returning to the library restores book navigation.

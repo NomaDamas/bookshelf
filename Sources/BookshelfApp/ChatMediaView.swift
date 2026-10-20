@@ -19,7 +19,7 @@ struct ChatResponseView: View, Equatable {
                 switch block.kind {
                 case "mermaid", "svg", "html":
                     if block.complete { ChatArtifactView(kind: block.kind, source: block.source) }
-                    else if streaming { HStack(spacing: 8) { ProgressView().controlSize(.small); Text("시각 자료를 구성하고 있습니다.").font(.system(size: 12)).foregroundStyle(.secondary) }.padding(14) }
+                    else if streaming { HStack(spacing: 8) { ProgressView().controlSize(.small); Text("시각 자료를 구성하고 있습니다.").font(.system(size: ReaderTokens.captionFont)).foregroundStyle(.secondary) }.padding(14) }
                     else { code(block.source, title: "시각 자료의 닫는 코드 표시를 확인해 주세요.") }
                 case "code": code(block.source, title: block.label)
                 case "image", "audio", "video": RemoteChatMedia(source: block.source, title: block.label, kind: block.kind)
@@ -33,8 +33,8 @@ struct ChatResponseView: View, Equatable {
     }
     private func code(_ value: String, title: String) -> some View {
         VStack(alignment: .leading, spacing: 8) {
-            if !title.isEmpty { Text(title).font(.system(size: 10)).foregroundStyle(.secondary) }
-            ScrollView(.horizontal) { Text(value).font(.system(size: 11, design: .monospaced)).textSelection(.enabled) }
+            if !title.isEmpty { Text(title).font(.system(size: ReaderTokens.footnoteFont)).foregroundStyle(.secondary) }
+            ScrollView(.horizontal) { Text(value).font(.system(size: ReaderTokens.detailFont, design: .monospaced)).textSelection(.enabled) }
         }.padding(12).frame(maxWidth: .infinity, alignment: .leading).background(ReaderStyle.canvas, in: RoundedRectangle(cornerRadius: 10))
     }
 }
@@ -45,7 +45,7 @@ struct ChatAttachmentView: View {
     var body: some View {
         if let url = ChatAssetStore.url(for: attachment, directory: directory) {
             VStack(alignment: .leading, spacing: 8) {
-                Text(attachment.name).font(.system(size: 12, weight: .medium)).lineLimit(2)
+                Text(attachment.name).font(.system(size: ReaderTokens.captionFont, weight: .medium)).lineLimit(2)
                 if ["mermaid", "html", "svg"].contains(attachment.kind) {
                     if let source = try? String(contentsOf: url, encoding: .utf8) { ChatArtifactView(kind: attachment.kind, source: source) }
                     else { Text("UTF-8 자료로 열 수 없습니다.").font(.caption).foregroundStyle(.secondary) }
@@ -69,11 +69,11 @@ private struct RemoteChatMedia: View {
                         Label(title.isEmpty ? (kind == "audio" ? "음성 불러오기" : "시각 자료 불러오기") : title,
                               systemImage: kind == "audio" ? "waveform" : "photo")
                     }.buttonStyle(.bordered)
-                    Text(url.host ?? "").font(.system(size: 10)).foregroundStyle(.secondary)
+                    Text(url.host ?? "").font(.system(size: ReaderTokens.footnoteFont)).foregroundStyle(.secondary)
                 }
             } else {
-                Label(title.isEmpty ? "로컬 자료" : title, systemImage: "doc").font(.system(size: 12))
-                Text("자료 열기 버튼으로 파일을 선택하면 이 대화에서 볼 수 있습니다.").font(.system(size: 11)).foregroundStyle(.secondary)
+                Label(title.isEmpty ? "로컬 자료" : title, systemImage: "doc").font(.system(size: ReaderTokens.captionFont))
+                Text("자료 열기 버튼으로 파일을 선택하면 이 대화에서 볼 수 있습니다.").font(.system(size: ReaderTokens.detailFont)).foregroundStyle(.secondary)
             }
         }.frame(maxWidth: .infinity, alignment: .leading)
     }
@@ -149,13 +149,13 @@ private struct NativeMediaPlayback: View {
                 VStack(spacing: 4) {
                     Slider(value: Binding(get: { position }, set: { value in position = value; player?.seek(to: CMTime(seconds: value, preferredTimescale: 600)) }), in: 0...max(duration, 1))
                         .disabled(duration <= 0).accessibilityLabel("재생 위치")
-                    HStack { Text(clock(position)); Spacer(); Text(clock(duration)) }.font(.system(size: 10)).monospacedDigit().foregroundStyle(.secondary)
+                    HStack { Text(clock(position)); Spacer(); Text(clock(duration)) }.font(.system(size: ReaderTokens.footnoteFont)).monospacedDigit().foregroundStyle(.secondary)
                 }
                 Picker("재생 속도", selection: $rate) { ForEach([Float(0.75), 1, 1.25, 1.5, 2], id: \.self) { Text("\(Double($0).formatted())x").tag($0) } }
                     .labelsHidden().frame(width: 68).controlSize(.small)
                     .onChange(of: rate) { _, value in if playing { player?.rate = value } }
             }
-            if let error { Text(error).font(.system(size: 11)).foregroundStyle(.secondary) }
+            if let error { Text(error).font(.system(size: ReaderTokens.detailFont)).foregroundStyle(.secondary) }
         }.padding(10).background(ReaderStyle.muted, in: RoundedRectangle(cornerRadius: 10))
             .task(id: url) {
                 let asset = AVURLAsset(url: url); player = AVPlayer(playerItem: AVPlayerItem(asset: asset))

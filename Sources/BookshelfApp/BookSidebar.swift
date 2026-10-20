@@ -14,7 +14,7 @@ struct BookSidebar: View {
                 if model.activeBook != nil {
                     ReaderIconButton(symbol: "scope", label: "현재 읽는 책 찾기") { model.revealCurrentBook() }
                 }
-                Text("\(model.books.count)").font(.system(size: 11, weight: .medium)).monospacedDigit()
+                Text("\(model.books.count)").font(.system(size: ReaderTokens.detailFont, weight: .medium)).monospacedDigit()
                     .foregroundStyle(.secondary).padding(.horizontal, 7).padding(.vertical, 3)
                     .background(ReaderStyle.muted, in: Capsule())
                     .accessibilityLabel("\(model.books.count)권")
@@ -27,7 +27,7 @@ struct BookSidebar: View {
                             Text(status.title).fontWeight(.medium)
                             Spacer()
                             Text("\(model.bookCount(in: status))").monospacedDigit().foregroundStyle(.secondary)
-                        }.font(.system(size: 13)).padding(.horizontal, 12).frame(height: 34)
+                        }.font(.system(size: ReaderTokens.controlFont)).padding(.horizontal, 12).frame(height: 34)
                             .background(model.readingShelfVisible && model.shelfStatus == status ? ReaderStyle.selection : .clear,
                                         in: RoundedRectangle(cornerRadius: ReaderTokens.radiusLarge))
                             .contentShape(RoundedRectangle(cornerRadius: ReaderTokens.radiusLarge))
@@ -43,11 +43,11 @@ struct BookSidebar: View {
                 Spacer()
                 if !model.libraryQuery.isEmpty { Text("\(model.filteredBooks.count)권").monospacedDigit() }
                 LibrarySortMenu(model: model, compact: true)
-            }.font(.system(size: 11, weight: .medium)).foregroundStyle(.secondary)
+            }.font(.system(size: ReaderTokens.detailFont, weight: .medium)).foregroundStyle(.secondary)
                 .padding(.horizontal, 20).padding(.bottom, 8)
             if model.isImporting {
                 HStack(spacing: 8) { ProgressView().controlSize(.small); Text("PDF 목록을 읽고 있습니다.") }
-                    .font(.system(size: 12)).foregroundStyle(.secondary).padding(16)
+                    .font(.system(size: ReaderTokens.captionFont)).foregroundStyle(.secondary).padding(16)
             }
             ScrollViewReader { proxy in
                 ScrollView {
@@ -64,7 +64,7 @@ struct BookSidebar: View {
                             VStack(spacing: 10) {
                                 Image(systemName: model.libraryQuery.isEmpty ? "books.vertical" : "magnifyingglass").font(.system(size: 24, weight: .light))
                                 Text(model.libraryQuery.isEmpty ? "PDF를 추가해 서재를 시작하세요." : "검색한 책이 없습니다.")
-                                    .font(.system(size: 12)).multilineTextAlignment(.center)
+                                    .font(.system(size: ReaderTokens.captionFont)).multilineTextAlignment(.center)
                             }.foregroundStyle(.secondary).padding(20).allowsHitTesting(false)
                         }
                     }
@@ -97,17 +97,17 @@ private struct BookRow: View {
                         .lineLimit(2).foregroundStyle(.primary)
                     if let currentPage {
                         Label("펼친 책  \(currentPage)쪽", systemImage: "book.fill")
-                            .font(.system(size: 11, weight: .medium)).monospacedDigit()
+                            .font(.system(size: ReaderTokens.detailFont, weight: .medium)).monospacedDigit()
                             .foregroundStyle(ReaderStyle.accent).lineLimit(1)
                     } else {
                         Text(summary.status == .reading ? "\(summary.label), \(book.lastPage)쪽" : summary.label)
-                            .font(.system(size: 11)).monospacedDigit().foregroundStyle(.secondary).lineLimit(1)
+                            .font(.system(size: ReaderTokens.detailFont)).monospacedDigit().foregroundStyle(.secondary).lineLimit(1)
                     }
                 }
                 Spacer(minLength: 0)
                 NoteCountBadge(count: noteCount)
                 if !FileAccess.hasLocalData(book.url) {
-                    Image(systemName: "icloud.and.arrow.down").font(.system(size: 12)).foregroundStyle(.secondary)
+                    Image(systemName: "icloud.and.arrow.down").font(.system(size: ReaderTokens.captionFont)).foregroundStyle(.secondary)
                         .accessibilityLabel("iCloud 다운로드 필요")
                 }
             }.padding(10).frame(maxWidth: .infinity, alignment: .leading)

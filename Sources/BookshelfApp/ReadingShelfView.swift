@@ -12,7 +12,7 @@ struct ReadingShelfView: View {
                     Text(model.shelfStatus.title).font(.system(size: 24, weight: .semibold))
                         .accessibilityIdentifier("reading-shelf-heading")
                     Text("\(model.shelfBooks.count)권, \(model.sortPreferences.label)")
-                        .font(.system(size: 13)).foregroundStyle(.secondary)
+                        .font(.system(size: ReaderTokens.controlFont)).foregroundStyle(.secondary)
                 }
                 Spacer()
                 LibrarySortMenu(model: model)
@@ -41,7 +41,7 @@ struct ReadingShelfView: View {
             Text(model.libraryQuery.isEmpty ? emptyTitle : "검색한 책이 없습니다.")
                 .font(.system(size: 20, weight: .medium))
             Text(model.libraryQuery.isEmpty ? emptyMessage : "검색어를 지우면 이 책장의 모든 책을 볼 수 있습니다.")
-                .font(.system(size: 13)).foregroundStyle(.secondary).lineSpacing(6).multilineTextAlignment(.center)
+                .font(.system(size: ReaderTokens.controlFont)).foregroundStyle(.secondary).lineSpacing(6).multilineTextAlignment(.center)
             if !model.libraryQuery.isEmpty {
                 Button("검색어 지우기") { model.libraryQuery = "" }.controlSize(.large)
             } else {
@@ -94,37 +94,37 @@ private struct ReadingBookCard: View {
                             Text(book.title).font(.system(size: 16, weight: .semibold)).lineLimit(3)
                                 .frame(maxWidth: .infinity, alignment: .leading)
                             Text(model.activeBook?.id == book.id ? "지금 펼친 책" : book.displayCategory)
-                                .font(.system(size: 11)).foregroundStyle(.secondary).lineLimit(1)
+                                .font(.system(size: ReaderTokens.detailFont)).foregroundStyle(.secondary).lineLimit(1)
                         }
                     }.frame(height: 84, alignment: .top).frame(maxWidth: .infinity, alignment: .leading)
                         .contentShape(Rectangle())
                 }.buttonStyle(.plain).accessibilityLabel("\(book.title) \(openLabel)")
                 Menu { ReadingActions(model: model, book: book) } label: {
-                    Image(systemName: "ellipsis").font(.system(size: 14)).frame(width: 24, height: 28)
+                    Image(systemName: "ellipsis").font(.system(size: ReaderTokens.bodyFont)).frame(width: 24, height: 28)
                 }.menuStyle(.borderlessButton).menuIndicator(.hidden).fixedSize()
                     .accessibilityLabel("\(book.title) 읽기 상태 변경")
             }
             VStack(alignment: .leading, spacing: 9) {
                 HStack {
-                    Label(summary.label, systemImage: summary.status.symbol).font(.system(size: 12, weight: .medium))
+                    Label(summary.label, systemImage: summary.status.symbol).font(.system(size: ReaderTokens.captionFont, weight: .medium))
                     Spacer()
                     if summary.status == .reading && book.pageCount > 0 {
-                        Text("\(Int((progress * 100).rounded()))%").font(.system(size: 12)).monospacedDigit().foregroundStyle(.secondary)
+                        Text("\(Int((progress * 100).rounded()))%").font(.system(size: ReaderTokens.captionFont)).monospacedDigit().foregroundStyle(.secondary)
                     }
                 }
                 if summary.status == .reading {
                     ProgressView(value: progress).tint(ReaderStyle.accent).accessibilityHidden(true)
                     Text(book.pageCount > 0 ? "PDF \(book.lastPage) / \(book.pageCount)쪽" : "페이지 확인 전")
-                        .font(.system(size: 11)).monospacedDigit().foregroundStyle(.secondary)
+                        .font(.system(size: ReaderTokens.detailFont)).monospacedDigit().foregroundStyle(.secondary)
                 } else {
                     Text(summary.lastCompletedAt.map { "최근 완료 " + Date(timeIntervalSince1970: $0).formatted(date: .abbreviated, time: .omitted) }
                          ?? "읽기를 시작하면 진행 상황이 기록됩니다.")
-                        .font(.system(size: 11)).foregroundStyle(.secondary)
+                        .font(.system(size: ReaderTokens.detailFont)).foregroundStyle(.secondary)
                 }
             }.frame(height: 60, alignment: .top)
             ReaderHairline()
             HStack(spacing: 8) {
-                Button(action: open) { Label(openLabel, systemImage: "book.pages").font(.system(size: 12, weight: .medium)) }
+                Button(action: open) { Label(openLabel, systemImage: "book.pages").font(.system(size: ReaderTokens.captionFont, weight: .medium)) }
                     .buttonStyle(.plain).accessibilityLabel("\(book.title) \(openLabel)")
                 Spacer(minLength: 4)
                 if !FileAccess.hasLocalData(book.url) {

@@ -46,7 +46,7 @@ struct LibrarySortMenu: View {
             }
         } label: {
             if compact { Image(systemName: "arrow.up.arrow.down").frame(width: 24, height: 24) }
-            else { Label(model.sortPreferences.label, systemImage: "arrow.up.arrow.down").font(.system(size: 12)) }
+            else { Label(model.sortPreferences.label, systemImage: "arrow.up.arrow.down").font(.system(size: ReaderTokens.captionFont)) }
         }.menuStyle(.borderlessButton).fixedSize().help("책장 정렬: " + model.sortPreferences.label)
             .accessibilityLabel(compact ? "전체 책장 정렬" : "책장 정렬").accessibilityValue(model.sortPreferences.label)
     }
