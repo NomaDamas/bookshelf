@@ -1,3 +1,10 @@
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="Resources/Brand/wordmark-dark.svg">
+    <img src="Resources/Brand/wordmark.svg" alt="Bookside" width="360">
+  </picture>
+</p>
+
 [![서재 데모: 발췌와 메모 남기기, Pi에게 책 내용 묻기, 스캔한 쪽을 검색할 수 있게 만들기](Resources/Design/evidence/readme-demo.gif)](Resources/Design/evidence/readme-demo.mp4)
 
 # Bookside / 서재

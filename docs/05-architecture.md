@@ -119,7 +119,9 @@ implementation serves UI, CLI, and MCP; exact spacing is an explicit option.
 [Design notes](../Resources/Design/DESIGN.md#tokens-and-ownership) define which file owns
 tokens, generated constants and semantic colors, and record the Aside/Glass reference
 and intentional native differences. The token commands are in
-[development](06-development.md#generated-tokens-and-source-layout).
+[development](06-development.md#generated-tokens-and-source-layout). The wordmark, app
+icon and social preview are generated into `Resources/Brand`; see
+[wordmark and app icon](../Resources/Design/DESIGN.md#wordmark-and-app-icon).
 
 The historical web prototype is preserved at commit `57ad734` on
 `feat/reader-ui-prototype`. It is not the native app's source or a web deployment.

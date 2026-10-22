@@ -47,8 +47,15 @@ data["BooksideSourceRevision"] = subprocess.check_output(["git", "rev-parse", "H
 data["BooksideSourceDirty"] = bool(subprocess.check_output(["git", "status", "--porcelain"], text=True).strip())
 plist.write_bytes(plistlib.dumps(data, sort_keys=False))
 PYINFO
-swift scripts/generate-icon.swift .runtime/AppIcon.iconset
-iconutil -c icns .runtime/AppIcon.iconset -o "$bundle/Contents/Resources/AppIcon.icns"
+# actool from Xcode 26 or later compiles the Icon Composer icon into Assets.car plus AppIcon.icns.
+if ! xcrun actool Resources/Brand/AppIcon.icon --compile "$bundle/Contents/Resources" --platform macosx \
+    --minimum-deployment-target "$(plutil -extract LSMinimumSystemVersion raw Resources/Info.plist)" \
+    --app-icon AppIcon --output-partial-info-plist .runtime/AppIcon-partial.plist >.runtime/actool.log 2>&1 \
+  || [[ ! -f "$bundle/Contents/Resources/Assets.car" ]]; then
+  cat .runtime/actool.log >&2
+  print -u2 "Compiling the app icon needs actool from Xcode 26 or later; see docs/01-getting-started.md."
+  exit 1
+fi
 python3 scripts/copy-licenses.py "$bundle/Contents/Resources/ThirdParty"
 python3 scripts/release.py sign-app "$bundle"
 python3 - "$build_stage" "$PWD/dist" <<'PYINSTALL'
