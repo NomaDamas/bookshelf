@@ -11,7 +11,6 @@ that its Git tag or GitHub Release has been published.
 - A new app icon and wordmark: a serif B with a yellow bookmark ribbon. On macOS 26 the icon
   follows the system icon format, so it no longer sits inside a gray tile. Building from source
   needs Xcode 26 or later.
-
 - The learning chat is part of Bookside. Every build, including the DMGs and the Homebrew
   cask, bundles it, and the separate `Bookside Pi.app` is gone. Using the chat needs
   Node.js 22.19 or later and the official Claude Code or Codex executable; without them the
