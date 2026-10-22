@@ -6,6 +6,8 @@ that its Git tag or GitHub Release has been published.
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-10-22
+
 ### Changed
 
 - A new app icon and wordmark: a serif B with a yellow bookmark ribbon. On macOS 26 the icon
@@ -128,6 +130,15 @@ that its Git tag or GitHub Release has been published.
 ### Removed
 
 - `scripts/install-pi-preview.command` and the `BOOKSIDE_INCLUDE_AGENT` build variable.
+
+### Known limitations
+
+- Ad-hoc signed developer preview, not notarized by Apple
+  ([#5](https://github.com/NomaDamas/bookside/issues/5)).
+- Opening a book whose file was moved or deleted reports an iCloud download message
+  ([#18](https://github.com/NomaDamas/bookside/issues/18)).
+- `bookside-cli` installed by Homebrew can wait at a Gatekeeper prompt until macOS
+  allows the app ([#24](https://github.com/NomaDamas/bookside/issues/24)).
 
 ## [0.2.0] - 2026-10-20
 

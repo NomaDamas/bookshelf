@@ -1,8 +1,8 @@
 {
   "name": "Bookside",
   "bundleIdentifier": "org.nomadamas.bookside",
-  "version": "0.2.0",
-  "buildNumber": 2,
+  "version": "0.3.0",
+  "buildNumber": 3,
   "minimumMacOS": "14.0",
   "repository": "https://github.com/NomaDamas/bookside",
   "legacyBundleIdentifiers": [
