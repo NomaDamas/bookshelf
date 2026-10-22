@@ -1,3 +1,10 @@
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="Resources/Brand/wordmark-dark.svg">
+    <img src="Resources/Brand/wordmark.svg" alt="Bookside" width="360">
+  </picture>
+</p>
+
 [![Bookside demo: saving an excerpt and notes, asking Pi about the book, and making scanned pages searchable](Resources/Design/evidence/readme-demo.gif)](Resources/Design/evidence/readme-demo.mp4)
 
 # Bookside / 서재

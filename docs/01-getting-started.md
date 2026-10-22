@@ -95,7 +95,7 @@ compatibility have not been verified end to end.
 | Requirement | Details |
 | --- | --- |
 | macOS | Deployment target: 14. Native frameworks make this a macOS application. |
-| Xcode / Swift | `Package.swift` declares Swift tools 6.0 and Swift language mode 5. Use a compatible full Xcode installation. |
+| Xcode / Swift | `Package.swift` declares Swift tools 6.0 and Swift language mode 5. Use a compatible full Xcode installation, version 26 or later: its `actool` compiles the Icon Composer app icon. |
 | Python 3 | Used by the token and dependency-notice build helpers. |
 | Node.js, pnpm, Bun | Node.js 22.19 or later, pnpm and Bun build the learning chat bridge that every build includes. |
 | Git and network access | Needed to clone and fetch Swift packages on the first build. |

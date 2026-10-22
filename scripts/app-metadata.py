@@ -37,7 +37,9 @@ def plist_bytes(data):
         "CFBundlePackageType": "APPL",
         "CFBundleShortVersionString": data["version"],
         "CFBundleVersion": str(data["buildNumber"]),
+        # macOS 26 reads the Icon Composer icon from Assets.car; earlier systems read AppIcon.icns.
         "CFBundleIconFile": "AppIcon",
+        "CFBundleIconName": "AppIcon",
         "LSMinimumSystemVersion": data["minimumMacOS"],
         "NSHighResolutionCapable": True,
         "NSPrincipalClass": "NSApplication",
