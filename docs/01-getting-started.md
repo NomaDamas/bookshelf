@@ -62,7 +62,7 @@ check that their executable paths still point to the intended app; see
 
 ## Install the developer preview
 
-The [v0.2.0 release](https://github.com/NomaDamas/bookside/releases/tag/v0.2.0)
+The [v0.3.0 release](https://github.com/NomaDamas/bookside/releases/tag/v0.3.0)
 provides separate DMGs for Apple Silicon (`arm64`) and Intel (`x86_64`). The deployment
 target is macOS 14. Downloaded apps do not require Xcode or Python; optional OCR
 has [separate dependencies](04-ocr.md#install-the-optional-engine). The learning chat needs
@@ -72,7 +72,7 @@ Node.js 22.19 or later and the official Claude Code or Codex executable.
 2. In that download folder, verify the checksum. For Apple Silicon:
 
     ```sh
-    shasum -a 256 -c Bookside-0.2.0-macos-arm64.dmg.sha256
+    shasum -a 256 -c Bookside-0.3.0-macos-arm64.dmg.sha256
     ```
 
     Use the `x86_64` filename for Intel. Continue only if the result is `OK`.
