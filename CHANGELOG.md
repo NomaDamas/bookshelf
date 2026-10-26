@@ -6,6 +6,11 @@ that its Git tag or GitHub Release has been published.
 
 ## [Unreleased]
 
+### Fixed
+
+- With the Dark icon style on macOS 26, the app icon's B stays cream. In 0.3.0 it turned
+  navy on a near-black tile and was hard to see.
+
 ## [0.3.0] - 2026-10-22
 
 ### Changed
@@ -28,7 +33,6 @@ that its Git tag or GitHub Release has been published.
 - Reader commands are grouped into **이동** and **책** menus. Sidebar, Pi panel, tab and
   zoom commands are in **보기**; search is in **편집 > 찾기**; saving and exporting notes
   are in **파일**. Menu titles say whether a panel will be shown or hidden.
-
 - The reader keeps one row of controls above the page: the window toolbar. The sidebar
   button stays first, followed by **서재**. Clicking the book title opens a menu with reading
   status, **책장에서 보기**, Finder, OCR, export and **AI로 이어가기**, which replaces the

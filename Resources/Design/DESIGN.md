@@ -66,6 +66,13 @@ In the wordmark a bookmark ribbon takes the place of the dot on the i; the app i
 
 macOS 26 shows an icon that does not follow Apple's icon grid inside a gray tile, as it did with the previous generated icon ([before and after](evidence/app-icon-macos26.png), rendered by `NSWorkspace` on macOS 26.6.2). Check a new icon in Finder or the Dock before merging.
 
+The Dark icon style in System Settings > Appearance paints a layer that has no dark fill in the tile color, so the letter layer sets paper as its dark fill; without it the B turned navy on a near-black tile ([0.3.0 and fixed](evidence/app-icon-dark-style.png)). Icon Composer's `ictool` renders every style without changing that setting. From the repository root, with `--rendition` set to `Default`, `Dark`, `TintedLight`, `TintedDark`, `ClearLight` or `ClearDark`:
+
+```sh
+"$(xcode-select -p)/../Applications/Icon Composer.app/Contents/Executables/ictool" Resources/Brand/AppIcon.icon \
+  --export-image --output-file icon-dark.png --platform macOS --rendition Dark --width 512 --height 512 --scale 1
+```
+
 ## Preview layout and Aside motion
 
 Preview 11.0's compiled `PVDocument.nib` identifies `LeftSplitRootView`, `SidebarView`,

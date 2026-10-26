@@ -22,6 +22,14 @@
     {
       "layers" : [
         {
+          "fill-specializations" : [
+            {
+              "appearance" : "dark",
+              "value" : {
+                "solid" : "srgb:0.95686,0.92941,0.87843,1.00000"
+              }
+            }
+          ],
           "image-name" : "letter.svg",
           "name" : "letter"
         }
