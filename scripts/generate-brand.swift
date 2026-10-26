@@ -116,12 +116,27 @@ for (name, path, color) in [("letter.svg", iconLetter, paper), ("ribbon.svg", ic
     let svg = "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"1024\" height=\"1024\" viewBox=\"0 0 1024 1024\"><path fill=\"\(color.hex)\" d=\"\(svgPath(path, canvasHeight: canvas))\"/></svg>\n"
     try svg.write(to: outDir.appendingPathComponent("AppIcon.icon/Assets/\(name)"), atomically: true, encoding: .utf8)
 }
-func layerGroup(_ name: String, translucency: Bool) -> String {
-    """
+// The Dark icon style paints a layer that has no dark fill in the tile color, which left the B
+// navy on a near-black tile, so the letter keeps the paper color there.
+func layerGroup(_ name: String, translucency: Bool, darkFill: RGB? = nil) -> String {
+    let fill = darkFill.map { color in
+        """
+                  "fill-specializations" : [
+                    {
+                      "appearance" : "dark",
+                      "value" : {
+                        "solid" : "\(color.iconComposer)"
+                      }
+                    }
+                  ],
+
+        """
+    } ?? ""
+    return """
         {
           "layers" : [
             {
-              "image-name" : "\(name).svg",
+    \(fill)          "image-name" : "\(name).svg",
               "name" : "\(name)"
             }
           ],
@@ -143,7 +158,7 @@ let iconJSON = """
   },
   "groups" : [
 \(layerGroup("ribbon", translucency: false)),
-\(layerGroup("letter", translucency: true))
+\(layerGroup("letter", translucency: true, darkFill: paper))
   ],
   "supported-platforms" : {
     "squares" : [
