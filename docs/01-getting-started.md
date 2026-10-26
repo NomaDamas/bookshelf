@@ -146,10 +146,9 @@ Scans skip hidden folders, symlinks, and [documented exclusions](07-data-and-pri
 open "$HOME/Applications/Bookside.app"
 ```
 
-The installer copies the build and checks its signature. It builds only when the
-local executable is missing. For an update, quit the app, update your checkout,
-run `./scripts/build-app.sh` explicitly, then run the installer again. Installing
-an existing `dist/` bundle alone does not rebuild changed source.
+The installer copies the build and checks its signature. It builds first unless
+`dist/Bookside.app` was built from the current commit with no local changes. For
+an update, quit the app, update your checkout, and run the installer again.
 
 Library data is outside the bundle, so replacing the app preserves the database.
 See [backup and restore](07-data-and-privacy.md#backup-and-restore) before testing

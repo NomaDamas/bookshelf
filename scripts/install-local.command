@@ -3,7 +3,23 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 bundle="$PWD/dist/Bookside.app"
 target="$HOME/Applications/Bookside.app"
-if [[ ! -x "$bundle/Contents/MacOS/Bookside" ]]; then ./scripts/build-app.sh; fi
+# Reuse dist/ only when it was built from this commit with no local changes; otherwise it holds older source.
+if ! python3 - "$bundle" <<'PYCURRENT'
+import os, plistlib, subprocess, sys
+from pathlib import Path
+bundle = Path(sys.argv[1])
+try:
+    info = plistlib.loads((bundle / "Contents/Info.plist").read_bytes())
+    head = subprocess.check_output(["git", "rev-parse", "HEAD"], text=True).strip()
+    dirty = bool(subprocess.check_output(["git", "status", "--porcelain"], text=True).strip())
+except (OSError, plistlib.InvalidFileException, subprocess.CalledProcessError):
+    raise SystemExit(1)
+built = info.get("BooksideSourceRevision") == head and info.get("BooksideSourceDirty") is False
+raise SystemExit(0 if built and not dirty and os.access(bundle / "Contents/MacOS/Bookside", os.X_OK) else 1)
+PYCURRENT
+then
+  ./scripts/build-app.sh
+fi
 mkdir -p "$HOME/Applications"
 if [[ -e "$target" ]]; then
   python3 - "$target/Contents/Info.plist" <<'PYIDENTITY'
