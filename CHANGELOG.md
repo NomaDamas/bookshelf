@@ -10,6 +10,8 @@ that its Git tag or GitHub Release has been published.
 
 - With the Dark icon style on macOS 26, the app icon's B stays cream. In 0.3.0 it turned
   navy on a near-black tile and was hard to see.
+- After you update a source checkout, `scripts/install-local.command` builds the new source.
+  Before, it installed the older build left in `dist/`.
 
 ## [0.3.0] - 2026-10-22
 
